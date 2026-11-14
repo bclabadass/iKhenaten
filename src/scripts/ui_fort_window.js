@@ -91,25 +91,8 @@ function fort_info_window_layout_standard(window, form) {
     }
 }
 
-[es=(info_window_fort, init)]
-function info_window_fort_on_init(window) {
-    var b = city.get_building(window.bid)
-    // fort_ground keeps the same formation_id as the main fort building
-    var form = city.get_formation(b.formation_id)
-    if (!form || !form.in_use) {
-        window.title.text = __loc(89, 0)
-        window.describe.text = __loc(89, 2)
-        window.soldiers_num.text = ""
-        window.health_num.text = ""
-        window.training_num.text = ""
-        window.morale_num.text = ""
-        window.batalion_icon.enabled = false
-        window.flag_img.enabled = false
-        window.morale_img.enabled = false
-        window.experience_img.enabled = false
-        return
-    }
-
+// Name, standard, soldiers, health, experience and morale: shared with the company orders panel.
+function fort_info_window_fill_company(window, form) {
     var company_type = fort_info_window_company_type_text(form.figure_type)
     window.title.text = __loc(138, form.batalion_id - 1) + " " + __loc(138, company_type)
 
@@ -138,6 +121,28 @@ function info_window_fort_on_init(window) {
         window.morale_lb.text = __loc(138, 36)
         window.morale_num.text = __loc(138, 37 + ((form.morale / 5) | 0))
     }
+}
+
+[es=(info_window_fort, init)]
+function info_window_fort_on_init(window) {
+    var b = city.get_building(window.bid)
+    // fort_ground keeps the same formation_id as the main fort building
+    var form = city.get_formation(b.formation_id)
+    if (!form || !form.in_use) {
+        window.title.text = __loc(89, 0)
+        window.describe.text = __loc(89, 2)
+        window.soldiers_num.text = ""
+        window.health_num.text = ""
+        window.training_num.text = ""
+        window.morale_num.text = ""
+        window.batalion_icon.enabled = false
+        window.flag_img.enabled = false
+        window.morale_img.enabled = false
+        window.experience_img.enabled = false
+        return
+    }
+
+    fort_info_window_fill_company(window, form)
 
     var group_id = 138
     var text_id = 11

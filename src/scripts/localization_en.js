@@ -588,6 +588,7 @@ localization_en = [
   {key: "#debens", text: "Debens"}
   {key: "#building_no_road_access", text: "WARNING: This building is not adjacent to a road"}
   {key: "#company_orders_button", text: "Orders"}
+  {key: "#company_rotate_button", text: "Rotate"}
   {key: "#building_no_people_in_city", text: "No people in the city!"}
   {key: "#building_no_workers_nearby", text: "No workers live nearby"}
   {key: "#building_labor_could_shift", text: "The Overseer of Workers could shift some labor"}

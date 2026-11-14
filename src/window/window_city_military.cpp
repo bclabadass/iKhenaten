@@ -11,6 +11,8 @@
 #include "figure/formation.h"
 #include "figure/formation_batalion.h"
 #include "sound/sound.h"
+#include "input/hotkey.h"
+#include "game/game_events.h"
 
 static int selected_legion_formation_id;
 
@@ -20,12 +22,23 @@ void draw_foreground_military(int) {
     widget_sidebar_city_draw_foreground_military();
     g_window_city.draw_paused_panel();
     window_city_draw_time_left_panel();
-    window_city_draw_company_orders_button();
+    window_city_draw_company_buttons();
     g_figure_follow.draw_panel();
+}
+
+// R (the building-rotate key) turns the selected company, as in Pharaoh. City listeners are dropped
+// whenever a city loads, so this subscribes again each time (subscribe skips duplicates).
+static void subscribe_rotate_company_key() {
+    events::subscribe([](event_rotate_building) {
+        if (g_window_manager.window_is("window_city_military")) {
+            formation_batalion_rotate(formation_get(selected_legion_formation_id));
+        }
+    });
 }
 
 void window_city_military_show(int legion_formation_id) {
     selected_legion_formation_id = legion_formation_id;
+    subscribe_rotate_company_key();
 
     static window_type window = {
         "window_city_military",
@@ -36,7 +49,7 @@ void window_city_military_show(int legion_formation_id) {
           if (g_figure_follow.handle_escape(h) || g_figure_follow.handle_mouse(m)) {
               return;
           }
-          if (window_city_handle_company_orders_button(m, selected_legion_formation_id)) {
+          if (window_city_handle_company_buttons(m, selected_legion_formation_id)) {
               return;
           }
           g_screen_city.handle_input_military(m, h, selected_legion_formation_id);

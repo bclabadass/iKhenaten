@@ -3846,6 +3846,11 @@ static vec2i __test_company_orders_button_pos() {
 }
 ANK_FUNCTION(__test_company_orders_button_pos);
 
+static vec2i __test_company_rotate_button_pos() {
+    return window_city_company_rotate_button_center();
+}
+ANK_FUNCTION(__test_company_rotate_button_pos);
+
 // Send a company to a tile the way a tap on the map does; it then counts as away from its fort.
 static void __test_company_move_to(int formation_id, int x, int y) {
     formation* m = formation_get(formation_id);
@@ -3889,6 +3894,16 @@ int __test_info_ui_image(pcstr element_id) {
     return (*context.ui)[element_id].image().tid();
 }
 ANK_FUNCTION_1(__test_info_ui_image);
+
+// Offset of an element's picture in its image group (e.g. a company order button in group 34), -1 if absent.
+int __test_info_ui_image_offset(pcstr element_id) {
+    auto& context = common_info_window::get_object_info();
+    if (!context.ui || !element_id || !context.ui->contains(element_id)) {
+        return -1;
+    }
+    return (*context.ui)[element_id].image().offset;
+}
+ANK_FUNCTION_1(__test_info_ui_image_offset);
 
 int __test_info_ui_enabled(pcstr element_id) {
     if (!element_id || !*element_id) {

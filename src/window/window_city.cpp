@@ -37,6 +37,7 @@
 #include "input/scroll.h"
 #include "platform/platform.h"
 #include "building/building.h"
+#include "figure/formation_batalion.h"
 #include "window/window_info.h"
 #include <climits>
 #include <iterator>
@@ -299,11 +300,14 @@ static bool handle_construction_buttons(const mouse *m) {
     return true;
 }
 
-// Touch has no right-click to open a company's orders, so while a company is selected to move, a
-// button where the rotate button sits during placement opens them.
+// Touch has no right-click to open a company's orders and no R key to turn it, so while a company
+// is selected to move, an Orders button sits where the rotate button does during placement, with
+// a Rotate button beside it.
 static bool company_orders_button_pressed = false;
+static bool company_rotate_button_pressed = false;
+static const int company_button_padding = 12;
 
-static bool company_orders_button_visible() {
+static bool company_buttons_visible() {
     return touch_only_platform() || mouse::get().is_touch;
 }
 
@@ -311,18 +315,39 @@ static pcstr company_orders_button_text() {
     return lang_text_from_key("#company_orders_button");
 }
 
-static rect company_orders_button_rect() {
+static pcstr company_rotate_button_text() {
+    return lang_text_from_key("#company_rotate_button");
+}
+
+static rect company_text_button_rect(pcstr text, int right) {
     const vec2i base = construction_buttons_base_pos();
     const image_button& rotate = construction_buttons[2];
-    const int width
-      = std::max<int>(rotate.width, text_get_width(company_orders_button_text(), FONT_LARGE_BLACK_ON_LIGHT) + 20);
-    const int right = base.x + rotate.x + rotate.width;
+    const int width = std::max<int>(rotate.width, text_get_width(text, FONT_LARGE_BLACK_ON_LIGHT) + 20);
     return {vec2i{right - width, base.y - 4}, vec2i{right, base.y - 4 + rotate.height}};
 }
 
-vec2i window_city_company_orders_button_center() {
-    const rect r = company_orders_button_rect();
+static rect company_orders_button_rect() {
+    const vec2i base = construction_buttons_base_pos();
+    const image_button& rotate = construction_buttons[2];
+    return company_text_button_rect(company_orders_button_text(), base.x + rotate.x + rotate.width);
+}
+
+// Far enough left that the two buttons' touch padding doesn't overlap.
+static rect company_rotate_button_rect() {
+    const int right = company_orders_button_rect().mn.x - 2 * company_button_padding;
+    return company_text_button_rect(company_rotate_button_text(), right);
+}
+
+static vec2i rect_center(const rect& r) {
     return {(r.mn.x + r.mx.x) / 2, (r.mn.y + r.mx.y) / 2};
+}
+
+vec2i window_city_company_orders_button_center() {
+    return rect_center(company_orders_button_rect());
+}
+
+vec2i window_city_company_rotate_button_center() {
+    return rect_center(company_rotate_button_rect());
 }
 
 int window_city_company_orders_button_top() {
@@ -334,48 +359,70 @@ int window_city_construction_rotate_button_top() {
     return construction_buttons_base_pos().y + construction_buttons[2].y;
 }
 
-void window_city_draw_company_orders_button() {
-    if (!company_orders_button_visible()) {
+static void draw_company_text_button(const rect& r, pcstr text, bool pressed) {
+    const vec2i size{r.w(), r.h()};
+    outer_panel_draw_exact(r.mn, size);
+    const int pressed_offset = pressed ? 1 : 0;
+    text_draw_centered((const uint8_t*)text, r.mn.x + pressed_offset, r.mn.y + 11 + pressed_offset, size.x,
+      FONT_LARGE_BLACK_ON_LIGHT, COLOR_MASK_NONE);
+}
+
+void window_city_draw_company_buttons() {
+    if (!company_buttons_visible()) {
         return;
     }
 
-    const rect r = company_orders_button_rect();
-    const vec2i size{r.w(), r.h()};
-    outer_panel_draw_exact(r.mn, size);
-    const int pressed_offset = company_orders_button_pressed ? 1 : 0;
-    text_draw_centered((const uint8_t*)company_orders_button_text(), r.mn.x + pressed_offset,
-      r.mn.y + 11 + pressed_offset, size.x, FONT_LARGE_BLACK_ON_LIGHT, COLOR_MASK_NONE);
+    draw_company_text_button(company_rotate_button_rect(), company_rotate_button_text(), company_rotate_button_pressed);
+    draw_company_text_button(company_orders_button_rect(), company_orders_button_text(), company_orders_button_pressed);
 }
 
-bool window_city_handle_company_orders_button(const mouse* m, int formation_id) {
-    const touch_t* t = (m->is_touch || touch_only_platform()) ? get_earliest_touch_raw() : nullptr;
-    if (!t || !t->in_use) {
-        company_orders_button_pressed = false;
-        return false;
-    }
+enum e_company_button_touch { COMPANY_BUTTON_MISSED, COMPANY_BUTTON_HELD, COMPANY_BUTTON_RELEASED };
 
-    const int padding = 12;
-    const rect r = company_orders_button_rect();
+static e_company_button_touch handle_company_text_button(const touch_t* t, const rect& r, bool& pressed) {
+    const int padding = company_button_padding;
     auto on_button = [&](vec2i pt) {
         return pt.x >= r.mn.x - padding && pt.x < r.mx.x + padding && pt.y >= r.mn.y - padding
                && pt.y < r.mx.y + padding;
     };
     if (!on_button(t->start_point)) {
+        pressed = false;
+        return COMPANY_BUTTON_MISSED;
+    }
+
+    pressed = on_button(t->current_point);
+    if (!t->has_ended) {
+        return COMPANY_BUTTON_HELD;
+    }
+
+    const bool released_on_button = pressed;
+    pressed = false;
+    return released_on_button ? COMPANY_BUTTON_RELEASED : COMPANY_BUTTON_HELD;
+}
+
+bool window_city_handle_company_buttons(const mouse* m, int formation_id) {
+    const touch_t* t = (m->is_touch || touch_only_platform()) ? get_earliest_touch_raw() : nullptr;
+    if (!t || !t->in_use) {
         company_orders_button_pressed = false;
+        company_rotate_button_pressed = false;
         return false;
     }
 
-    company_orders_button_pressed = on_button(t->current_point);
-    if (t->has_ended) {
-        const bool fire = company_orders_button_pressed;
-        company_orders_button_pressed = false;
+    const e_company_button_touch rotate
+      = handle_company_text_button(t, company_rotate_button_rect(), company_rotate_button_pressed);
+    if (rotate == COMPANY_BUTTON_RELEASED) {
+        formation_batalion_rotate(formation_get(formation_id));
+    }
+
+    const e_company_button_touch orders
+      = handle_company_text_button(t, company_orders_button_rect(), company_orders_button_pressed);
+    if (orders == COMPANY_BUTTON_RELEASED) {
         const formation* f = formation_get(formation_id);
-        building* fort = (fire && f && f->in_use) ? building_get(f->building_id) : nullptr;
+        building* fort = (f && f->in_use) ? building_get(f->building_id) : nullptr;
         if (fort && fort->is_valid() && fort->is_fort()) {
             events::emit(event_show_tile_info{fort->tile, false, SOURCE_LOCATION, true});
         }
     }
-    return true;
+    return rotate != COMPANY_BUTTON_MISSED || orders != COMPANY_BUTTON_MISSED;
 }
 
 bool window_city_draw_construction_cost_and_size() {

@@ -132,8 +132,8 @@ function run_test() {
     if (window_id == 'window_building_info' && section == 'batalion_info_window') {
         __log_marker('fort_tap_opens_orders')
 
-        var button = __test_info_ui_screen_pos('formation_5')
-        var size = __test_window_element_size('batalion_info_window', 'formation_5')
+        var button = __test_info_ui_screen_pos('formation_4')
+        var size = __test_window_element_size('batalion_info_window', 'formation_4')
         t330_tap({ x: button.x + ((size.x / 2) | 0), y: button.y + ((size.y / 2) | 0) })
         form = city.get_formation(fid)
         __log_info_native('[test:330] formation tap at ' + JSON.stringify(button) + ': layout ' + form.layout

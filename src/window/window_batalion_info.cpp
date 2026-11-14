@@ -23,7 +23,64 @@ batalion_info_window::batalion_info_window() {
     window_batalion_register_handler(this);
 }
 
-static pcstr buttons[] = { "formation_1", "formation_2", "formation_3", "formation_4", "formation_5" };
+static pcstr buttons[] = {"formation_1", "formation_2", "formation_3", "formation_4"};
+
+namespace {
+    enum e_company_order { ORDER_NONE = -1, ORDER_TIGHT, ORDER_LOOSE, ORDER_ENGAGE, ORDER_MOP_UP, ORDER_CHARGE };
+
+    // Pharaoh's orders (help message 87) and their title in text group 138; the description follows it.
+    // Engage nearby is layout 0x0F: the company holds and fights whatever comes within a few tiles.
+    struct company_order_t {
+        e_formation_layout layout;
+        int title_id;
+    };
+
+    const company_order_t COMPANY_ORDERS[] = {
+      {FORMATION_DOUBLE_LINE_1, 12},
+      {FORMATION_SINGLE_LINE_1, 14},
+      {FORMATION_CHARGE, 16},
+      {FORMATION_MOP_UP, 18},
+      {FORMATION_COLUMN, 20},
+    };
+
+    // Pharaoh_Unloaded group 34 holds each type's four order pictures, then Return to Fort and its
+    // greyed copy. Charioteers have Charge where the others have loose formation.
+    int company_image_base(e_figure_type type) {
+        if (type == FIGURE_ARCHER) {
+            return 6;
+        }
+        if (type == FIGURE_FCHARIOTEER) {
+            return 12;
+        }
+        return 0;
+    }
+
+    std::array<e_company_order, 4> company_order_slots(e_figure_type type) {
+        if (type == FIGURE_FCHARIOTEER) {
+            return {ORDER_TIGHT, ORDER_CHARGE, ORDER_ENGAGE, ORDER_MOP_UP};
+        }
+        return {ORDER_TIGHT, ORDER_LOOSE, ORDER_ENGAGE, ORDER_MOP_UP};
+    }
+
+    e_company_order company_order_of(const formation& m) {
+        switch (m.layout) {
+        case FORMATION_DOUBLE_LINE_1:
+        case FORMATION_DOUBLE_LINE_2:
+            return ORDER_TIGHT;
+        case FORMATION_SINGLE_LINE_1:
+        case FORMATION_SINGLE_LINE_2:
+            return ORDER_LOOSE;
+        case FORMATION_CHARGE:
+            return ORDER_ENGAGE;
+        case FORMATION_MOP_UP:
+            return ORDER_MOP_UP;
+        case FORMATION_COLUMN:
+            return m.figure_type == FIGURE_FCHARIOTEER ? ORDER_CHARGE : ORDER_NONE;
+        default:
+            return ORDER_NONE;
+        }
+    }
+} // namespace
 
 struct military_data_t {
     object_info* context_for_callback;
@@ -80,14 +137,7 @@ void batalion_info_window::change_layout(e_formation_layout new_layout) {
     if (m->in_distant_battle)
         return;
 
-    //if (index == 0 && data.context_for_callback->formation_types < 5)
-    //    return;
-    //
-    //if (index == 1 && data.context_for_callback->formation_types < 4)
-    //    return;
-
-    // store layout in case of mop up
-    formation_batalion_change_layout(m, new_layout);
+    formation_batalion_change_layout(m, formation_batalion_line_layout(new_layout, m->direction));
     switch (new_layout) {
     case 0:
         g_sound.speech_play_file("Wavs/f_infantry.wav", 255);
@@ -118,112 +168,34 @@ void batalion_info_window::update_layout() {
     building *fort = data.context_for_callback->building_get();
     const formation *m = formation_get(fort->formation_id);
 
-    struct mode_t { int img, mode; };
-    static const mode_t OFFSETS_LEGIONARY[2][5] = {
-      {{0, FORMATION_COLUMN}, {1, FORMATION_TORTOISE}, {2, FORMATION_DOUBLE_LINE_1}, {3, FORMATION_DOUBLE_LINE_2},
-        {4, FORMATION_MOP_UP}},
-      {{0, FORMATION_COLUMN}, {1, FORMATION_TORTOISE}, {3, FORMATION_DOUBLE_LINE_2}, {2, FORMATION_DOUBLE_LINE_1},
-        {4, FORMATION_MOP_UP}},
-    };
-    // OG charioteers: double-line / charge(COLUMN) / charge-hold(0x0F) / mop-up.
-    static const mode_t OFFSETS_CHARIOTEER[2][5] = {
-      {{0, FORMATION_DOUBLE_LINE_1}, {1, FORMATION_COLUMN}, {2, FORMATION_CHARGE}, {3, FORMATION_DOUBLE_LINE_2},
-        {4, FORMATION_MOP_UP}},
-      {{0, FORMATION_DOUBLE_LINE_2}, {1, FORMATION_COLUMN}, {2, FORMATION_CHARGE}, {3, FORMATION_DOUBLE_LINE_1},
-        {4, FORMATION_MOP_UP}},
-    };
-    static const mode_t OFFSETS_OTHER[2][5] = {
-      {{5, FORMATION_SINGLE_LINE_1}, {1, FORMATION_SINGLE_LINE_2}, {2, FORMATION_DOUBLE_LINE_1},
-        {3, FORMATION_DOUBLE_LINE_2}, {4, FORMATION_MOP_UP}},
-      {{6, FORMATION_SINGLE_LINE_2}, {5, FORMATION_SINGLE_LINE_1}, {3, FORMATION_DOUBLE_LINE_2},
-        {2, FORMATION_DOUBLE_LINE_1}, {4, FORMATION_MOP_UP}},
-    };
-
-    const int index = (g_camera.orientation == DIR_6_TOP_LEFT || g_camera.orientation == DIR_2_BOTTOM_RIGHT) ? 1 : 0;
-    const mode_t *offsets;
-    if (m->figure_type == FIGURE_INFANTRY)
-        offsets = OFFSETS_LEGIONARY[index];
-    else if (m->figure_type == FIGURE_FCHARIOTEER)
-        offsets = OFFSETS_CHARIOTEER[index];
-    else {
-        offsets = OFFSETS_OTHER[index];
-    }
-
+    const int image_base = company_image_base(m->figure_type);
+    const auto slots = company_order_slots(m->figure_type);
+    const e_company_order current = company_order_of(*m);
+    const bool can_order = m->num_figures > 0 && !m->cursed_by_seth;
     for (int i = 0; i < std::size(buttons); ++i) {
         auto imgbtn = ui[buttons[i]].dcast_image_button();
-        imgbtn->param1 = offsets[i].mode;
-        imgbtn->image(offsets[i].img);
-        imgbtn->darkened = UiFlags_None;
-        imgbtn->select(m->layout == imgbtn->param1);
+        imgbtn->param1 = COMPANY_ORDERS[slots[i]].layout;
+        imgbtn->image(image_base + i);
+        imgbtn->darkened = can_order ? UiFlags_None : UiFlags_Grayscale;
+        imgbtn->select(can_order && slots[i] == current);
         imgbtn->onclick([this] (int p1, int) {
             this->change_layout((e_formation_layout)p1);
             this->update_describe_layout(*g_military_data.context_for_callback);
         });
     }
+
+    auto return_btn = ui["return_to_fort"].dcast_image_button();
+    return_btn->image(image_base + (m->is_at_fort ? 5 : 4));
+    return_btn->darkened = m->is_at_fort ? UiFlags_Grayscale : UiFlags_None;
 }
 
+// The company's name, standard, soldiers, health, experience and morale come from the fort
+// window's script (batalion_info_window init); this sets up the orders.
 void batalion_info_window::init(object_info &c) {
     building_info_window::init(c);
 
-    building *fort = c.building_get();
-    const formation *m = formation_get(fort->formation_id);
-
     g_military_data.context_for_callback = &c;
-
-    ui["title"] = ui::str(138, m->batalion_id - 1);
-    ui["batalion_icon"].image(m->batalion_id - 1);
-
-    const int morale = (21.f - m->morale / 5) / 21.f;
-    ui["morale_img"].image(morale);
-    ui["soldiers_num"] = bstring32(m->num_figures);
-
-    int health = calc_percentage(m->total_damage, m->max_total_damage);
-    int text_id;
-    if (health <= 0)
-        text_id = 26;
-    else if (health <= 20)
-        text_id = 27;
-    else if (health <= 40)
-        text_id = 28;
-    else if (health <= 55)
-        text_id = 29;
-    else if (health <= 70)
-        text_id = 30;
-    else if (health <= 90)
-        text_id = 31;
-    else {
-        text_id = 32;
-    }
-    ui["health_num"] = ui::str(138, text_id);
-    ui["training_num"] = ui::str(18, m->has_military_training);
-
-    int morale_level = m->cursed_by_seth ? 59 : 37 + m->morale / 5;
-    ui["morale_num"] = ui::str(138, morale_level);
-
-    if (m->num_figures) {
-        update_layout();
-    } else {
-        // no soldiers
-        int group_id;
-        if (m->cursed_by_seth) {
-            group_id = 89;
-            text_id = 1;
-        } else if (g_city.buildings.count_active(BUILDING_RECRUITER)) {
-            group_id = 138;
-            text_id = 10;
-        } else {
-            group_id = 138;
-            text_id = 11;
-        }
-
-        ui["describe"] = ui::str(group_id, text_id);
-
-        for (int i = 0; i < std::size(buttons); ++i) {
-            ui[buttons[i]].darkened = UiFlags_Grayscale;
-        }
-    }
-
-    ui["return_to_fort"].darkened = (m->is_at_fort) ? UiFlags_Grayscale : UiFlags_None;
+    update_layout();
 
     ui["return_to_fort"].onclick([] {
         auto &data = g_military_data;
@@ -284,54 +256,28 @@ bool batalion_info_window::check(object_info &c) {
 }
 
 void batalion_info_window::update_describe_layout(object_info &c) {
-    int title_id, text_id;
-    building* b = c.building_get();
+    const formation* m = formation_get(c.building_get()->formation_id);
 
-    const formation *m = formation_get(b->formation_id);
-    switch (m->layout) {
-    case FORMATION_SINGLE_LINE_1:
-    case FORMATION_SINGLE_LINE_2:
-        title_id = 16;
-        text_id = 22;
-        break;
-    case FORMATION_DOUBLE_LINE_1:
-    case FORMATION_DOUBLE_LINE_2:
-        title_id = 14;
-        text_id = 20;
-        break;
-    case FORMATION_TORTOISE:
-        title_id = 12;
-        text_id = m->has_military_training ? 18 : 17;
-        break;
-    case FORMATION_MOP_UP:
-        title_id = 15;
-        text_id = 21;
-        break;
-    case FORMATION_COLUMN:
-        // OG charioteer charge order uses the same COLUMN layout with charge copy.
-        if (m->figure_type == FIGURE_FCHARIOTEER) {
-            title_id = 20;
-            text_id = 21;
-        } else {
-            title_id = 13;
-            text_id = m->has_military_training ? 19 : 17;
-        }
-        break;
-    case FORMATION_CHARGE:
-        title_id = 16;
-        text_id = 17;
-        break;
-    default:
-        title_id = 16;
-        text_id = 22;
-        logs::info("Unknown formation %u", m->layout);
-        break;
+    if (m->cursed_by_seth) {
+        ui["layout_header"] = ui::str(138, 59);
+        ui["layout_desc"] = ui::str(89, 1);
+        return;
     }
 
-    //if (m->is_at_fort) {
-    //    text_id = 58;
-    //}
+    if (!m->num_figures) {
+        ui["layout_header"] = "";
+        ui["layout_desc"] = ui::str(138, g_city.buildings.count_active(BUILDING_RECRUITER) ? 10 : 11);
+        return;
+    }
 
+    const e_company_order order = company_order_of(*m);
+    if (order == ORDER_NONE) {
+        ui["layout_header"] = "";
+        ui["layout_desc"] = "";
+        return;
+    }
+
+    const int title_id = COMPANY_ORDERS[order].title_id;
     ui["layout_header"] = ui::str(138, title_id);
-    ui["layout_desc"] = ui::str(138, text_id);
+    ui["layout_desc"] = ui::str(138, title_id + 1);
 }

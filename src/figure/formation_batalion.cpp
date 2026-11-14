@@ -67,6 +67,32 @@ void formation_batalion_restore_layout(formation* m) {
         m->layout = m->prev.layout;
 }
 
+// _1 lines face top-right or bottom-left, _2 lines bottom-right or top-left.
+e_formation_layout formation_batalion_line_layout(e_formation_layout layout, int direction) {
+    const bool faces_along_y = (direction / 2) % 2 == 0;
+    switch (layout) {
+    case FORMATION_DOUBLE_LINE_1:
+    case FORMATION_DOUBLE_LINE_2:
+        return faces_along_y ? FORMATION_DOUBLE_LINE_1 : FORMATION_DOUBLE_LINE_2;
+    case FORMATION_SINGLE_LINE_1:
+    case FORMATION_SINGLE_LINE_2:
+        return faces_along_y ? FORMATION_SINGLE_LINE_1 : FORMATION_SINGLE_LINE_2;
+    default:
+        return layout;
+    }
+}
+
+// Pharaoh's R order: the company turns a quarter clockwise, and a line takes the other orientation.
+void formation_batalion_rotate(formation* m) {
+    if (!m || !m->in_use || !m->own_batalion || m->in_distant_battle || m->cursed_by_seth) {
+        return;
+    }
+
+    m->direction = ((m->direction / 2) * 2 + 2) % 8;
+    m->layout = formation_batalion_line_layout(m->layout, m->direction);
+    m->prev.layout = formation_batalion_line_layout(m->prev.layout, m->direction);
+}
+
 static int prepare_to_move(formation* m) {
     if (m->months_very_low_morale || m->months_low_morale > 1) {
         return 0;

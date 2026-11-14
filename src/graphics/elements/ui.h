@@ -1006,6 +1006,7 @@ namespace ui {
         virtual void image(const image_desc& d) override { img_desc = d; offsets.data[0] = d.offset; }
         virtual void image(const animation_t& d) override;
         virtual void image(int v) override { img_desc.offset = v; offsets.data[0] = v; }
+        virtual image_desc image() const override { return img_desc; }
 
         virtual eimage_button* dcast_image_button() override { return this; }
 

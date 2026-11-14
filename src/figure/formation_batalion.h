@@ -12,6 +12,10 @@ void formation_batalion_change_layout(formation* m, e_formation_layout new_layou
 
 void formation_batalion_restore_layout(formation* m);
 
+e_formation_layout formation_batalion_line_layout(e_formation_layout layout, int direction);
+
+void formation_batalion_rotate(formation* m);
+
 void formation_batalion_move_to(formation* m, tile2i tile);
 
 void formation_batalion_return_home(formation* m);

@@ -313,10 +313,12 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_show_company_orders(bid)` | undefined | Open the company orders panel for fort `bid`, as a tap on the fort does on a touch screen |
 | `__test_company_orders_button_pos()` | `{x,y}` | Centre of the Orders button shown on touch screens while a company is selected to move |
 | `__test_company_orders_button_top()` | int | Top edge (y) of that Orders button |
+| `__test_company_rotate_button_pos()` | `{x,y}` | Centre of the Rotate button beside it (turns the selected company) |
 | `__test_company_move_to(formation_id, x, y)` | undefined | Send a company to a tile, as a tap on the map does (it is then away from its fort) |
 | `__test_construction_rotate_button_top()` | int | Top edge (y) of the touch Rotate button shown while placing a rotatable building |
 | `__test_info_window_section()` | string | Section of the open info panel (`info_window_fort`, `batalion_info_window`, …), or `""` |
 | `__test_info_ui_text(element_id)` | string | Text of a named element on the current building/terrain info window (e.g. `workers_text`) |
+| `__test_info_ui_image_offset(element_id)` | int | Picture offset in its image group of an element on the current info window (e.g. an order button), −1 if absent |
 | `__test_color_roundtrip(color)` | number | Echo a `color` (uint32) back through the binding conversion; asserts full `COLOR_MASK_*` survive MuJS→C++ (J1) |
 | `__test_count_scenario_map_points(kind)` | int | Valid map points of `prey` / `animals` / `fishing` in the loaded scenario |
 | `__test_enemy_figure_registered(type)` | boolean | Spawn `type` and report whether it resolved to a registered enemy class (`dcast_enemy` != null); false for a missing `FIGURE_METAINFO` (F2) |

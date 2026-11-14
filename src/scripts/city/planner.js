@@ -56,6 +56,9 @@ city_planner = extend(__city_planner, {
 
 [es=event_rotate_building]
 function city_planner_on_rotate_building(ev) {
+    if (ui.window_is("window_city_military")) {
+        return
+    }
     if (statue_is_type(city_planner.build_type) && statue_og_mode()) {
         statue_og_advance()
         __city_planner_update_orientations()

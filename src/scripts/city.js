@@ -358,6 +358,7 @@ city.get_formation = function(formation_id) {
         @cursed_by_seth { }
         @is_at_fort { }
         @layout { }
+        @direction { }
         @in_distant_battle { }
         @empire_service { }
         @ship_figure_id { }

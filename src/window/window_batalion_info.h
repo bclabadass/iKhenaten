@@ -13,6 +13,7 @@ struct batalion_info_window : public building_info_window_t<batalion_info_window
     using widget::archive_load;
     virtual void archive_load(archive arch) override {
         common_info_window::archive_load(arch);
+        arch.r("help_id", help_id);
     }
 
     void update_describe_layout(object_info &c);
