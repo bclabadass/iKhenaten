@@ -331,6 +331,7 @@ city.get_battalion_by_index = function(index) {
         @morale      { }
         @experience  { }
         @is_at_fort  { }
+        @home        { }
         @in_distant_battle {}
         @empire_service { }
 

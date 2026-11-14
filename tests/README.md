@@ -313,6 +313,7 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_show_company_orders(bid)` | undefined | Open the company orders panel for fort `bid`, as a tap on the fort does on a touch screen |
 | `__test_company_orders_button_pos()` | `{x,y}` | Centre of the Orders button shown on touch screens while a company is selected to move |
 | `__test_company_orders_button_top()` | int | Top edge (y) of that Orders button |
+| `__test_company_move_to(formation_id, x, y)` | undefined | Send a company to a tile, as a tap on the map does (it is then away from its fort) |
 | `__test_construction_rotate_button_top()` | int | Top edge (y) of the touch Rotate button shown while placing a rotatable building |
 | `__test_info_window_section()` | string | Section of the open info panel (`info_window_fort`, `batalion_info_window`, …), or `""` |
 | `__test_info_ui_text(element_id)` | string | Text of a named element on the current building/terrain info window (e.g. `workers_text`) |
@@ -339,6 +340,7 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_yards_stored(resource)` / `__test_yards_stored_staffed(resource)` | int | City granite/etc. in yards (all / staffed only) |
 | `__test_building_current_image(bid)` | int | Monument `building_image_get()` |
 | `__test_camera_center_building(bid)` | undefined | Center camera on building / monument `center_point` |
+| `__test_window_element_screen_pos(section, id)` | `{x,y}` | Screen position of an element in a window (`advisor_military_window`, …), `{-1,-1}` if absent |
 | `__test_js_hotreload_handlers_stack_ok(n)` | boolean | Re-run `js_register_game_handlers` `n` times; true if MuJS stack depth unchanged (HR1) |
 | `__test_js_hotreload_file_stack_ok(path, n)` | boolean | `js_vm_reload_file` + `js_vm_sync` `n` times; true if stack depth unchanged (HR1) |
 | `__test_trader_capacity(fid)` | int | Caravan runtime / ship effective max capacity (TC*) |

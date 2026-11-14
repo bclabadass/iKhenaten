@@ -479,6 +479,12 @@ static vec2i __test_window_element_size(xstring section, xstring id) {
 }
 ANK_FUNCTION_2(__test_window_element_size);
 
+static vec2i __test_window_element_screen_pos(xstring section, xstring id) {
+    autoconfig_window* w = autoconfig_window::find(section);
+    return (w && w->contains(id)) ? (*w)[id].screen_pos() : vec2i{-1, -1};
+}
+ANK_FUNCTION_2(__test_window_element_screen_pos);
+
 // "text_x,text_y,bar_x,bar_y,bar_height,max_scroll" for a rich text element, as last drawn; "" if it has none.
 static xstring __test_window_element_scrollbar(xstring section, xstring id) {
     autoconfig_window* w = autoconfig_window::find(section);
@@ -3839,6 +3845,15 @@ static vec2i __test_company_orders_button_pos() {
     return window_city_company_orders_button_center();
 }
 ANK_FUNCTION(__test_company_orders_button_pos);
+
+// Send a company to a tile the way a tap on the map does; it then counts as away from its fort.
+static void __test_company_move_to(int formation_id, int x, int y) {
+    formation* m = formation_get(formation_id);
+    if (m && m->in_use) {
+        formation_batalion_move_to(m, tile2i(x, y));
+    }
+}
+ANK_FUNCTION_3(__test_company_move_to);
 
 // Top edges of the touch buttons by the city view's right edge, to compare with the top menu bar.
 static int __test_company_orders_button_top() {

@@ -7,55 +7,60 @@ function get_figure_type_str(figure_type) {
     return ""
 }
 
+// "1 Soldier", "6 Soldiers": group 8 holds each noun as a singular, plural pair.
+function advisor_military_amount_str(n, singular_id) {
+    return n + " " + __loc(8, singular_id + (n == 1 ? 0 : 1))
+}
+
 function advisor_military_forts_on_render_item(p) {
     var i = p.user_data
     var form = city.get_battalion_by_index(i)
     if (!form) {
         return
     }
-    var px = p.x
-    var py = p.y
+    var x = p.x
+    var y = p.y
 
-    ui.button({ text:"", pos:[px + 2, py + 1], size:[px(35) - 4, 40], font:FONT_NORMAL_BLACK_ON_DARK, border:false, body:false })
+    ui.button({ text:"", pos:[x + 2, y + 1], size:[px(35) - 4, 40], font:FONT_NORMAL_BLACK_ON_DARK, border:false, body:false })
 
     var battalion_image = get_image(PACK_GENERAL, 127, form.batalion_id)
-    ui.image(battalion_image, {x: px + 6, y: py + 6})
-    ui.label(__loc(138, form.batalion_id), vec2i(px + 46, py + 7), FONT_NORMAL_WHITE_ON_DARK)
+    ui.image(battalion_image, {x: x + 6, y: y + 6})
+    ui.label(__loc(138, form.batalion_id), vec2i(x + 46, y + 7), FONT_NORMAL_WHITE_ON_DARK)
 
     var num_figures_str = "" + form.num_figures + " " + get_figure_type_str(form.figure_type)
-    ui.label(num_figures_str, vec2i(px + 46, py + 24), FONT_NORMAL_BLACK_ON_DARK)
+    ui.label(num_figures_str, vec2i(x + 46, y + 24), FONT_NORMAL_BLACK_ON_DARK)
 
     var morale_str = __loc(138, 37 + ((form.morale / 5) | 0))
-    ui.label_ex(morale_str, vec2i(px + 186, py + 15), FONT_NORMAL_BLACK_ON_DARK, UiFlags_AlignCentered, 0)
+    ui.label_ex(morale_str, vec2i(x + 186, y + 15), FONT_NORMAL_BLACK_ON_DARK, UiFlags_AlignCentered, 0)
 
     var exp_image = get_image("pharaoh_general/paneling_00537")
     exp_image.tid += ((form.experience / 100) | 0)
-    ui.button({ text:"", pos:[px + 276, py + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
-    ui.image(exp_image, { x: px + 279, y: py + 10})
+    ui.button({ text:"", pos:[x + 276, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
+    ui.image(exp_image, { x: x + 279, y: y + 10})
 
     var goto_legion_image = get_image("pharaoh_general/paneling_00531")
-    var goto_clicked = ui.button({text:"", pos:[px + 356, py + 7], size:[30, 30]})
+    var goto_clicked = ui.button({text:"", pos:[x + 356, y + 7], size:[30, 30]})
     if (goto_clicked == ui.button_clicked) {
         city.camera_go_to(form.home)
         ui.window_city_show()
     }
-    ui.image(goto_legion_image, { x: px + 359, y: py + 10 })
+    ui.image(goto_legion_image, { x: x + 359, y: y + 10 })
 
     var fort_image = get_image("pharaoh_general/paneling_00532")
     fort_image.tid += (form.is_at_fort ? 1 : 0)
-    var back_to_fort_clicked = ui.button({text:"", pos:[px + 426, py + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
+    var back_to_fort_clicked = ui.button({text:"", pos:[x + 426, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
     if (back_to_fort_clicked == ui.button_clicked) {
         form.return_home()
     }
-    ui.image(fort_image, { x: px + 429, y: py + 10 })
+    ui.image(fort_image, { x: x + 429, y: y + 10 })
 
     var kingdom_service = get_image("pharaoh_general/paneling_00534")
     kingdom_service.tid += (form.empire_service ? 1 : 0)
-    var kingdom_service_clicked = ui.button({text:"", pos:[px + 506, py + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
+    var kingdom_service_clicked = ui.button({text:"", pos:[x + 506, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
     if (kingdom_service_clicked == ui.button_clicked) {
         form.set_empire_service(!form.empire_service)
     }
-    ui.image(kingdom_service, vec2i(px + 509, py + 10))
+    ui.image(kingdom_service, vec2i(x + 509, y + 10))
 }
 
 [es=advisor_window]
@@ -131,9 +136,10 @@ function advisor_military_window_init(window) {
     window.enemy_text.text = __loc(51, enemy_text_id)
     window.distant_text.text = __loc(51, distant_battle_text_id)
 
-    var total_soldiers_str = __loc(8, 46) + " " + city.military.total_soldiers
-    var total_batalions_str = city.military.total_batalions + " " + __loc(8, 49)
-    window.forts_text.text = total_soldiers_str + " " + __loc(51, 7) + " " + total_batalions_str
+    var soldiers = city.military.total_soldiers
+    var batalions = city.military.total_batalions
+    window.forts_text.text = advisor_military_amount_str(soldiers, 46) + " " + __loc(51, 7) + " "
+        + advisor_military_amount_str(batalions, 48)
 
     if (city.num_forts > 0) {
         window.nothing_text.enabled = false
