@@ -1,8 +1,11 @@
 // A mortuary gets its linen from the storage yards, like the senet house its beer. Nothing delivered linen to a
 // mortuary: carts only take raw materials to workshops, and the mortuary isn't one, so it stood idle in a city
 // full of linen (Timna 11 on the Duo). A staffed storage yard now sends linen in whole loads to a mortuary with
-// room for it, and its cart unloads there.
+// room for it, and its cart unloads there. The city's count of mortuaries also left them out (the mortuary's
+// update_count only added its workers to health), so after the daily recount or a load there were none to supply,
+// and the Health overseer listed 0 mortuaries.
 // Markers:
+//   [test-marker] mortuaries_counted
 //   [test-marker] yard_sends_linen_to_mortuary
 //   [test-marker] mortuary_receives_linen
 
@@ -30,6 +33,15 @@ function run_test() {
     __test_building_set_distance_from_entry(yard, 10)
     var added = __test_storage_yard_add_resource(yard, RESOURCE_LINEN, 400)
 
+    // The daily recount (also run on load): placing a building counts it, a recount must keep it.
+    __test_update_building_counters()
+    var counted = city.count_total_buildings(BUILDING_MORTUARY)
+    var active = city.count_active_buildings(BUILDING_MORTUARY)
+    __log_info_native('[test:338] after the recount: ' + counted + ' mortuaries, ' + active + ' active')
+    if (counted == 1 && active == 1) {
+        __log_marker('mortuaries_counted')
+    }
+
     var b = city.get_building(mortuary)
     __test_calculate_storageyard_stocks()
     var in_yard = __test_yards_stored(RESOURCE_LINEN)
@@ -56,6 +68,7 @@ function run_test() {
 }
 
 function check_valid() {
-    return __test_find_inlog('[test-marker] yard_sends_linen_to_mortuary')
+    return __test_find_inlog('[test-marker] mortuaries_counted')
+        && __test_find_inlog('[test-marker] yard_sends_linen_to_mortuary')
         && __test_find_inlog('[test-marker] mortuary_receives_linen')
 }

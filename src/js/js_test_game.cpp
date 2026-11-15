@@ -6106,6 +6106,12 @@ static int __test_god_coverage_total(int god) {
 }
 ANK_FUNCTION_1(__test_god_coverage_total);
 
+// Recount buildings by type as the city does once a day (and on load).
+static void __test_update_building_counters() {
+    g_city.buildings.update_counters();
+}
+ANK_FUNCTION(__test_update_building_counters);
+
 ANK_DECLARE_JSFUNCTION_ITERATOR(register_test_js_functions);
 inline void register_test_js_functions(js_State *J) {
 }
