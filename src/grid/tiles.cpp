@@ -600,9 +600,10 @@ static void set_elevation_image(int grid_offset) {
                     map_image_set(grid_offset, image_id_from_group(GROUP_TERRAIN_EMPTY_LAND) + (map_random_get(grid_offset) & 7));
             }
         } else {
+            // Caesar 3's elevation slopes; Pharaoh has no such pictures (its Terrain group 9 is the irrigation
+            // ditches), so the tile keeps the picture the map stores for it.
             map_property_set_multi_tile_xy(grid_offset, 0, 0, 1);
             map_terrain_add(grid_offset, TERRAIN_ELEVATION);
-            map_image_set(grid_offset, image_id_from_group(GROUP_TERRAIN_ELEVATION) + img.group_offset + img.item_offset);
         }
     }
 }
