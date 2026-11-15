@@ -337,6 +337,9 @@ void GamestateIO::start_loaded_file() {
     // build the map grids when loading MAP files
     if (game.session.last_loaded != e_session_save) {
         // initialize grids
+        // Pharaoh has no raised land: its maps store no heights, except Behdet's leftover ring, which the
+        // Caesar 3 elevation pass turned into unbuildable 'cliff' tiles.
+        map_elevation_clear();
         map_tiles_update_all_elevation();
         map_tiles_river_refresh_entire();
         map_tiles_update_all_earthquake();
