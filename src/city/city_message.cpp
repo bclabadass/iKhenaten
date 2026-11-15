@@ -387,6 +387,26 @@ void city_message_post_full(bool use_popup, xstring template_id, const event_ph_
     apply_popup_delivery(use_popup, popup_cat, id, template_id);
 }
 
+void city_message_post_invasion(int enemy_type, int title_id, int body_id, int invasion_seq, int grid_offset) {
+    auto& data = g_message_manager;
+    const xstring template_id = "message_template_invasion";
+    int id = data.alloc_message(template_id);
+    if (id < 0) {
+        return;
+    }
+
+    city_message& msg = data.messages[id];
+    msg.eventmsg_title_id = title_id;
+    msg.eventmsg_body_id = body_id;
+    msg.param1 = invasion_seq;
+    msg.param2 = grid_offset;
+    msg.god = GOD_UNKNOWN;
+    msg.sender_faction = enemy_type;
+    data.problem_count = 1;
+
+    apply_popup_delivery(true, popup_message_category_for_key(template_id), id, template_id);
+}
+
 city_message &message_manager_t::post_common(bool use_popup, xstring mm_text, int param1, int param2, int god, int bg_img) {
     int id = alloc_message(mm_text);
     if (id < 0) {

@@ -107,10 +107,11 @@ struct enemy_properties_t {
     int percentage_type2;
     int percentage_type3;
     std::array<e_figure_type, 3> figure_types;
-    xstring army_title;
+    int army_title_id; // text group 37: "a Hyksos army", ...
     e_formation_layout layout;
 };
-ANK_CONFIG_STRUCT(enemy_properties_t, percentage_type1, percentage_type2, percentage_type3, figure_types, army_title, layout)
+ANK_CONFIG_STRUCT(enemy_properties_t, percentage_type1, percentage_type2, percentage_type3, figure_types, army_title_id,
+  layout)
 
 struct invasion_data_t {
     enum {

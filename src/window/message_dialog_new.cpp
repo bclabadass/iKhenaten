@@ -342,6 +342,7 @@ void ui::message_dialog_base::eventmsg_template_combine(pcstr template_ptr, T& b
 
     bstring32 amount;
     bstring32 time; time.printf("%d", msg.req_months_left);
+    const int army_title_id = g_invasions.get_prop((e_enemy_type)msg.sender_faction).army_title_id;
     int city_name_id = 0;
 
     if (phrase_modifier) {
@@ -364,17 +365,13 @@ void ui::message_dialog_base::eventmsg_template_combine(pcstr template_ptr, T& b
 
     text_tag_substitution tags[] = {
       {"[greeting]", (pcstr)lang_get_string(32, 11 + g_scenario.campaign_scenario_id)},
-      {"[player_name]", city_player_name()},
-      {"[reason_phrase]", phrase_text.c_str()},
+      {"[player_name]", city_player_name()}, {"[reason_phrase]", phrase_text.c_str()},
       {"[city_name]", (pcstr)lang_get_string(195, city_name_id)},
-      {"[a_foreign_army]", g_invasions.get_prop((e_enemy_type)msg.sender_faction).army_title},
-      {"[amount]", amount.c_str()},
-      {"[amount_granted]", ""}, // TODO
+      {"[a_foreign_army]", army_title_id > 0 ? (pcstr)lang_get_string(37, army_title_id) : ""},
+      {"[amount]", amount.c_str()}, {"[amount_granted]", ""}, // TODO
       {"[item]", (pcstr)lang_get_string(23, 54 + (phrase_modifier ? msg.req_resource_past : msg.req_resource))},
-      {"[time_allotted]", time.c_str()},
-      {"[time_until_attack]", time.c_str()},
-      {"[travel_time]", ""},       // TODO
-      {"[god]", ""},               // TODO
+      {"[time_allotted]", time.c_str()}, {"[time_until_attack]", time.c_str()}, {"[travel_time]", ""}, // TODO
+      {"[god]", ""},                                                                                   // TODO
     };
 
     text_fill_in_tags(template_ptr, buffer, tags);

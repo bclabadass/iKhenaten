@@ -30,18 +30,34 @@
 #include "js/js_game.h"
 #include "figure/enemy_army.h"
 #include "scenario/scenario_event_manager.h"
+#include "scenario/event_phrases.h"
 
 #include <algorithm>
 
 const e_attack_faction_tokens_t ANK_CONFIG_ENUM(e_attack_faction_tokens);
 const e_invasion_spawn_kind_tokens_t ANK_CONFIG_ENUM(e_invasion_spawn_kind_tokens);
 
-// Skip OG attack popup when auto-resolve already queued this seq (quick-battle message sent).
-static void emit_local_invasion_attack_message(xstring msg_id, uint16_t seq, int grid_offset) {
+// Pharaoh's own attack message for the army that just arrived (the title and "upon us" alert of its kind).
+// Skipped when auto-resolve already queued this seq (quick-battle message sent).
+static void emit_invasion_attack_message(e_enemy_type enemy, e_invasion_spawn_kind kind, uint16_t seq,
+  int grid_offset) {
     if (g_invasion_auto_resolve.is_seq_frozen(seq)) {
         return;
     }
-    events::emit(event_message{ true, msg_id, seq, grid_offset, SOURCE_LOCATION });
+
+    int title = PHRASE_foreign_army_attacks_you_title;
+    int alert = PHRASE_foreign_army_attacks_you_city_attacked_alert;
+    if (kind == INVASION_KIND_KINGDOME) {
+        title = PHRASE_pharaoh_attacks_you_title;
+        alert = PHRASE_pharaoh_attacks_you_city_attacked_alert;
+    } else if (enemy == ENEMY_3_EGYPTIAN) {
+        title = PHRASE_eg_city_attacks_you_title;
+        alert = PHRASE_eg_city_attacks_you_city_attacked_alert;
+    } else if (enemy == ENEMY_0_BARBARIAN) {
+        title = PHRASE_bedouin_attacks_you_title;
+        alert = PHRASE_bedouin_attacks_you_city_attacked_alert;
+    }
+    city_message_post_invasion(enemy, title, alert, seq, grid_offset);
 }
 
 e_formation_attack_type formation_attack_from_event_target(int invasion_attack_target) {
@@ -91,8 +107,8 @@ declare_console_command_p(start_invasion_fast) {
     opts.kind = INVASION_KIND_FOREIGN;
     tile2i tile = scenario_start_invasion_impl(opts);
     if (tile.valid()) {
-        emit_local_invasion_attack_message("message_barbarians_attack",
-            g_invasions.last_internal_invasion_id, tile.grid_offset());
+        emit_invasion_attack_message(opts.enemy_type, opts.kind, g_invasions.last_internal_invasion_id,
+          tile.grid_offset());
     }
 }
 
@@ -975,10 +991,8 @@ void scenario_invasion_process() {
                 opts.kind = (enemy_id == ENEMY_3_EGYPTIAN) ? INVASION_KIND_PHARAOH : INVASION_KIND_FOREIGN;
                 tile2i invasion_tile = scenario_start_invasion_impl(opts);
                 if (invasion_tile.valid()) {
-                    const bool egyptian = (enemy_id == ENEMY_3_EGYPTIAN);
-                    emit_local_invasion_attack_message(
-                        egyptian ? "message_legion_attacks" : "message_barbarians_attack",
-                        g_invasions.last_internal_invasion_id, invasion_tile.grid_offset());
+                    emit_invasion_attack_message(opts.enemy_type, opts.kind, g_invasions.last_internal_invasion_id,
+                      invasion_tile.grid_offset());
                 }
             }
             if (g_scenario.invasions[warning.invasion_id].type == INVASION_TYPE_KNGDOME) {
@@ -994,8 +1008,8 @@ void scenario_invasion_process() {
                     // Scenario kingdom wave: kill tally via favour_only (no Caesar respect /
                     // pause-retreat). opts.size is difficulty-adjusted by start_invasion_impl.
                     g_city.kingdome.begin_favour_army(opts.size);
-                    emit_local_invasion_attack_message("message_legion_attacks",
-                        g_invasions.last_internal_invasion_id, invasion_tile.grid_offset());
+                    emit_invasion_attack_message(opts.enemy_type, opts.kind, g_invasions.last_internal_invasion_id,
+                      invasion_tile.grid_offset());
                 }
             }
         }
@@ -1050,10 +1064,8 @@ bool scenario_invasion_start_from_kingdome(int &size) {
     tile2i invasion_tile = scenario_start_invasion_impl(opts);
     if (invasion_tile.valid()) {
         size = opts.size; // difficulty-adjusted spawn count for kill bookkeeping
-        // Same popup as scenario KINGDOME warnings (id 123); no separate
-        // message_kingdome_army_attack archive entry.
-        emit_local_invasion_attack_message("message_legion_attacks",
-            data.last_internal_invasion_id, invasion_tile.grid_offset());
+        emit_invasion_attack_message(opts.enemy_type, opts.kind, data.last_internal_invasion_id,
+          invasion_tile.grid_offset());
         return true;
     }
     return false;
@@ -1075,13 +1087,8 @@ int scenario_invasion_start(invasion_opts_t opts) {
     case ATTACK_TYPE_ENEMIES: {
         tile2i invasion_tile = scenario_start_invasion_impl(opts);
         if (invasion_tile.valid()) {
-            if (opts.enemy_type == ENEMY_3_EGYPTIAN || opts.kind == INVASION_KIND_KINGDOME) {
-                emit_local_invasion_attack_message("message_legion_attacks",
-                    data.last_internal_invasion_id, invasion_tile.grid_offset());
-            } else {
-                emit_local_invasion_attack_message("message_barbarians_attack",
-                    data.last_internal_invasion_id, invasion_tile.grid_offset());
-            }
+            emit_invasion_attack_message(opts.enemy_type, opts.kind, data.last_internal_invasion_id,
+              invasion_tile.grid_offset());
             if (opts.kind == INVASION_KIND_KINGDOME) {
                 g_city.kingdome.begin_favour_army(opts.size);
             }
@@ -1189,7 +1196,6 @@ const enemy_properties_t &invasion_data_t::get_prop(e_enemy_type type) {
     // Messages store "no faction" as -1 (original saves too); an empty army title rather than a read past the table.
     static const enemy_properties_t none = [] {
         enemy_properties_t p{};
-        p.army_title = "";
         return p;
     }();
     if ((int)type < 0 || (int)type >= ENEMY_COUNT || !g_enemy_properties[type]) {

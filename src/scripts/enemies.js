@@ -231,6 +231,7 @@ enemy_barbarian = {
     percentage_type1 : 80
     percentage_type2 : 20 
     percentage_type3 : 0
+    army_title_id : 41
     figure_types : [FIGURE_ENEMY_BARBARIAN_SWORD, FIGURE_ENEMY_BARBARIAN_ARCHER, FIGURE_NONE]
     layout : FORMATION_ENEMY_MOB
 }
@@ -353,6 +354,7 @@ enemy_assyrian = {
     percentage_type1 : 40
     percentage_type2 : 50
     percentage_type3 : 10
+    army_title_id : 36
     figure_types : [FIGURE_ENEMY_ASSYRIAN_ARCHER, FIGURE_ENEMY_ASSYRIAN_SWORD, FIGURE_ENEMY_ASSYRIAN_CHARIOT]
     layout : FORMATION_ENEMY_MOB
 }
@@ -475,6 +477,7 @@ enemy_canaanite = {
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
+    army_title_id : 35
     figure_types : [FIGURE_ENEMY_CANAANITE_ARCHER, FIGURE_ENEMY_CANAANITE_SWORD, FIGURE_NONE]
     layout : FORMATION_ENEMY_MOB
 }
@@ -867,6 +870,7 @@ enemy_egyptian = {
     percentage_type1 : 80
     percentage_type2 : 20
     percentage_type3 : 0
+    army_title_id : 40
     figure_types: [FIGURE_ENEMY_EGYPTIAN_ARCHER, FIGURE_ENEMY_EGYPTIAN_SPEAR, FIGURE_ENEMY_EGYPTIAN_CHARIOT]
     layout: FORMATION_ENEMY_MOB
 }
@@ -992,6 +996,7 @@ enemy_hittite = {
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
+    army_title_id : 30
     figure_types: [FIGURE_ENEMY_HITTITE_ARCHER, FIGURE_ENEMY_HITTITE_SPEARMAN, FIGURE_ENEMY_HITTITE_CHARIOT]
     layout: FORMATION_ENEMY_MOB
 }
@@ -1111,6 +1116,7 @@ enemy_hyksos = {
     percentage_type1 : 50
     percentage_type2 : 40
     percentage_type3 : 10
+    army_title_id : 28
     figure_types: [FIGURE_ENEMY_HYKSOS_ARCHER, FIGURE_ENEMY_HYKSOS_SWORDMAN, FIGURE_ENEMY_HYKSOS_CHARIOT]
     layout : FORMATION_COLUMN
 }
@@ -1235,6 +1241,7 @@ enemy_kushite = {
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
+    army_title_id : 32
     figure_types: [FIGURE_ENEMY_KUSHITE_SPEARMAN, FIGURE_ENEMY_KUSHITE_AXEMAN, FIGURE_NONE]
     layout: FORMATION_ENEMY_DOUBLE_LINE
 }
@@ -1354,7 +1361,7 @@ enemy_libian = {
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
-    army_title [37, 33]
+    army_title_id : 33
     figure_types: [FIGURE_ENEMY_LIBIAN_ARCHER, FIGURE_ENEMY_LIBIAN_SWORDMAN, FIGURE_NONE]
     layout : FORMATION_ENEMY_DOUBLE_LINE
 }
@@ -1481,6 +1488,7 @@ enemy_nubian = {
     percentage_type1 : 60
     percentage_type2 : 40
     percentage_type3 : 0
+    army_title_id : 34
     figure_types: [FIGURE_ENEMY_NUBIAN_ARCHER, FIGURE_ENEMY_NUBIAN_AXEMAN, FIGURE_NONE]
     layout: FORMATION_ENEMY_DOUBLE_LINE
 }
@@ -1602,6 +1610,7 @@ enemy_persian = {
     percentage_type1 : 80
     percentage_type2 : 20
     percentage_type3 : 0
+    army_title_id : 39
     figure_types: [FIGURE_ENEMY_PERSIAN_ARCHER, FIGURE_ENEMY_PERSIAN_SPEARMAN, FIGURE_ENEMY_PERSIAN_CHARIOT]
     layout: FORMATION_ENEMY_WIDE_COLUMN
 }
@@ -1721,6 +1730,7 @@ enemy_phoenician = {
     percentage_type1 : 80
     percentage_type2 : 20
     percentage_type3 : 0
+    army_title_id : 38
     figure_types: [FIGURE_ENEMY_PHOENICIAN_SPEARMAN, FIGURE_ENEMY_PHOENICIAN_SWORDMAN, FIGURE_NONE]
     layout: FORMATION_ENEMY_WIDE_COLUMN
 }
@@ -1841,6 +1851,7 @@ enemy_roman = {
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
+    army_title_id : 37
     figure_types: [FIGURE_ENEMY_ROMAN_ARCHER, FIGURE_ENEMY_ROMAN_LEGIONER, FIGURE_NONE]
     layout: FORMATION_COLUMN
 }
@@ -1965,6 +1976,7 @@ enemy_seapeople = {
     percentage_type1 : 80
     percentage_type2 : 20
     percentage_type3 : 0
+    army_title_id : 29
     figure_types: [FIGURE_ENEMY_SEAPEOPLE_ARCHER, FIGURE_ENEMY_SEAPEOPLE_SWORDMAN, FIGURE_NONE]
     layout: FORMATION_COLUMN
 }

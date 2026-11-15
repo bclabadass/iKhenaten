@@ -19,18 +19,7 @@ void ui::message_dialog_invasion::init_data(xstring text_id, int message_id, voi
 }
 
 void ui::message_dialog_invasion::draw_city_message_text(const lang_message& msg) {
-    xstring text = resolve_message_body(msg);
-    if (!text) {
-        return;
-    }
-
-    bstring1024 header;
-    format_city_message_header(header);
-
-    bstring1024 full_text;
-    full_text.printf("%s @P%s @P%s", header.c_str(), text.c_str(), ui::str(12, 1));
-
-    ui["content_text"] = full_text;
+    draw_city_message_text_header_paragraph(msg);
 }
 
 void ui::message_dialog_invasion::button_go_to_problem() {

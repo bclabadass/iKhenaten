@@ -344,6 +344,7 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_camera_center_building(bid)` | undefined | Center camera on building / monument `center_point` |
 | `__test_window_element_screen_pos(section, id)` | `{x,y}` | Screen position of an element in a window (`advisor_military_window`, …), `{-1,-1}` if absent |
 | `__test_window_element_image(section, id)` | string | `"pack,id,offset"` of an element's picture in a window, `""` if absent |
+| `__test_window_element_text(section, id)` | string | Text of an element in a window, `""` if absent |
 | `__test_message_dialog_section()` | string | Section of the open message dialog (`message_dialog_window_general`, `message_dialog_window_image`, …), or `""` |
 | `__test_population_check_milestone()` | undefined | Run the population milestone check (posts the highest milestone reached and not yet announced) |
 | `__test_js_hotreload_handlers_stack_ok(n)` | boolean | Re-run `js_register_game_handlers` `n` times; true if MuJS stack depth unchanged (HR1) |

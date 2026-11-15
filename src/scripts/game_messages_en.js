@@ -1488,6 +1488,17 @@ game_messages_en {
         content { text: "" }
     }
 
+    // Shared shell for an invasion's arrival (title/body from the attack phrases; go-to button).
+    message_template_invasion {
+        id: 132,
+        type: 2
+        message_type: 7
+        size [30, 20]
+        urgent: 1
+        title { text: "" }
+        content { text: "" }
+    }
+
     message_wrath_of_bast_3 {
         id: 134,
         type: 2,
