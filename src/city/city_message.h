@@ -174,25 +174,10 @@ struct message_manager_t {
     uint16_t reserved_1;
     uint16_t current_message_id;
     uint16_t reserved_2;
-    uint16_t reserved_3;
-    uint16_t reserved_4;
-    uint16_t reserved_5;
-    uint8_t reserved_6;
-    uint8_t reserved_7;
 
-    union population_shown_u {
-        uint16_t popmiles;
-        uint16_t pop100 : 1;
-        uint16_t pop500 : 1;
-        uint16_t pop1000 : 1;
-        uint16_t pop2000 : 1;
-        uint16_t pop3000 : 1;
-        uint16_t pop5000 : 1;
-        uint16_t pop10000 : 1;
-        uint16_t pop15000 : 1;
-        uint16_t pop20000 : 1;
-        uint16_t pop25000 : 1;
-    } population_shown;
+    // One byte per milestone, as the original saves them: 100 (the original leaves this byte 0), 500,
+    // 1000, 2000, 3000, 5000, 10000, 15000, 20000, 25000.
+    uint8_t population_shown[10];
 
     int message_count[MESSAGE_CAT_SIZE];
     int message_delay[MESSAGE_CAT_SIZE];

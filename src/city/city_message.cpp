@@ -19,6 +19,9 @@
 #include "game/game_config.h"
 #include "scenario/scenario.h"
 
+#include <algorithm>
+#include <iterator>
+
 message_manager_t g_message_manager;
 
 static bool should_play_sound = true;
@@ -145,16 +148,7 @@ void message_manager_t::init() {
         message_count[i] = 0;
         message_delay[i] = 0;
     }
-    // population
-    population_shown.pop500 = 0;
-    population_shown.pop1000 = 0;
-    population_shown.pop2000 = 0;
-    population_shown.pop3000 = 0;
-    population_shown.pop5000 = 0;
-    population_shown.pop10000 = 0;
-    population_shown.pop15000 = 0;
-    population_shown.pop20000 = 0;
-    population_shown.pop25000 = 0;
+    std::fill(std::begin(population_shown), std::end(population_shown), 0);
 
     for (int i = 0; i <= MESSAGE_CAT_RIOT_COLLAPSE; i++) {
         last_sound_time[i] = 0;
@@ -535,22 +529,18 @@ void city_message_decrease_delays(void) {
 }
 
 bool city_message_mark_population_shown(int population) {
-    auto& data = g_message_manager;
-    bool lastv = false;
-    switch (population) {
-    case 100: lastv = data.population_shown.pop500; data.population_shown.pop100 = true; return lastv;
-    case 500: lastv = data.population_shown.pop500; data.population_shown.pop500 = true; return lastv;
-    case 1000: lastv = data.population_shown.pop1000; data.population_shown.pop1000 = true; return lastv;
-    case 2000: lastv = data.population_shown.pop2000; data.population_shown.pop2000 = true; return lastv;
-    case 3000: lastv = data.population_shown.pop3000; data.population_shown.pop3000 = true; return lastv;
-    case 5000: lastv = data.population_shown.pop5000; data.population_shown.pop5000 = true; return lastv;
-    case 10000: lastv = data.population_shown.pop10000; data.population_shown.pop10000 = true; return lastv;
-    case 15000: lastv = data.population_shown.pop15000; data.population_shown.pop15000 = true; return lastv;
-    case 20000: lastv = data.population_shown.pop20000; data.population_shown.pop20000 = true; return lastv;
-    case 25000: lastv = data.population_shown.pop25000; data.population_shown.pop25000 = true; return lastv;
-    default:
-        return false;
+    static constexpr int milestones[] = {100, 500, 1000, 2000, 3000, 5000, 10000, 15000, 20000, 25000};
+    uint8_t* shown = g_message_manager.population_shown;
+    for (int i = 0; i < (int)std::size(milestones); i++) {
+        if (milestones[i] != population) {
+            continue;
+        }
+        // Original saves have no 100 flag: a city already past 500 has had its 100.
+        const bool was_shown = shown[i] || (population == 100 && shown[1]);
+        shown[i] = 1;
+        return was_shown;
     }
+    return false;
 }
 
 const city_message& city_message_get(int message_id) {
@@ -705,13 +695,9 @@ io_buffer* iob_message_extra = new io_buffer([](io_buffer* iob, size_t version) 
     iob->bind(BIND_SIGNATURE_UINT16, &data.current_message_id);
     iob->bind(BIND_SIGNATURE_UINT16, &data.reserved_2);
 
-    // population
-    iob->bind(BIND_SIGNATURE_UINT8, &data.reserved_7);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.population_shown.popmiles);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.reserved_3);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.reserved_4);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.reserved_5);
-    iob->bind(BIND_SIGNATURE_UINT8, &data.reserved_6);
+    for (uint8_t& shown : data.population_shown) {
+        iob->bind(BIND_SIGNATURE_UINT8, &shown);
+    }
 
     for (int i = 0; i < MESSAGE_CAT_SIZE; i++) {
         iob->bind(BIND_SIGNATURE_INT32, &data.message_count[i]);

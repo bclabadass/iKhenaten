@@ -148,6 +148,7 @@
 #include "scenario/types.h"
 #include "window/window_info.h"
 #include "window/window_city.h"
+#include "window/message_dialog_new.h"
 #include "city/object_info.h"
 #include "scenario/request.h"
 #include "scenario/distant_battle.h"
@@ -479,6 +480,25 @@ static vec2i __test_window_element_size(xstring section, xstring id) {
 }
 ANK_FUNCTION_2(__test_window_element_size);
 
+// "pack,id,offset" of an element's picture; "" if the element is missing.
+static xstring __test_window_element_image(xstring section, xstring id) {
+    autoconfig_window* w = autoconfig_window::find(section);
+    if (!w || !w->contains(id)) {
+        return xstring();
+    }
+    const image_desc desc = (*w)[id].image();
+    bstring64 out;
+    out.printf("%d,%d,%d", desc.pack, desc.id, desc.offset);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION_2(__test_window_element_image);
+
+// Section of the open message dialog (each message type has its own layout); "" if none is open.
+static xstring __test_message_dialog_section() {
+    return window_message_dialog_section();
+}
+ANK_FUNCTION(__test_message_dialog_section);
+
 static vec2i __test_window_element_screen_pos(xstring section, xstring id) {
     autoconfig_window* w = autoconfig_window::find(section);
     return (w && w->contains(id)) ? (*w)[id].screen_pos() : vec2i{-1, -1};
@@ -609,6 +629,11 @@ void __test_set_city_population(int amount) {
     g_city.population.current = amount;
 }
 ANK_FUNCTION_1(__test_set_city_population);
+
+void __test_population_check_milestone() {
+    g_city.population.reached_milestone(false);
+}
+ANK_FUNCTION(__test_population_check_milestone);
 
 pcstr __test_music_current_track() {
     return g_sound.music_current_track().c_str();

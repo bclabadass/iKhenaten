@@ -117,7 +117,18 @@ namespace ui {
         virtual xstring section() const override;
 
     protected:
+        // Layouts with the picture on top keep their own size: init_data sizes the dialog from each
+        // message's size, which doesn't fit them.
+        void keep_layout_size();
+        void restore_layout_size();
+        // The date and addressee in a paragraph of their own above the text.
+        void draw_city_message_text_header_paragraph(const lang_message& msg);
+
         xstring config_name;
+        vec2i layout_background_size;
+        vec2i layout_panel_size;
+        vec2i layout_text_size;
+        int layout_title_width = 0;
     };
 
     struct message_dialog_general : public message_dialog_base {
@@ -131,6 +142,7 @@ void window_message_dialog_show_with_video(pcstr video_path, pcstr title);
 void window_message_setup_help_id(xstring helpid);
 void window_show_help();
 void window_message_dialog_help();
+xstring window_message_dialog_section();
 
 template<typename R, typename T>
 void text_fill_in_tags(pcstr src, R& result, const T &tag_templates) {

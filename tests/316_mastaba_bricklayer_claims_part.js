@@ -78,6 +78,10 @@ function t316_save() {
     // Laborers work the floodplain farms first in this save, then bring blocks.
     for (var k = 0; k < 12 && mon && __pyramid_remaining_blocks(mon) >= before; k++) {
         __test_pump_frames(400)
+        // A message (this save's 1000 population milestone) stops the city until it is closed.
+        if (ui.window_is('window_message_dialog')) {
+            window_go_back()
+        }
     }
     var after = mon ? __pyramid_remaining_blocks(mon) : -1
     __log_info_native('[test:316] save mastaba ' + mon + ' blocks ' + before + ' -> ' + after)

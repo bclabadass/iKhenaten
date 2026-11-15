@@ -86,6 +86,40 @@ xstring ui::message_dialog_base::section() const {
     return config_name;
 }
 
+void ui::message_dialog_base::keep_layout_size() {
+    layout_background_size = ui["background"].size;
+    layout_panel_size = ui["content_panel"].size;
+    layout_text_size = ui["content_text"].size;
+    layout_title_width = ui["title"].size.x;
+}
+
+void ui::message_dialog_base::draw_city_message_text_header_paragraph(const lang_message& msg) {
+    xstring text = resolve_message_body(msg);
+    if (!text) {
+        return;
+    }
+
+    bstring1024 header;
+    format_city_message_header(header);
+
+    bstring1024 full_text;
+    full_text.printf("%s @P%s", header.c_str(), text.c_str());
+
+    ui["content_text"] = full_text;
+}
+
+void ui::message_dialog_base::restore_layout_size() {
+    if (show_video || layout_background_size.x <= 0) {
+        return;
+    }
+
+    ui["background"].size = layout_background_size;
+    ui["content_panel"].size = layout_panel_size;
+    ui["content_text"].size = layout_text_size;
+    ui["title"].size.x = layout_title_width;
+    pos = {(screen_width() - layout_background_size.x * 16) / 2, (screen_height() - layout_background_size.y * 16) / 2};
+}
+
 void ui::message_dialog_base::init() {
     ui.begin_widget(pos);
     ui.event(window_info{pos}, get_section(), __func__);
@@ -601,7 +635,13 @@ static ui::message_dialog_base* create_message_dialog(xstring text_id, int messa
     ui::message_dialog_base *window;
     switch (msg.message_type) {
         case MESSAGE_TYPE_GENERAL:
-            window = &message_dialog_general_window;
+            // A picture named by pack is one of Pharaoh's message pictures (Unloaded group 16), drawn above
+            // the text; a bare id numbers the small message images the general window draws.
+            if (msg.image.pack > 0) {
+                window = &message_dialog_image_window;
+            } else {
+                window = &message_dialog_general_window;
+            }
             break;
         case MESSAGE_TYPE_DISTANT_BATTLE:
             window = &message_dialog_troop_request_window;
@@ -681,3 +721,9 @@ void window_message_dialog_help() {
     }
 }
 
+xstring window_message_dialog_section() {
+    if (!g_message_dialog_instance || !g_window_manager.window_is("window_message_dialog")) {
+        return xstring();
+    }
+    return g_message_dialog_instance->section();
+}

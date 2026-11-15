@@ -39,15 +39,7 @@ void ui::message_dialog_god::draw_foreground(UiFlags flags) {
 
 void ui::message_dialog_god::init_data(xstring text_id, int message_id, void (*background_callback)(void)) {
     message_dialog_base::init_data(text_id, message_id, background_callback);
-
-    if (!show_video && layout_background_size.x > 0) {
-        ui["background"].size = layout_background_size;
-        ui["content_panel"].size = layout_panel_size;
-        ui["content_text"].size = layout_text_size;
-        ui["title"].size.x = layout_title_width;
-        pos = {
-          (screen_width() - layout_background_size.x * 16) / 2, (screen_height() - layout_background_size.y * 16) / 2};
-    }
+    restore_layout_size();
 
     if (message_id != -1) {
         const city_message& city_msg = city_message_get(message_id);
@@ -61,26 +53,11 @@ void ui::message_dialog_god::archive_load(archive arch) {
     message_dialog_base::archive_load(arch);
 
     arch.r("god_images", god_images);
-
-    layout_background_size = ui["background"].size;
-    layout_panel_size = ui["content_panel"].size;
-    layout_text_size = ui["content_text"].size;
-    layout_title_width = ui["title"].size.x;
+    keep_layout_size();
 }
 
 void ui::message_dialog_god::draw_city_message_text(const lang_message& msg) {
-    xstring text = resolve_message_body(msg);
-    if (!text) {
-        return;
-    }
-
-    bstring1024 header;
-    format_city_message_header(header);
-
-    bstring1024 full_text;
-    full_text.printf("%s @P%s", header.c_str(), text.c_str());
-
-    ui["content_text"] = full_text;
+    draw_city_message_text_header_paragraph(msg);
 }
 
 declare_console_command_p(show_god_message) {

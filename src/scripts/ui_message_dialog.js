@@ -135,11 +135,15 @@ message_dialog_window_god {
 
 [es=message_dialog_window]
 message_dialog_window_image {
-    pos: [(sw(0) - px(30))/2, (sh(0) - px(20))/2]
+    pos: [(sw(0) - px(30))/2, (sh(0) - px(28))/2]
     help_id: ""
 
-    ui :baseui(message_dialog_window_general, {
-
+    ui : baseui(message_dialog_window_general, {
+        background     : outer_panel({size: [30, 28]})
+        title          : text({ margin{ bottom:-36 }, size [px(30), 20], align: "center", font: FONT_NORMAL_BLACK_ON_LIGHT})
+        image          : image({ margin{ left:0, top:16 }, size [px(30), px(13)], centering [0, 0] })
+        content_panel  : inner_panel({ margin{ left:8, bottom:-px(14) }, size [29, 11]})
+        content_text   : text({ margin{ left:16, bottom:-px(13) }, size [px(28), px(12)], font: FONT_NORMAL_WHITE_ON_DARK, rich: true, clip_area: true})
     })
 }
 
