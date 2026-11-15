@@ -62,6 +62,14 @@ building_mortuary {
   }
 }
 
+[es=(building_mortuary, add_resource)]
+function building_mortuary_add_resource(ev) {
+  if (ev.resource != RESOURCE_LINEN) {
+    return
+  }
+  city.get_building(ev.bid).store_resource(ev.resource, ev.amount)
+}
+
 // The mortuary works (sends embalmers, shows its work animation, reads as operational) while it holds the
 // linen for one embalmer.
 function building_mortuary_has_linen_for_work(b) {

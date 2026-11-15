@@ -571,37 +571,50 @@ storage_worker_task building_storageyard_deliver_timber_to_shipyard_school(build
     return { STORAGEYARD_TASK_NONE };
 }
 
-storage_worker_task building_storageyard_deliver_beer_to_senet_house(building *b) {
-    if (g_city.buildings.count_active(BUILDING_SENET_HOUSE) <= 0 || g_city.resource.is_stockpiled(RESOURCE_BEER)) {
+static storage_worker_task deliver_resource_to_asker(building* b, e_building_type consumer, e_resource resource) {
+    if (g_city.buildings.count_active(consumer) <= 0 || g_city.resource.is_stockpiled(resource)) {
         return { STORAGEYARD_TASK_NONE };
     }
 
     auto warehouse = b->dcast_storage_yard();
-    auto result = building_get_asker_for_resource(warehouse->tile(), BUILDING_SENET_HOUSE, RESOURCE_BEER, warehouse->road_network(), warehouse->distance_from_entry());
-    building *senet_house = building_get(result.building_id);
-    if (!senet_house || !senet_house->is_valid()) {
+    if (!warehouse) {
         return { STORAGEYARD_TASK_NONE };
     }
 
-    const int school_want = senet_house->need_resource_amount(RESOURCE_BEER);
+    auto result = building_get_asker_for_resource(warehouse->tile(), consumer, resource, warehouse->road_network(),
+      warehouse->distance_from_entry());
+    building* dest = building_get(result.building_id);
+    if (!dest || !dest->is_valid()) {
+        return {STORAGEYARD_TASK_NONE};
+    }
 
-    if (school_want > 0 && warehouse->road_network() == senet_house->road_network_id) {
+    const int want = dest->need_resource_amount(resource);
+
+    if (want > 0 && warehouse->road_network() == dest->road_network_id) {
         int available = 0;
         auto space = warehouse->room();
         while (space) {
-            if (space->stored_first().value > 0 && space->resource() == RESOURCE_BEER) {
+            if (space->stored_first().value > 0 && space->resource() == resource) {
                 available += space->stored_first().value;
             }
             space = space->next_room();
         }
 
-        const int amount = whole_load_delivery(available, school_want);
+        const int amount = whole_load_delivery(available, want);
         if (amount > 0) {
-            return { STORAGEYARD_TASK_DELIVERING, &warehouse->base, amount, RESOURCE_BEER };
+            return {STORAGEYARD_TASK_DELIVERING, &warehouse->base, amount, resource};
         }
     }
 
     return { STORAGEYARD_TASK_NONE };
+}
+
+storage_worker_task building_storageyard_deliver_beer_to_senet_house(building* b) {
+    return deliver_resource_to_asker(b, BUILDING_SENET_HOUSE, RESOURCE_BEER);
+}
+
+storage_worker_task building_storageyard_deliver_linen_to_mortuary(building* b) {
+    return deliver_resource_to_asker(b, BUILDING_MORTUARY, RESOURCE_LINEN);
 }
 
 storage_worker_task building_storageyard_deliver_resource_to_zoo(building *b) {
@@ -899,19 +912,20 @@ storage_worker_task building_storage_yard::determine_worker_task() {
     }
 
     using action_type = decltype(building_storageyard_deliver_weapons);
-    action_type *actions[] = {
-        &building_storage_yard_determine_getting_up_resources,      // getting up resources
-        &building_storageyard_deliver_weapons_to_police_stations,   // deliver weapons to police stations
-        &building_storageyard_deliver_weapons,                      // deliver weapons to barracks
-        &building_storageyard_deliver_resource_to_zoo,              // straw / game meat to zoo (before workshops — straw contested)
-        &building_storageyard_deliver_resource_to_workshop,         // deliver raw materials to workshops
-        &building_storageyard_deliver_papyrus_to_scribal_school,    // deliver papyrus materials to scribal school
-        &building_storageyard_deliver_beer_to_senet_house,          // deliver beer to senet house
-        &building_storageyard_deliver_timber_to_shipyard_school,    // deliver timber to shipyard
-        &building_storage_yard::deliver_food_to_gettingup_granary,  // deliver food to getting granary
-        &building_storageyard_deliver_food_to_accepting_granary,    // deliver food to accepting granary
-        &building_storage_yard_deliver_emptying_resources,          // emptying resource
-        &building_storageyard_deliver_to_monuments,                 // monuments resource
+    action_type* actions[] = {
+      &building_storage_yard_determine_getting_up_resources,    // getting up resources
+      &building_storageyard_deliver_weapons_to_police_stations, // deliver weapons to police stations
+      &building_storageyard_deliver_weapons,                    // deliver weapons to barracks
+      &building_storageyard_deliver_resource_to_zoo, // straw / game meat to zoo (before workshops — straw contested)
+      &building_storageyard_deliver_resource_to_workshop,        // deliver raw materials to workshops
+      &building_storageyard_deliver_papyrus_to_scribal_school,   // deliver papyrus materials to scribal school
+      &building_storageyard_deliver_beer_to_senet_house,         // deliver beer to senet house
+      &building_storageyard_deliver_linen_to_mortuary,           // deliver linen to mortuary
+      &building_storageyard_deliver_timber_to_shipyard_school,   // deliver timber to shipyard
+      &building_storage_yard::deliver_food_to_gettingup_granary, // deliver food to getting granary
+      &building_storageyard_deliver_food_to_accepting_granary,   // deliver food to accepting granary
+      &building_storage_yard_deliver_emptying_resources,         // emptying resource
+      &building_storageyard_deliver_to_monuments,                // monuments resource
     };
 
     for (const auto &action : actions) {

@@ -179,6 +179,7 @@ void figure_cartpusher::do_deliver(bool warehouseman, int action_done, int actio
             case BUILDING_LIBRARY:
             case BUILDING_INDUSTRY_OFFICE:
             case BUILDING_SENET_HOUSE:
+            case BUILDING_MORTUARY:
             case BUILDING_ZOO:
             case BUILDING_POLICE_STATION:
             case BUILDING_VILLAGE_PALACE:
@@ -417,6 +418,15 @@ void figure_cartpusher::determine_storageyard_cart_destination() {
 
         if (base.resource_id == RESOURCE_BEER) {
             auto result = building_get_asker_for_resource(tile(), BUILDING_SENET_HOUSE, base.resource_id, road_network_id, warehouse->distance_from_entry);
+            set_destination(result.building_id);
+            if (has_destination()) {
+                return advance_action(ACTION_51_CARTPUSHER_DELIVERING_RESOURCE);
+            }
+        }
+
+        if (base.resource_id == RESOURCE_LINEN) {
+            auto result = building_get_asker_for_resource(tile(), BUILDING_MORTUARY, base.resource_id, road_network_id,
+              warehouse->distance_from_entry);
             set_destination(result.building_id);
             if (has_destination()) {
                 return advance_action(ACTION_51_CARTPUSHER_DELIVERING_RESOURCE);
