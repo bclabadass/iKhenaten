@@ -159,7 +159,9 @@ int figure::figure_image_missile_launcher_offset() {
     return MISSILE_LAUNCHER_OFFSETS[attack_image_offset / 2];
 }
 int figure::figure_image_direction() {
-    int dir = direction - g_camera.orientation;
+    // A stopped figure's direction is DIR_FIGURE_NONE/REROUTE/CAN_NOT_REACH (8+): it faces the way it came.
+    const int facing = direction < 8 ? direction : (previous_tile_direction < 8 ? previous_tile_direction : 0);
+    int dir = facing - g_camera.orientation;
     if (dir < 0) {
         dir += 8;
     }

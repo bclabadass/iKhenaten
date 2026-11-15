@@ -7,7 +7,8 @@ figure_ferry_boat {
 		walk { id:138, max_frames:4, duration:4 }
 		swim { id:138, max_frames:4, duration:4 }
 		death { id:139, max_frames:8, loop:false }
-		idle { id:140, offset:3, max_frames:1 }
+		// One picture per facing (the facing is added to the frame).
+		idle { id:140, max_frames:1 }
 		bubbles { pack:PACK_SPR_AMBIENT, id:11, max_frames:22, duration:1 }
 		big_image { pack:PACK_UNLOADED, id:25, offset:FIGURE_FERRY_BOAT }
 	}

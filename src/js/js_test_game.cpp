@@ -3356,6 +3356,25 @@ static void __test_figure_update_animation(int fid) {
 }
 ANK_FUNCTION_1(__test_figure_update_animation);
 
+static void __test_figure_set_direction(int fid, int dir) {
+    figure* f = figure_get(fid);
+    if (f && f->is_alive()) {
+        f->direction = (uint8_t)dir;
+    }
+}
+ANK_FUNCTION_2(__test_figure_set_direction);
+
+// The figure's animation for its state, then its picture, without running its action.
+static void __test_figure_refresh_image(int fid) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_alive()) {
+        return;
+    }
+    f->dcast()->update_animation();
+    f->figure_image_update(true);
+}
+ANK_FUNCTION_1(__test_figure_refresh_image);
+
 bool __test_enemy_figure_registered(int type) {
     tile2i tile(g_scenario.map.width / 2, g_scenario.map.height / 2);
     figure *f = figure_create((e_figure_type)type, tile, 0);

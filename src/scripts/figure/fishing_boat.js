@@ -6,7 +6,8 @@ figure_fishing_boat {
 		swim { pack:PACK_SPR_MAIN, id:134, max_frames:4, duration:3 }
 		death { pack:PACK_SPR_MAIN, id:136, max_frames:11, loop:false }
 		work { pack:PACK_SPR_MAIN, id:135, max_frames:6, duration:5 }
-		idle { pack:PACK_SPR_MAIN, id:136, offset:3, max_frames:1 }
+		// One picture per facing (the facing is added to the frame); 136 is the sinking strip.
+		idle { pack:PACK_SPR_MAIN, id:137, max_frames:1 }
 		big_image { pack:PACK_UNLOADED, id:25, offset:FIGURE_FISHING_BOAT }
 	}
 
