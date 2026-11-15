@@ -36,9 +36,9 @@ message_dialog_window_disaster {
 
     ui : baseui(message_dialog_window_general, {
         content_panel  : inner_panel({pos: [16, 48], size: [28, 13]})
-        content_text   : text({pos: [24, 54], size: [px(28), px(34)], font: FONT_NORMAL_WHITE_ON_DARK, rich: true, clip_area: true})
+        content_text   : text({pos: [24, 54], size: [px(27), px(12)], font: FONT_NORMAL_WHITE_ON_DARK, rich: true, clip_area: true})
 
-        button_go_to_problem : image_button({ margin:{ bottom:-60, centerx:-87 }, size[27, 27], pack:PACK_GENERAL, id:136, offset:17*3+1  })
+        button_go_to_problem : image_button({ margin:{ bottom:-50, centerx:-75 }, size[27, 27], pack:PACK_GENERAL, id:136, offset:17*3+1, scale:0.6 })
         button_go_to_problem_text : text({ margin:{ bottom:-40, centerx:-40 }, size[-1, 20], font: FONT_NORMAL_BLACK_ON_LIGHT, text: "#goto_site_of_event"})
     })
 }
@@ -107,8 +107,8 @@ message_dialog_window_invasion {
 
     ui :baseui(message_dialog_window_general, {
         content_panel  : inner_panel({pos: [16, 48], size: [28, 13]})
-        content_text   : text({pos: [24, 54], size: [px(27), px(13)], font: FONT_NORMAL_WHITE_ON_DARK, rich: true, clip_area: true})
-        button_go_to_problem : image_button({ margin:{ bottom:-60, centerx:-87 }, size[27, 27], pack:PACK_GENERAL, id:136, offset:17*3+1, enabled: false })
+        content_text   : text({pos: [24, 54], size: [px(27), px(12)], font: FONT_NORMAL_WHITE_ON_DARK, rich: true, clip_area: true})
+        button_go_to_problem : image_button({ margin:{ bottom:-50, centerx:-75 }, size[27, 27], pack:PACK_GENERAL, id:136, offset:17*3+1, scale:0.6, enabled: false })
         button_go_to_problem_text : text({ margin:{ bottom:-40, centerx:-40 }, size[-1, 20], font: FONT_NORMAL_BLACK_ON_LIGHT, text: "#goto_site_of_event"})
     })
 }

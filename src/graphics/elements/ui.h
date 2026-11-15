@@ -265,7 +265,7 @@ namespace ui {
     generic_button& button(uint32_t id);
     pcstr button_tooltip(uint32_t id);
     image_button& img_button(image_desc desc, vec2i pos, vec2i size, const img_button_offsets offsets = {},
-      UiFlags flags = UiFlags_None);
+      UiFlags flags = UiFlags_None, float scale = 1.f);
     image_button& imgok_button(vec2i pos, button_onclick_cb cb);
     image_button& imgcancel_button(vec2i pos, button_onclick_cb cb);
     arrow_button& arw_button(vec2i pos, bool down, bool tiny = false, UiFlags_ flags = UiFlags_AllowRepeat, int* external_repeats = nullptr);

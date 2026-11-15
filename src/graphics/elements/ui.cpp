@@ -738,7 +738,8 @@ pcstr ui::button_tooltip(uint32_t id) {
     return (id < g_state.buttons.size()) ? g_state.buttons[id].tooltip() : "";
 }
 
-image_button& ui::img_button(image_desc desc, vec2i pos, vec2i size, const img_button_offsets offsets, UiFlags flags) {
+image_button& ui::img_button(image_desc desc, vec2i pos, vec2i size, const img_button_offsets offsets, UiFlags flags,
+  float scale) {
     const vec2i state_offset = g_state.offset();
     const mouse& m = mouse::get();
 
@@ -773,7 +774,7 @@ image_button& ui::img_button(image_desc desc, vec2i pos, vec2i size, const img_b
         if (!!(flags & UiFlags_Composite)) {
             push(cmd_t::image_isometric, Pos{state_offset + pos}, ImageId{image_id}, Mask{COLOR_MASK_NONE});
         } else {
-            push(cmd_t::image, Pos{state_offset + pos}, ImageId{image_id}, Mask{COLOR_WHITE}, Scale{1.0f},
+            push(cmd_t::image, Pos{state_offset + pos}, ImageId{image_id}, Mask{COLOR_WHITE}, Scale{scale},
               ImgFlagsTag{grayscaled ? ImgFlag_Grayscale : ImgFlag_None});
         }
     }
@@ -1854,7 +1855,7 @@ void ui::eimage_button::draw(UiFlags gflags) {
 
     image_button* btn = nullptr;
     if (resolved_image_id >= 0) {
-        btn = &ui::img_button(img_desc, pos, tsize, offsets, flags);
+        btn = &ui::img_button(img_desc, pos, tsize, offsets, flags, scale);
     } else if (texture_id > 0) {
         btn = &ui::img_button({0, 0}, pos, size, offsets, flags);
         push(cmd_t::saved_texture, Pos{scr_pos}, Size{size}, ImageId{texture_id});

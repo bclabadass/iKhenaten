@@ -11,6 +11,7 @@
 
 void ui::message_dialog_invasion::init_data(xstring text_id, int message_id, void (*background_callback)(void)) {
     message_dialog_base::init_data(text_id, message_id, background_callback);
+    restore_layout_size();
 
     const lang_message& msg = lang_get_message(text_id);
     assert(msg.message_type == MESSAGE_TYPE_INVASION);
@@ -20,6 +21,11 @@ void ui::message_dialog_invasion::init_data(xstring text_id, int message_id, voi
 
 void ui::message_dialog_invasion::draw_city_message_text(const lang_message& msg) {
     draw_city_message_text_header_paragraph(msg);
+}
+
+void ui::message_dialog_invasion::archive_load(archive arch) {
+    message_dialog_base::archive_load(arch);
+    keep_layout_size();
 }
 
 void ui::message_dialog_invasion::button_go_to_problem() {

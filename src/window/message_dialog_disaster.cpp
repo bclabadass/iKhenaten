@@ -33,6 +33,7 @@ int ui::message_dialog_disaster::handle_mouse(const mouse *m) {
 
 void ui::message_dialog_disaster::init_data(xstring text_id, int message_id, void (*background_callback)(void)) {
     message_dialog_base::init_data(text_id, message_id, background_callback);
+    restore_layout_size();
 
     const lang_message &msg = lang_get_message(text_id);
 
@@ -72,6 +73,11 @@ void ui::message_dialog_disaster::draw_city_message_text(const lang_message& msg
 }
 
 void ui::message_dialog_disaster::draw_background_content() {
+}
+
+void ui::message_dialog_disaster::archive_load(archive arch) {
+    message_dialog_base::archive_load(arch);
+    keep_layout_size();
 }
 
 void ui::message_dialog_disaster::button_go_to_problem() {

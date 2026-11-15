@@ -3,11 +3,15 @@
 // for the kind of army: "Foreign Army Invades" with the army's name ("a Kushite army is upon us..."), "Bedouin Army
 // Attacks", "Egyptian Army Attacks", "Pharaoh's Army Attacks"; the go-to button uses the go-to picture, as in the
 // disaster messages. The army-name check needs the Pharaoh texts and is otherwise skipped.
+// The invasion and disaster windows keep their own layout: the message's size used to widen the text box past
+// its panel (text ran out of the window) and stretch the panel under the go-to button, whose 38x45 picture
+// reached up into the text; the picture is now drawn at 0.6, inside its 27x27 slot below the panel.
 // Markers:
 //   [test-marker] attack_messages_per_army
 //   [test-marker] attack_message_goto_picture
 //   [test-marker] attack_message_names_army
 //   [test-marker] army_name_skipped
+//   [test-marker] message_text_inside_panel
 
 var T335_SECTION = 'message_dialog_window_invasion'
 
@@ -27,6 +31,7 @@ function t335_arrive(args) {
     }
     r.text = __test_window_element_text(T335_SECTION, 'content_text')
     r.goto = __test_window_element_image(T335_SECTION, 'button_go_to_problem')
+    r.fits = t335_layout_fits(T335_SECTION)
     if (ui.window_is('window_message_dialog')) {
         window_go_back()
     }
@@ -34,6 +39,22 @@ function t335_arrive(args) {
     __log_info_native('[test:335] ' + JSON.stringify(args) + ' -> ' + r.key + ' title ' + r.title + ' body ' + r.body
         + ' seq ' + r.seq + '/' + r.param1 + ' window ' + r.section)
     return r
+}
+
+// The text box lies inside its panel and the go-to button below it.
+function t335_layout_fits(section) {
+    var panel = __test_window_element_screen_pos(section, 'content_panel')
+    var blocks = __test_window_element_size(section, 'content_panel')
+    var text = __test_window_element_screen_pos(section, 'content_text')
+    var text_size = __test_window_element_size(section, 'content_text')
+    var button = __test_window_element_screen_pos(section, 'button_go_to_problem')
+    var right = panel.x + blocks.x * 16
+    var bottom = panel.y + blocks.y * 16
+    var fits = text.x >= panel.x && text.x + text_size.x <= right && text.y + text_size.y <= bottom && button.y >= bottom
+    __log_info_native('[test:335] ' + section + ' panel ' + panel.x + '..' + right + ' x ' + panel.y + '..' + bottom
+        + ', text ' + text.x + '..' + (text.x + text_size.x) + ' x ' + text.y + '..' + (text.y + text_size.y)
+        + ', go-to button top ' + button.y)
+    return fits
 }
 
 function run_test() {
@@ -65,6 +86,19 @@ function run_test() {
         __log_marker('attack_messages_per_army')
     }
 
+    __city_message_post_with_popup_delay(MESSAGE_CAT_FIRE, true, 'message_fire_in_the_city', 0, 0, false, '')
+    __test_process_events()
+    __test_pump_frames(4)
+    var disaster_fits = __test_message_dialog_section() == 'message_dialog_window_disaster'
+        && t335_layout_fits('message_dialog_window_disaster')
+    if (ui.window_is('window_message_dialog')) {
+        window_go_back()
+    }
+    __test_pump_frames(2)
+    if (results[0].fits && disaster_fits) {
+        __log_marker('message_text_inside_panel')
+    }
+
     __log_info_native('[test:335] go-to picture ' + results[0].goto)
     if (results[0].goto == PACK_GENERAL + ',136,52') {
         __log_marker('attack_message_goto_picture')
@@ -86,5 +120,6 @@ function run_test() {
 function check_valid() {
     return __test_find_inlog('[test-marker] attack_messages_per_army')
         && __test_find_inlog('[test-marker] attack_message_goto_picture')
+        && __test_find_inlog('[test-marker] message_text_inside_panel')
         && (__test_find_inlog('[test-marker] attack_message_names_army') || __test_find_inlog('[test-marker] army_name_skipped'))
 }
