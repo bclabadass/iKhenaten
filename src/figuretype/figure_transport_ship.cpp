@@ -1148,6 +1148,9 @@ void figure_transport_ship::figure_action() {
 }
 
 void figure_transport_ship::kill() {
+    if (!base.is_alive()) {
+        return;
+    }
     // Match OG drown-at-legion_drowns_tick; we drown in before_poof.
     base.wait_ticks = current_params().legion_drowns_tick;
     before_poof();

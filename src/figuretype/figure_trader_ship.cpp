@@ -528,6 +528,9 @@ void figure_trade_ship::debug_show_properties() {
 }
 
 void figure_trade_ship::kill() {
+    if (!base.is_alive()) {
+        return;
+    }
     auto dock = destination()->dcast_dock();
 
     if (dock) {

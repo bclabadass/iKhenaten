@@ -10,8 +10,15 @@
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_shipwreck);
 
+// Pharaoh's data has no wreck pictures (the ship's own sinking animation shows instead), so without them the
+// wreck stays unseen rather than drawing image 0 onwards.
+bool figure_shipwreck::has_pictures() {
+    return anim(animkeys().walk).first_img() > 0;
+}
+
 void figure_shipwreck::on_create() {
     figure_impl::on_create();
+    base.set_flag(e_figure_flag_invisible, !has_pictures());
     base.allow_move_type = EMOVE_DEEPWATER;
     base.wait_ticks = 0;
     base.progress_on_tile = 0;
@@ -19,7 +26,7 @@ void figure_shipwreck::on_create() {
 
 void figure_shipwreck::figure_action() {
     // OG figure_shipwreck_action (shipwreck.c).
-    base.set_flag(e_figure_flag_invisible, false);
+    base.set_flag(e_figure_flag_invisible, !has_pictures());
     base.height_adjusted_ticks = 0;
     base.allow_move_type = EMOVE_DEEPWATER;
 

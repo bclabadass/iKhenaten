@@ -30,7 +30,10 @@ namespace {
 constexpr int k_og_fishing_time_ticks = 200;
 
 water_dest map_water_get_wharf_for_new_fishing_boat(figure &boat) {
-    building_wharf *wharf = building_first_ex<building_wharf>([&boat](building_wharf *w) {
+    building_wharf* wharf = building_first_ex<building_wharf>([&boat](building_wharf* w) {
+        if (!w->base.dcast_fishing_wharf()) {
+            return false;
+        }
         int wharf_boat_id = w->get_figure_id(BUILDING_SLOT_BOAT);
         return !wharf_boat_id || wharf_boat_id == boat.id;
     });
@@ -95,6 +98,9 @@ void figure_fishing_boat::before_poof() {
 }
 
 void figure_fishing_boat::kill() {
+    if (!base.is_alive()) {
+        return;
+    }
     home()->remove_figure_by_id(id());
     base.set_home(0);
     base.wait_ticks = 0;
@@ -119,12 +125,19 @@ void figure_fishing_boat::update_animation() {
     case ACTION_4_FISHING_BOAT_AT_WHARF:
         anim_key = "idle";
         break;
+
+    case FIGURE_ACTION_149_CORPSE:
+        anim_key = "death";
+        break;
     }
 
     image_set_animation(anim_key);
 }
 
 void figure_fishing_boat::figure_action() {
+    if (!base.is_alive()) {
+        return;
+    }
     if (game_features::gameplay_change_fishing_boat_remake.to_bool()) {
         figure_action_remake();
         return;
@@ -133,10 +146,11 @@ void figure_fishing_boat::figure_action() {
 }
 
 void figure_fishing_boat::figure_action_og() {
+    // OG fishing_boat_action: a new boat's home is the shipwright that built it until it claims a wharf; a boat
+    // whose home is gone or that finds no wharf is removed, and only damage sinks it.
     building *home_building = home();
-    building_fishing_wharf *wharf = home_building ? home_building->dcast_fishing_wharf() : nullptr;
-    if (!wharf || !wharf->base.is_valid()) {
-        kill();
+    if (!home_building || !home_building->is_valid()) {
+        poof();
         return;
     }
 
@@ -145,8 +159,29 @@ void figure_fishing_boat::figure_action_og() {
         return;
     }
 
-    int wharf_boat_id = wharf->get_figure_id(BUILDING_SLOT_BOAT);
-    if (action_state() != ACTION_0_FISHING_BOAT_CREATED && wharf_boat_id != id()) {
+    building_fishing_wharf* wharf = home_building->dcast_fishing_wharf();
+    if (action_state() == ACTION_0_FISHING_BOAT_CREATED) {
+        base.wait_ticks++;
+        if (base.wait_ticks < 50) {
+            return;
+        }
+        base.wait_ticks = 0;
+        if (!wharf || wharf->get_figure_id(BUILDING_SLOT_BOAT) != id()) {
+            water_dest result = map_water_get_wharf_for_new_fishing_boat(base);
+            wharf = result.found ? building_get(result.bid)->dcast_fishing_wharf() : nullptr;
+            if (!wharf) {
+                return;
+            }
+            home_building->remove_figure_by_id(id());
+            set_home(wharf->id());
+            wharf->base.set_figure(BUILDING_SLOT_BOAT, &base);
+        }
+        advance_action(ACTION_3_FISHING_BOAT_GOING_TO_WHARF);
+        fishing_boat_go_to_wharf(*this, *wharf);
+        return;
+    }
+
+    if (!wharf || wharf->get_figure_id(BUILDING_SLOT_BOAT) != id()) {
         water_dest result = map_water_get_wharf_for_new_fishing_boat(base);
         building *new_home = building_get(result.bid);
         if (new_home->id) {
@@ -163,25 +198,13 @@ void figure_fishing_boat::figure_action_og() {
                 route_remove();
             }
         } else {
-            kill();
+            poof();
             return;
         }
     }
 
     assert(base.allow_move_type == EMOVE_WATER);
     switch (action_state()) {
-    case ACTION_0_FISHING_BOAT_CREATED:
-        base.wait_ticks++;
-        if (base.wait_ticks >= 50) {
-            base.wait_ticks = 0;
-            if (wharf->id()) {
-                wharf->base.set_figure(BUILDING_SLOT_BOAT, &base);
-                advance_action(ACTION_3_FISHING_BOAT_GOING_TO_WHARF);
-                fishing_boat_go_to_wharf(*this, *wharf);
-            }
-        }
-        break;
-
     case ACTION_1_FISHING_BOAT_GOING_TO_FISH:
         base.move_ticks(1);
         base.height_adjusted_ticks = 0;

@@ -19,4 +19,7 @@ public:
     virtual bool window_info_background(object_info &ctx) override;
 
     static figure *create(tile2i t);
+
+private:
+    bool has_pictures();
 };

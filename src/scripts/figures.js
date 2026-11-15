@@ -534,7 +534,8 @@ figure_locust {
 // OG FIG_SHIPWRECK: 36 animation frames then gone; settle to open water once (wait=1000).
 figure_shipwreck = {
 	animations : {
-		// Frame index is animation_frame (0..35); pack id still provisional vs image_shipwreck.
+		// Frame index is animation_frame (0..35). Sprmain has no group 226 in Pharaoh (no wreck pictures):
+		// the wreck is invisible and the sunk ship shows its own sinking animation.
 		walk : { pack:PACK_SPR_MAIN, id:226, max_frames:36 }
 		big_image : { pack:PACK_UNLOADED, id:25, offset:FIGURE_SHIPWRECK }
 	}

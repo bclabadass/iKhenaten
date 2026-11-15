@@ -804,6 +804,9 @@ void figure_warship::figure_action() {
 }
 
 void figure_warship::kill() {
+    if (!base.is_alive()) {
+        return;
+    }
     building_shipyard_leave_queue(id());
     building *b = home();
     if (b && b->id) {
