@@ -30,11 +30,10 @@ building_mortuary {
     linen {
       pos : [45, 3]
       pack:PACK_GENERAL
-      id:206
+      id:199
       resource : RESOURCE_LINEN
-      stack : true
-      step : [5, -5]
-      max_count : 8
+      stack : false
+      max_count : 2
       default_active : true
     }
   }
@@ -47,7 +46,6 @@ building_mortuary {
   walker_cost : [5, 10, 20, 40, 60]
   seth_altar_walker_cost_pct : [12, 60, 60, 70, 90]
   spawn_delays : [3, 7, 15, 29, 44]
-  linen_required_for_animation : 100
   monthly_linen_consumption : 20
   min_houses_coverage : 50
   building_size : 2
@@ -62,6 +60,15 @@ building_mortuary {
   flags {
     work_anim: true
   }
+}
+
+// The mortuary works (sends embalmers, shows its work animation, reads as operational) while it holds the
+// linen for one embalmer.
+function building_mortuary_has_linen_for_work(b) {
+    if (game_features.gameplay_change_mortuary_mothballed_linen && __city_resource_is_mothballed(RESOURCE_LINEN)) {
+        return false
+    }
+    return b.stored_resource(RESOURCE_LINEN) >= building_mortuary_walker_cost()
 }
 
 function building_mortuary_walker_cost() {
@@ -100,16 +107,7 @@ function building_mortuary_on_place_checks(ev) {
 [es=(building_mortuary, update_animation)]
 function building_mortuary_update_animation(ev) {
     var b = city.get_building(ev.bid)
-    if (!b.play_animation) {
-        return
-    }
-
-    if (__city_resource_is_mothballed(RESOURCE_LINEN)) {
-        b.play_animation = false
-        return
-    }
-
-    if (b.stored_resource(RESOURCE_LINEN) < building_mortuary.linen_required_for_animation) {
+    if (b.play_animation && !building_mortuary_has_linen_for_work(b)) {
         b.play_animation = false
     }
 }

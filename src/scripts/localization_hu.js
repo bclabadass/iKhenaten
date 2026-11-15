@@ -760,13 +760,13 @@ localization_hu = [
   {key: "#building_removed_fort_archers", group:19, id:183}
   {key: "#building_removed_fort_charioteers", group:19, id:184}
   {key: "#building_removed_academies", group:19, id:185}
-  {key: "#mausoleum_needs_sandstone", group:19, id:186}
-  {key: "#build_brewery_or_import_beer", group:19, id:187}
-  {key: "#build_papyrus_maker_or_import", group:19, id:188}
-  {key: "#build_weaver_or_import_linen", group:19, id:189}
-  {key: "#tax_collector_robbed", group:19, id:190}
-  {key: "#courthouse_robbed", group:19, id:191}
-  {key: "#mansion_destroyed", group:19, id:192}
+  {key: "#mausoleum_needs_sandstone", group:19, id:188}
+  {key: "#build_brewery_or_import_beer", group:19, id:189}
+  {key: "#build_papyrus_maker_or_import", group:19, id:191}
+  {key: "#build_weaver_or_import_linen", group:19, id:193}
+  {key: "#tax_collector_robbed", group:19, id:195}
+  {key: "#courthouse_robbed", group:19, id:196}
+  {key: "#mansion_destroyed", group:19, id:197}
   {key: "#mansion_protected_by_police", text:"Rendőrség védi"}
   {key: "#mansion_not_protected_theft", text:"Nincs védelem - tolvajok ellophatják a megtakarításokat"}
   {key: "#palace_destroyed", group:19, id:198}

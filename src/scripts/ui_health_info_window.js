@@ -3,7 +3,7 @@ log_info("akhenaten: ui health info window started")
 [es=building_info_window]
 health_info_window {
     first_advisor    : ADVISOR_HEALTH
-    related_buildings [BUILDING_APOTHECARY, BUILDING_PHYSICIAN, BUILDING_DENTIST, BUILDING_MORTUARY]
+    related_buildings [BUILDING_APOTHECARY, BUILDING_PHYSICIAN, BUILDING_DENTIST]
     ui : baseui(building_info_window, {
     })
 }
