@@ -347,6 +347,8 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_window_element_text(section, id)` | string | Text of an element in a window, `""` if absent |
 | `__test_message_dialog_section()` | string | Section of the open message dialog (`message_dialog_window_general`, `message_dialog_window_image`, …), or `""` |
 | `__test_population_check_milestone()` | undefined | Run the population milestone check (posts the highest milestone reached and not yet announced) |
+| `__test_formation_figure_type(formation_id)` | int | The company's soldier type (`FIGURE_INFANTRY`, …), -1 if no such formation |
+| `__test_figure_attack_figure_at(fid, x, y)` | int | Start a melee between `fid` and a figure on tile x,y as when they meet; returns `fid`'s action state |
 | `__test_js_hotreload_handlers_stack_ok(n)` | boolean | Re-run `js_register_game_handlers` `n` times; true if MuJS stack depth unchanged (HR1) |
 | `__test_js_hotreload_file_stack_ok(path, n)` | boolean | `js_vm_reload_file` + `js_vm_sync` `n` times; true if stack depth unchanged (HR1) |
 | `__test_trader_capacity(fid)` | int | Caravan runtime / ship effective max capacity (TC*) |

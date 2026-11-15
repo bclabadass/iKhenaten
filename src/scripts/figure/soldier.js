@@ -5,7 +5,7 @@ figure_soldier_infantry {
 	animations {
 		walk { pack:PACK_SPR_MAIN, id:64, max_frames:12 }
 		death { pack:PACK_SPR_MAIN, id:65, max_frames:8, loop:false }
-		attack { pack:PACK_SPR_MAIN, id:66, max_frames:12 }
+		attack { pack:PACK_SPR_MAIN, id:66, max_frames:8 }
 		big_image { pack:PACK_UNLOADED, id:25, offset:FIGURE_INFANTRY }
 	}
 

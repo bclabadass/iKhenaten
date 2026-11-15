@@ -2157,6 +2157,23 @@ static int __test_formation_get_experience(int formation_id) {
 }
 ANK_FUNCTION_1(__test_formation_get_experience);
 
+static int __test_formation_figure_type(int formation_id) {
+    formation* m = formation_get(formation_id);
+    return m ? m->figure_type : -1;
+}
+ANK_FUNCTION_1(__test_formation_figure_type);
+
+// Starts a melee between fid and a figure on (x, y), the way figures meet on a tile.
+static int __test_figure_attack_figure_at(int fid, int x, int y) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_alive()) {
+        return 0;
+    }
+    f->figure_combat_attack_figure_at(tile2i(x, y).grid_offset());
+    return f->action_state;
+}
+ANK_FUNCTION_3(__test_figure_attack_figure_at);
+
 static void __test_make_floodplain_water(int x, int y) {
     map_terrain_add(tile2i(x, y), TERRAIN_WATER | TERRAIN_FLOODPLAIN);
 }
