@@ -9,7 +9,7 @@ mission7 { // Abydos / Abedju — The Challenge of the Sea
 	herd_points_predator [ [88, 57], [74, 71], [92, 35] ]
 	fishing_points [ [95, 66], [76, 65], [110, 71] ]
 
-	start_message : "message_soldiers_and_forts"
+	start_message : "message_at_the_waters_edge"
 	selection_title : "Abydos"
 	env {
 		has_animals : true
@@ -420,7 +420,7 @@ function mission7_fire_request(tag, resource, amount, months, ok_tag, fail_tag, 
 [es=event_mission_start, mission=mission7]
 function mission7_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_KUSHITE)
-	mission_show_start_message(mission, "message_soldiers_and_forts")
+	mission_show_start_message(mission, "message_at_the_waters_edge")
 	empire.set_id(0)
 	empire.set_expanded(false)
 	city.set_empire_available(1)

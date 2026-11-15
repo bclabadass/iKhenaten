@@ -8,7 +8,7 @@ mission6 { // Behdet — The Royal Navy
 	// Map points from data/maps/m_006_behdet.map.
 	fishing_points [ [73, 38], [89, 61] ]
 
-	start_message : "message_soldiers_and_forts"
+	start_message : "message_trade_on_the_water"
 	selection_title : "Behdet"
 	player_rank : 2
 
@@ -400,7 +400,7 @@ function mission6_kushite_raid(invasion_id, size, on_completed_tag) {
 [es=event_mission_start, mission=mission6]
 function mission6_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_KUSHITE)
-	mission_show_start_message(mission, "message_soldiers_and_forts")
+	mission_show_start_message(mission, "message_trade_on_the_water")
 	empire.set_id(1)
 	empire.set_expanded(false)
 	city.set_empire_available(1)
