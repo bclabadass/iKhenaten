@@ -17,6 +17,8 @@ building_recruiter {
   cost [ 30, 50, 100, 200, 300 ]
   desirability { value:[-6], step:[1], step_size:[1], range: [3] }
   laborers [10]
+  // Days between recruits at 100/75/50/25/1% staff (Caesar 3's barracks, which the recruiter grew out of).
+  spawn_delays [8, 12, 16, 32, 48]
   fire_risk [4]
   damage_risk [1]
   flags {

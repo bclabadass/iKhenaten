@@ -16,6 +16,7 @@ public:
     virtual building_recruiter *dcast_recruiter() override { return this; }
 
     struct static_params : public building_static_params {
+        std::array<uint8_t, 5> spawn_delays; // days between recruits at 100/75/50/25/1% staff
         virtual bool is_unique_building() const override;
     } BUILDING_STATIC_DATA_T;
 
@@ -35,7 +36,7 @@ public:
     bool create_soldier();
     formation_id get_closest_batalion_needing_soldiers();
 };
-ANK_CONFIG_STRUCT(building_recruiter::static_params, meta)
+ANK_CONFIG_STRUCT(building_recruiter::static_params, meta, spawn_delays)
 ANK_CONFIG_PROPERTY(building_recruiter::runtime_data_t, priority)
 
 void building_barracks_request_tower_sentry();

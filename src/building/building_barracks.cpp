@@ -283,20 +283,17 @@ void building_recruiter::spawn_figure() {
     //    map_point road;
     if (base.has_road_access) {
         common_spawn_labor_seeker(current_params().min_houses_coverage);
-        int pct_workers = worker_percentage();
-        int spawn_delay = figure_spawn_timer();
-        //        if (pct_workers >= 100)
-        //            spawn_delay = 8;
-        //        else if (pct_workers >= 75)
-        //            spawn_delay = 12;
-        //        else if (pct_workers >= 50)
-        //            spawn_delay = 16;
-        //        else if (pct_workers >= 25)
-        //            spawn_delay = 32;
-        //        else if (pct_workers >= 1)
-        //            spawn_delay = 48;
-        //        else
-        //            return;
+        const int pct_workers = worker_percentage();
+        if (pct_workers <= 0) {
+            return;
+        }
+
+        const auto& delays = current_params().spawn_delays;
+        const int spawn_delay = pct_workers >= 100  ? delays[0]
+                                : pct_workers >= 75 ? delays[1]
+                                : pct_workers >= 50 ? delays[2]
+                                : pct_workers >= 25 ? delays[3]
+                                                    : delays[4];
         base.figure_spawn_delay++;
         if (base.figure_spawn_delay > spawn_delay) {
             base.figure_spawn_delay = 0;
