@@ -90,6 +90,9 @@ public:
     static void finalize(building *b, const vec2i size_b);
     static int get_image(int orientation, tile2i tile, tile2i start, tile2i end);
     static const base_params &get_params(e_building_type type);
+    // How far to move the main part so a rotated mastaba covers the tiles the planner previewed and checked
+    // (the footprint of the camera's own orientation).
+    static vec2i rotation_shift(e_building_type type, int orientation);
 
     virtual void remove_worker(figure_id fid) override;
     virtual void add_workers(figure_id fid) override;

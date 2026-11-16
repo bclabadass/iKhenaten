@@ -5,6 +5,7 @@
 #include "grid/water.h"
 #include "city/city_buildings.h"
 #include "building/building.h"
+#include "building/monument_mastaba.h"
 #include "game/undo.h"
 #include "grid/figure.h"
 #include "graphics/graphics.h"
@@ -203,6 +204,13 @@ int building_planer_renderer::construction_place(build_planner &planer, tile2i s
     case DIR_6_TOP_LEFT:
         end = end.shifted(0, -params.building_size + 1);
         break;
+    }
+
+    // A rotated mastaba is laid out from another corner: keep its parts on the previewed, checked tiles.
+    if (building_type_any_of(planer.build_type,
+          {BUILDING_SMALL_MASTABA, BUILDING_MEDIUM_MASTABA, BUILDING_LARGE_MASTABA})) {
+        const vec2i shift = building_mastaba::rotation_shift(planer.build_type, orientation);
+        end = end.shifted(shift.x, shift.y);
     }
 
     // create building

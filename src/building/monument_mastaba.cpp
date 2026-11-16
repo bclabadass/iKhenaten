@@ -343,6 +343,38 @@ void building_mastaba::on_destroy() {
     building_impl::on_destroy();
 }
 
+static const hvector<mastaba_part, 40>& mastaba_parts_for(const building_mastaba::base_params& p, int orientation) {
+    switch (orientation % 4) {
+    case 1:
+        return p.config_east;
+    case 2:
+        return p.config_south;
+    case 3:
+        return p.config_west;
+    default:
+        return p.config_north;
+    }
+}
+
+static vec2i mastaba_parts_min_offset(const hvector<mastaba_part, 40>& parts) {
+    vec2i least{0, 0}; // the base part sits on the tile itself (its offset is a placeholder)
+    for (const auto& part : parts) {
+        if (part.base) {
+            continue;
+        }
+        least.x = std::min(least.x, part.offset.x());
+        least.y = std::min(least.y, part.offset.y());
+    }
+    return least;
+}
+
+vec2i building_mastaba::rotation_shift(e_building_type type, int orientation) {
+    const auto& p = get_params(type);
+    const vec2i checked = mastaba_parts_min_offset(mastaba_parts_for(p, (g_camera.orientation / 2) % 4));
+    const vec2i placed = mastaba_parts_min_offset(mastaba_parts_for(p, orientation));
+    return {checked.x - placed.x, checked.y - placed.y};
+}
+
 void building_mastaba::on_place(int orientation, int variant) {
     building_monument::on_place(orientation, variant);
 
