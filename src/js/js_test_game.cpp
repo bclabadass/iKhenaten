@@ -2224,6 +2224,12 @@ static int __test_wharf_anim_max_offset(int bid) {
 }
 ANK_FUNCTION_1(__test_wharf_anim_max_offset);
 
+// Open a warship's or transport's orders panel, as its Orders button does.
+static void __test_open_ship_orders(int fid) {
+    window_city_open_ship_orders(fid);
+}
+ANK_FUNCTION_1(__test_open_ship_orders);
+
 static int __test_formation_get_experience(int formation_id) {
     formation *m = formation_get(formation_id);
     return m ? m->experience : -1;

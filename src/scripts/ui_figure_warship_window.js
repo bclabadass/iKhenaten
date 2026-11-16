@@ -76,9 +76,10 @@ figure_warship_info_window {
     ui {
         background       : outer_panel({size: [29, 23]}),
         name             : text_center({pos: [16, 16], size: [px(27), 20], text:"${figure.class_name}", font : FONT_LARGE_BLACK_ON_DARK }),
-        hullstrength_lb  : text({pos: [102, 58], text:"${184.2}" }),
+        // Set in window_info_background: group 184 is the port's English text, which "${184.2}" doesn't reach.
+        hullstrength_lb  : text({pos: [102, 58] }),
         hullstrength_val : text({pos: [232, 58], text:"" }),
-        crewfatique_lb   : text({pos: [102, 88], text:"${184.27}" }),
+        crewfatique_lb   : text({pos: [102, 88] }),
         crewfatique_val  : text({pos: [232, 88], text:"" }),
 
         hold_position    : image_button({param1:3, param2:9, pos:[87 * 0 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 0, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
@@ -128,6 +129,8 @@ function figure_warship_info_window_window_info_background(window) {
     var ship = city.get_warship(f.id)
 
     window.name.text = f.class_name
+    window.hullstrength_lb.text = __loc(184, 2)
+    window.crewfatique_lb.text = __loc(184, 27)
     window.hullstrength_val.text = __loc(184, figure_warship_hull_strength_text_id(ship))
     window.crewfatique_val.text = __loc(184, figure_warship_crew_fatigue_text_id(ship))
 
