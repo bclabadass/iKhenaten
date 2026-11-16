@@ -325,6 +325,20 @@ void figure::resume_activity_after_attack() {
     route_remove();
 }
 
+// The manual: "All soldiers who survive a battle gain experience from fighting." A kill by one of the city's
+// companies adds 1 to its experience, up to the maximum, as a javelin kill does (figure_javelin); not for animals
+// or robbers.
+void figure::gain_batalion_experience_for_kill(const figure* victim) {
+    formation* m = formation_get(formation_id);
+    if (!m || !m->in_use || !m->own_batalion || faction_id != 1 || !victim) {
+        return;
+    }
+    if (victim->category() == figure_category_animal || victim->type == FIGURE_ROBBER) {
+        return;
+    }
+    m->experience = (uint16_t)std::min<int>(m->experience + 1, BATALION_MAX_EXPERIENCE);
+}
+
 void figure::hit_opponent() {
     const formation* m = formation_get(formation_id);
     figure* opponent = figure_get(opponent_id);
@@ -415,6 +429,7 @@ void figure::hit_opponent() {
         opponent->wait_ticks = 0;
         opponent->play_die_sound();
         formation_update_morale_after_death(opponent_formation);
+        gain_batalion_experience_for_kill(opponent);
     }
 }
 

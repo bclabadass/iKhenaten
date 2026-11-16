@@ -406,6 +406,7 @@ public:
     void figure_combat_handle_corpse();
     void resume_activity_after_attack();
     void hit_opponent();
+    void gain_batalion_experience_for_kill(const figure* victim);
     void figure_combat_handle_attack();
     void figure_combat_attack_figure_at(int grid_offset);
     int figure_image_normalize_direction(int dir);

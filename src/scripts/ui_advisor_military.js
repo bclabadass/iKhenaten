@@ -34,7 +34,7 @@ function advisor_military_forts_on_render_item(p) {
     ui.label_ex(morale_str, vec2i(x + 186, y + 15), FONT_NORMAL_BLACK_ON_DARK, UiFlags_AlignCentered, 0)
 
     var exp_image = get_image("pharaoh_general/paneling_00537")
-    exp_image.tid += ((form.experience / 100) | 0)
+    exp_image.tid += fort_info_window_experience_level(form)
     ui.button({ text:"", pos:[x + 276, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
     ui.image(exp_image, { x: x + 279, y: y + 10})
 

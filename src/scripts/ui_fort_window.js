@@ -92,6 +92,13 @@ function fort_info_window_layout_standard(window, form) {
 }
 
 // Name, standard, soldiers, health, experience and morale: shared with the company orders panel.
+// Experience runs 0-100 (OG LEGION_MAX_EXPERIENCE); the six levels, Green to The best (138.60-65), are 20 apart
+// (an Academy recruit's 25 is Skilled), as combat's (experience + 10) / 20 bonus steps.
+function fort_info_window_experience_level(form) {
+    var level = (form.experience / 20) | 0
+    return Math.max(0, Math.min(5, level))
+}
+
 function fort_info_window_fill_company(window, form) {
     var company_type = fort_info_window_company_type_text(form.figure_type)
     window.title.text = __loc(138, form.batalion_id - 1) + " " + __loc(138, company_type)
@@ -101,7 +108,7 @@ function fort_info_window_fill_company(window, form) {
     window.soldiers_num.text = "" + form.num_figures
     window.health_num.text = __loc(138, fort_info_window_health_text_id(form))
 
-    var exp_level = form.experience / 100
+    var exp_level = fort_info_window_experience_level(form)
     if (exp_level < 0) { exp_level = 0 }
     if (exp_level > 5) { exp_level = 5 }
     exp_level = exp_level | 0
