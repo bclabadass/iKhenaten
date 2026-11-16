@@ -41,6 +41,7 @@ public:
 
     virtual void on_create() override;
     virtual void on_destroy() override;
+    virtual void on_post_load() override;
     virtual void before_poof() override;
     virtual void figure_before_action() override {}
     virtual void figure_action() override;

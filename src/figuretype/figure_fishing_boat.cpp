@@ -15,6 +15,7 @@
 #include "graphics/image_desc.h"
 #include "building/building_fishing_wharf.h"
 #include "city/city.h"
+#include "city/city_figures.h"
 #include "city/city_warnings.h"
 #include "game/game_events.h"
 #include "js/js_game.h"
@@ -92,6 +93,35 @@ void figure_fishing_boat::on_create() {
 void figure_fishing_boat::on_destroy() {
     building *b = home();
     b->remove_figure_by_id(id());
+}
+
+void figure_fishing_boat::on_post_load() {
+    figure_impl::on_post_load();
+    if (action_state() != ACTION_0_FISHING_BOAT_CREATED) {
+        return;
+    }
+
+    // Saves from before the shipwright fix can hold new boats built for no wharf, waiting at the shipwright for
+    // good. Keep as many waiting boats as there are wharves without a boat; remove the rest.
+    int free_wharves = 0;
+    buildings_valid_do(
+      [&](building& b) {
+          if (b.dcast_fishing_wharf() && !b.get_figure(BUILDING_SLOT_BOAT)->is_valid()) {
+              free_wharves++;
+          }
+      },
+      BUILDING_FISHING_WHARF);
+    int waiting_before = 0;
+    figure_valid_do([&](figure& f) {
+        if (f.id < id() && f.is_alive() && f.type == FIGURE_FISHING_BOAT
+            && f.action_state == ACTION_0_FISHING_BOAT_CREATED) {
+            waiting_before++;
+        }
+    });
+    if (waiting_before >= free_wharves) {
+        home()->remove_figure_by_id(id());
+        poof();
+    }
 }
 
 void figure_fishing_boat::before_poof() {
