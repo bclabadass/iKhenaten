@@ -21,6 +21,13 @@ void ui::message_dialog_imperial::draw_city_message_text(const lang_message& msg
 
     const auto& city_msg = city_message_get(message_id);
     bstring1024 full_text;
+    // Most event messages (floods and the like) use the general template, which opens here: only a request names a
+    // good, and without one the line read "800 Nothing Month 0 to comply".
+    if (city_msg.req_resource == RESOURCE_NONE) {
+        full_text.printf("%s @P@P%s", header.c_str(), text.c_str());
+        ui["content_text"] = full_text;
+        return;
+    }
     int resource_image_id = resource_image(city_msg.req_resource);
 
     city_resource_handle hresource{ (e_resource)city_msg.req_resource };

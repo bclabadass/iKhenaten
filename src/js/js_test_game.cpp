@@ -2230,6 +2230,16 @@ static void __test_open_ship_orders(int fid) {
 }
 ANK_FUNCTION_1(__test_open_ship_orders);
 
+// Post an event message on the general template as a scenario event does: the event's item and amount fill the
+// message's request fields (item 0 for an event that requests nothing, such as a flood).
+static void __test_post_event_message(int item, int amount, int title_id, int body_id, int phrase_id) {
+    event_ph_t event{};
+    event.item.value = item;
+    event.amount.value = amount;
+    city_message_post_full(true, "message_template_general", &event, -1, title_id, body_id, phrase_id, 0, 0);
+}
+ANK_FUNCTION_5(__test_post_event_message);
+
 static int __test_formation_get_experience(int formation_id) {
     formation *m = formation_get(formation_id);
     return m ? m->experience : -1;
