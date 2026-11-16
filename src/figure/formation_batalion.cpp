@@ -149,8 +149,17 @@ void formation_batalion_move_to(formation* m, tile2i tile) {
 
 void formation_batalion_return_home(formation* m) {
     map_routing_calculate_distances(m->home);
-    if (map_routing_distance(m->tile) <= 0)
-        return; // unable to route home
+    if (map_routing_distance(m->tile) <= 0) {
+        // Home lags a step behind the soldiers (it was the ship's tile just after a landing): try where one stands.
+        figure* first = m->figures[0] ? figure_get(m->figures[0]) : nullptr;
+        if (!first || !first->is_alive() || first->tile == m->home) {
+            return; // unable to route home
+        }
+        map_routing_calculate_distances(first->tile);
+        if (map_routing_distance(m->tile) <= 0) {
+            return;
+        }
+    }
 
     if (m->cursed_by_seth) {
         return;

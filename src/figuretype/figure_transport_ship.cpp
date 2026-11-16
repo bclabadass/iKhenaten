@@ -259,7 +259,6 @@ void figure_transport_ship::board_legion(int formation_id) {
     m->ship_figure_id = (int16_t)id();
     m->is_halted = 1;
     m->is_at_fort = 0;
-    m->tile = base.tile;
     m->standard_tile = base.tile;
 }
 
@@ -510,7 +509,6 @@ void figure_transport_ship::disembark_troops() {
     }
     map_find_nearest_free_land_tile(disembark);
 
-    m->tile = disembark;
     m->standard_tile = disembark;
     m->is_halted = 1;
     m->is_at_fort = 0;
@@ -660,7 +658,7 @@ void figure_transport_ship::sync_embarked_troops() {
         f->set_flag(e_figure_flag_invisible, false);
     }
 
-    m->tile = base.tile;
+    // Only the standard follows the ship: a company's tile is its fort, where Return to Fort takes it.
     m->standard_tile = base.tile;
 }
 

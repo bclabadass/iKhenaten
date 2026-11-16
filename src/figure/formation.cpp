@@ -243,7 +243,8 @@ void formations_t::calculate_batalion_totals() {
 
         if (m->missile_attack_timeout <= 0 && m->figures[0] && !m->is_herd) {
             figure* f = figure_get(m->figures[0]);
-            if (f->state == FIGURE_STATE_ALIVE) {
+            // Not from a soldier on a transport: that tile is water, and Return to Fort routes from home.
+            if (f->state == FIGURE_STATE_ALIVE && f->action_state != ACTION_18_SOLDIER_ON_SHIP) {
                 m->home = f->tile;
             }
         }

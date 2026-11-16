@@ -125,6 +125,24 @@ formation_id building_fort::create_batalion() {
     return m->id;
 }
 
+// A company's tile is its fort's ground, where Return to Fort takes it. Transports used to move it to the ship and
+// the landing, so in those saves a company returned to the beach or into the river.
+void building_fort::on_post_load() {
+    building_impl::on_post_load();
+    // The ground link is set when the fort is placed; after a load it comes from the fort's next part.
+    if (!ground()) {
+        building* next = building_get(base.next_part_building_id);
+        if (next && next->id && next->dcast_fort_ground()) {
+            runtime_data().ground = next->id;
+        }
+    }
+    formation* m = base.formation_id > 0 ? formation_get(base.formation_id) : nullptr;
+    building_fort_ground* fort_ground = ground();
+    if (m && m->in_use && m->own_batalion && fort_ground) {
+        m->tile = fort_ground->tile();
+    }
+}
+
 void building_fort::on_place_update_tiles(int orientation, int variant) {
     base.prev_part_building_id = 0;
     int image_id = base_img();

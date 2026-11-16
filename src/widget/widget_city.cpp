@@ -1315,7 +1315,8 @@ void screen_city_t::handle_first_touch(tile2i tile) {
             return;
         }
 
-        if (handle_warship_click(tile) || handle_transport_click(tile) || handle_legion_click(tile)) {
+        if (handle_warship_click(tile) || handle_transport_click(tile) || handle_legion_click(tile)
+            || handle_ship_near_click(tile)) {
             return;
         }
 
@@ -1626,6 +1627,23 @@ void screen_city_t::warship_map_click(int warship_figure_id, tile2i tile) {
     window_city_show();
 }
 
+// A ship's picture, and the standard of a company aboard, cover more than its tile: a tap a tile off still means the
+// ship (after companies, which take a tap a tile off too), rather than the company's panel from the tile's info.
+bool screen_city_t::handle_ship_near_click(tile2i tile) {
+    if (!tile.valid()) {
+        return false;
+    }
+    for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            tile2i near = tile.shifted(dx, dy);
+            if ((dx || dy) && near.valid() && (handle_warship_click(near) || handle_transport_click(near))) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool screen_city_t::handle_transport_click(tile2i tile) {
     if (!tile.valid()) {
         return false;
@@ -1857,7 +1875,7 @@ void screen_city_t::handle_mouse(const mouse* m) {
     g_city_planner.draw_as_constructing = false;
     if (m->left.went_down) {
         if (handle_warship_click(current_tile) || handle_transport_click(current_tile)
-            || handle_legion_click(current_tile)) {
+            || handle_legion_click(current_tile) || handle_ship_near_click(current_tile)) {
             return;
         }
 
