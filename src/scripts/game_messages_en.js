@@ -1392,7 +1392,9 @@ game_messages_en {
         
         size [30, 20]
         urgent: 1,
-        title { text: "Wrath of the Emperor" }
+        // Caesar 3's "Wrath of the Emperor" with no text; the other languages say Pharaoh. The body is the port's.
+        title { text: "Pharaoh is angry!" }
+        content { text: "Pharaoh's patience with your city has run out, and your standing in the Kingdom has suffered. Win back his favor quickly, or face his wrath." }
         video { text: "@12" }
     }
 

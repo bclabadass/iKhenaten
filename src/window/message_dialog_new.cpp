@@ -189,6 +189,8 @@ void ui::message_dialog_base::init_data(xstring text_id, int message_id, void (*
         ui["title"] = msg.title.text;
     }
     ui["title"].enabled = true;
+    // The dialog windows are shared: a message with no body text kept the previous message's text.
+    ui["content_text"] = "";
 
     ui["button_close"].enabled = true;
 
