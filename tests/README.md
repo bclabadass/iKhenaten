@@ -352,6 +352,7 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_update_building_counters()` | undefined | Recount buildings by type, as the city does once a day and on load (`count_total_buildings` / `count_active_buildings`) |
 | `__test_figure_set_direction(fid, dir)` / `__test_figure_refresh_image(fid)` | undefined | Set a figure's direction (0-7, or 8+ for stopped) / run its `update_animation` and picture update without its action |
 | `__test_building_overlay_image(bid, resource)` | string | `"image,copies"` the building's stock overlay for that good draws now (`"0,0"` when empty), `""` if it has none |
+| `__test_game_feature_reset(name)` | boolean | Set a game feature back to its built-in default, ignoring the machine's `akhenaten.conf`; false if no such feature |
 | `__test_js_hotreload_handlers_stack_ok(n)` | boolean | Re-run `js_register_game_handlers` `n` times; true if MuJS stack depth unchanged (HR1) |
 | `__test_js_hotreload_file_stack_ok(path, n)` | boolean | `js_vm_reload_file` + `js_vm_sync` `n` times; true if stack depth unchanged (HR1) |
 | `__test_trader_capacity(fid)` | int | Caravan runtime / ship effective max capacity (TC*) |

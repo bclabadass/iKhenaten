@@ -79,6 +79,7 @@
 #include "figuretype/figure_flotsam.h"
 #include "figuretype/figure_docker.h"
 #include "figuretype/figure_immigrant.h"
+#include "game/game_config.h"
 #include "game/game_events.h"
 #include "figuretype/figure_missile.h"
 #include "figuretype/figure_javelin.h"
@@ -550,6 +551,17 @@ static int __test_image_from_desc(int pack, int id, int offset) {
     return image_desc{(int16_t)pack, (int16_t)id, (int16_t)offset}.tid();
 }
 ANK_FUNCTION_3(__test_image_from_desc);
+
+// Set a game feature back to its built-in default (ignoring akhenaten.conf); false if there is no such feature.
+static bool __test_game_feature_reset(xstring name) {
+    game_features::game_feature* feature = game_features::find(name);
+    if (!feature) {
+        return false;
+    }
+    game_features::settings().set(feature->name, feature->defaultv);
+    return true;
+}
+ANK_FUNCTION_1(__test_game_feature_reset);
 
 // The picture the building's stock overlay for `resource` draws now ("image,copies"), "" if it has none.
 static xstring __test_building_overlay_image(int bid, int resource) {
