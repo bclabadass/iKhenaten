@@ -187,10 +187,11 @@ function run_test() {
             near = null
         }
     }
-    var tship = city.get_transport_ship(ship)
+    // Embark taken: the ship heads for the company (218, going to the company; Embark stays open while it waits).
+    var going = __figure_get_action_state(ship)
     __log_info_native('[test:351] Embark: window ' + mode + ', tapped ' + JSON.stringify(near) + ' beside company '
-        + form_id + ': ship can still embark ' + tship.can_embark + ', window now ' + __game_window_get_id())
-    if (mode == 'window_city_transport' && near && !tship.can_embark) {
+        + form_id + ': ship action ' + going + ', window now ' + __game_window_get_id())
+    if (mode == 'window_city_transport' && near && going == 218) {
         __log_marker('embark_taps_company_nearby')
     }
 

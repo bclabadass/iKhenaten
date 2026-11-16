@@ -163,8 +163,10 @@ int figure_transport_ship::transported_formation() const {
     return has_troops() ? runtime_data().formation_id : 0;
 }
 
+// A company waiting to board doesn't block Embark: picking a company again replaces it (the only way to call off a
+// boarding stuck on a soldier who couldn't line up, Brendan on the Duo).
 bool figure_transport_ship::can_embark() const {
-    if (has_troops() || runtime_data().formation_id > 0) {
+    if (has_troops()) {
         return false;
     }
     const int state = action_state();
@@ -439,6 +441,7 @@ void figure_transport_ship::move_to_tile(tile2i water_tile) {
     if (!transport_is_navigable_water(water_tile)) {
         return;
     }
+    cancel_boarding();
 
     auto &d = runtime_data();
     d.landing_x = -1;
@@ -712,7 +715,17 @@ void figure_transport_ship::check_auto_repair() {
     }
 }
 
+// A company assigned to board but not yet aboard: another order to the ship calls the boarding off.
+void figure_transport_ship::cancel_boarding() {
+    auto& d = runtime_data();
+    if (!has_troops() && d.formation_id > 0) {
+        d.formation_id = 0;
+        d.phase = 0;
+    }
+}
+
 void figure_transport_ship::set_evade_order() {
+    cancel_boarding();
     runtime_data().evade_mode = evade_waiting;
     runtime_data().given_order = order_evade;
     base.wait_ticks = 0;
@@ -720,6 +733,7 @@ void figure_transport_ship::set_evade_order() {
 }
 
 void figure_transport_ship::set_hold_order() {
+    cancel_boarding();
     runtime_data().evade_mode = evade_waiting;
     runtime_data().given_order = order_hold;
     base.destination_tile = base.tile;
@@ -728,6 +742,7 @@ void figure_transport_ship::set_hold_order() {
 }
 
 void figure_transport_ship::set_repair_order() {
+    cancel_boarding();
     runtime_data().given_order = order_repair;
     go_to_best_shipwright();
 }
@@ -738,6 +753,7 @@ void figure_transport_ship::return_to_wharf() {
     if (!wharf) {
         return;
     }
+    cancel_boarding();
     runtime_data().given_order = order_return_to_wharf;
     move_to_wharf(b->id, home_berth_tile());
 }
@@ -1124,7 +1140,17 @@ void figure_transport_ship::action_going_to_legion() {
     if (direction() == DIR_FIGURE_NONE) {
         base.wait_ticks = 0;
         const int formation_id = d.formation_id;
-        if (formation_id <= 0 || !legion_ready_to_board(formation_id)) {
+        if (formation_id <= 0) {
+            return;
+        }
+        if (!legion_ready_to_board(formation_id)) {
+            // The company was sent elsewhere (Return to Fort, or moved away from the shore by the ship): stop waiting.
+            const formation* waiting_for = formation_get(formation_id);
+            if (!waiting_for || !waiting_for->in_use || waiting_for->is_at_fort
+                || calc_maximum_distance(waiting_for->standard_tile, base.tile) > boarding_reach) {
+                cancel_boarding();
+                set_evade_order();
+            }
             return;
         }
 
