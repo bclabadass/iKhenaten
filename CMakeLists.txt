@@ -911,7 +911,8 @@ add_definitions(-DGAME_BUILD_TIME=\"${GAME_BUILD_TIME}\")
 # The game's own update (src/platform/app_updater.cpp): on by default in the CI's builds only, whose artifacts
 # nightly.link serves, so a build of one's own is never replaced by them. The commit and its time decide whether the
 # newest master build is newer than this one.
-if(DEFINED ENV{GITHUB_ACTIONS})
+# Never on iOS: the app can't swap its own files (iOS keeps GAME_PLATFORM_MACOSX, so the code would be active).
+if(DEFINED ENV{GITHUB_ACTIONS} AND NOT IOS)
     set(updater_default ON)
 else()
     set(updater_default OFF)
