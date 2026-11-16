@@ -3057,11 +3057,6 @@ static void __test_fishing_points_reset() {
 }
 ANK_FUNCTION(__test_fishing_points_reset);
 
-static void __test_water_cache_river_tiles() {
-    map_water_cache_river_tiles();
-}
-ANK_FUNCTION(__test_water_cache_river_tiles);
-
 // Pack (x << 16) | y for a land tile where is_herd_spawn_accessible(ftype) holds; -1 if none.
 static int __test_find_accessible_herd_tile(int ftype) {
     if (ftype <= FIGURE_NONE || ftype >= FIGURE_MAX) {
@@ -3201,6 +3196,43 @@ static void __test_transport_ships_requested_set(int value) {
     g_city.buildings.transport_ships_requested = (int8_t)value;
 }
 ANK_FUNCTION_1(__test_transport_ships_requested_set);
+
+static int __test_fishing_boats_requested() {
+    return g_city.buildings.fishing_boats_requested;
+}
+ANK_FUNCTION(__test_fishing_boats_requested);
+
+// Put a shipwright on an order: what it builds (FIGURE_FISHING_BOAT, FIGURE_TRANSPORT_SHIP, ...) and its progress.
+static void __test_shipyard_set_order(int bid, int process_type, int progress) {
+    building* b = building_get(bid);
+    auto* shipyard = (b && b->is_valid()) ? b->dcast_shipyard() : nullptr;
+    if (!shipyard) {
+        return;
+    }
+    shipyard->runtime_data().process_type = (e_figure_type)process_type;
+    b->progress = (uint16_t)progress;
+}
+ANK_FUNCTION_3(__test_shipyard_set_order);
+
+// The wharf's water access point (where its boats dock), packed x * 1000 + y; -1 none.
+static int __test_wharf_water_access(int bid) {
+    building* b = building_get(bid);
+    auto* wharf = (b && b->is_valid()) ? b->dcast_wharf() : nullptr;
+    if (!wharf) {
+        return -1;
+    }
+    tile2i p = wharf->get_water_access_tiles().point_a;
+    return p.valid() ? p.x() * 1000 + p.y() : -1;
+}
+ANK_FUNCTION_1(__test_wharf_water_access);
+
+static void __test_figure_set_destination_tile(int fid, int x, int y) {
+    figure* f = figure_get(fid);
+    if (f && f->is_valid()) {
+        f->destination_tile = tile2i(x, y);
+    }
+}
+ANK_FUNCTION_3(__test_figure_set_destination_tile);
 
 static void __test_warship_wharf_spawn_figure(int bid) {
     building *b = building_get(bid);

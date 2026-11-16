@@ -46,7 +46,7 @@ function run_test() {
             __test_make_deep_water(lx, ly)
         }
     }
-    __test_water_cache_river_tiles()
+    __map_water_cache_river_tiles()
     __test_map_routing_update_water()
 
     var spot = t348_spot_by_shore()

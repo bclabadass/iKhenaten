@@ -817,19 +817,21 @@ tile2i figure_transport_ship::home_berth_tile() const {
         return tile2i::invalid;
     }
 
-    // OG ship_update_dock berth: map_water_tile_next_to(home.x/y, size).
-    tile2i next = tile2i::invalid;
-    if (map_water_tile_next_to(b->tile, b->size, next) && next.valid()) {
-        return next;
-    }
-
-    // Fallback: orientation access point (wharf layout).
+    // The berth is the wharf's water access point, where ships sail to dock
+    // (map_water_get_wharf_for_new_transport_ship, finish_ship_repair). The first water tile beside the wharf (OG
+    // ship_update_dock's map_water_tile_next_to) is often another tile: a docked ship then gave up the wharf's slot,
+    // and the wharf kept ordering more ships.
     building *mutable_b = building_get(b->id);
     if (auto *wharf = mutable_b ? mutable_b->dcast_transport_wharf() : nullptr) {
         tile2i berth = wharf->get_water_access_tiles().point_a;
         if (berth.valid()) {
             return berth;
         }
+    }
+
+    tile2i next = tile2i::invalid;
+    if (map_water_tile_next_to(b->tile, b->size, next) && next.valid()) {
+        return next;
     }
     return tile2i::invalid;
 }

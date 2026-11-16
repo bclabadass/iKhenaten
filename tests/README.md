@@ -356,10 +356,13 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_routing_citizen_value(x, y)` | int | The tile's value in the citizens' land routing grid as last computed (4 clear land, 2 passable, 0 road, -1 blocked) |
 | `__test_scenario_fishing_point(index)` | int | Fishing spot `index` packed as `x * 1000 + y`, -1 when unset |
 | `__test_fishing_points_reset()` | — | Re-roll the fishing spots as after a flood |
-| `__test_water_cache_river_tiles()` | — | Rebuild the river tile cache (after test code adds water) |
 | `__test_boat_routing_value(x, y)` | int | The tile in the boats' water routing grid: 0 open water, negative blocked (shore, map edge, bridge) |
 | `__test_boat_water_distance(x1, y1, x2, y2)` | int | Boat routing distance over water between two tiles; 0 or less when a boat can't get there |
 | `__test_fishing_boat_alternative_tile(fid)` | int | Where a fishing boat at a taken fishing spot would move, packed `x * 1000 + y`; -1 none |
+| `__test_fishing_boats_requested()` | int | Fishing boats the wharves are asking the shipwrights for |
+| `__test_shipyard_set_order(bid, figure_type, progress)` | — | Put a shipwright on an order (`FIGURE_FISHING_BOAT`, `FIGURE_TRANSPORT_SHIP`, …) with this much progress |
+| `__test_wharf_water_access(bid)` | int | The wharf's water access point, where its boats dock, packed `x * 1000 + y`; -1 none |
+| `__test_figure_set_destination_tile(fid, x, y)` | — | Set a figure's destination tile |
 | `__test_js_hotreload_handlers_stack_ok(n)` | boolean | Re-run `js_register_game_handlers` `n` times; true if MuJS stack depth unchanged (HR1) |
 | `__test_js_hotreload_file_stack_ok(path, n)` | boolean | `js_vm_reload_file` + `js_vm_sync` `n` times; true if stack depth unchanged (HR1) |
 | `__test_trader_capacity(fid)` | int | Caravan runtime / ship effective max capacity (TC*) |

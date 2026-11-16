@@ -4,12 +4,14 @@ BUILDING_RUNTIME_DATA_IMPL(building_shipyard)
 #include "building/building.h"
 #include "building/building_warship_wharf.h"
 #include "building/building_transport_wharf.h"
+#include "building/building_fishing_wharf.h"
 #include "figuretype/figure_fishing_boat.h"
 #include "figuretype/figure_war_ship.h"
 #include "figuretype/figure_transport_ship.h"
 #include "city/object_info.h"
 #include "city/buildings.h"
 #include "city/city.h"
+#include "city/city_figures.h"
 #include "core/calc.h"
 #include "core/svector.h"
 #include "game/resource.h"
@@ -101,6 +103,24 @@ void finish_ship_repair(figure *f) {
 
 bool figure_alive_for_repair(figure *f) {
     return f && f->is_valid() && f->is_alive() && !f->is_dead();
+}
+
+// Fishing wharves still waiting for a boat, less the new boats already waiting at a shipwright to claim one.
+int fishing_boats_still_needed() {
+    int needed = 0;
+    buildings_valid_do([&](building& b) {
+        auto* wharf = b.dcast_fishing_wharf();
+        if (wharf && wharf->num_workers() > 0 && b.has_open_water_access
+            && !wharf->get_figure(BUILDING_SLOT_BOAT)->is_valid()) {
+            needed++;
+        }
+    });
+    figure_valid_do([&](figure& f) {
+        if (f.is_alive() && f.type == FIGURE_FISHING_BOAT && f.action_state == ACTION_0_FISHING_BOAT_CREATED) {
+            needed--;
+        }
+    });
+    return needed;
 }
 
 } // namespace
@@ -279,12 +299,17 @@ void building_shipyard::spawn_figure() {
     }
     common_spawn_labor_seeker(current_params().min_houses_coverage);
 
-    if (has_figure_of_type(BUILDING_SLOT_BOAT, FIGURE_FISHING_BOAT)) {
+    auto& d = runtime_data();
+    if (d.reparing || d.process_type == FIGURE_NONE) {
         return;
     }
 
-    auto &d = runtime_data();
-    if (d.reparing || d.process_type == FIGURE_NONE) {
+    // Every wharf got a boat while this one was built: drop it rather than launch a boat with no wharf, which sat
+    // by the shipwright for good and kept it from launching anything else.
+    const int fishing_cost = current_params().fishingboat_progress_cost;
+    if (d.process_type == FIGURE_FISHING_BOAT && base.progress >= fishing_cost && fishing_boats_still_needed() <= 0) {
+        base.progress = 0;
+        d.process_type = FIGURE_NONE;
         return;
     }
 
@@ -332,6 +357,10 @@ void building_shipyard::spawn_figure() {
         break;
 
     case FIGURE_FISHING_BOAT:
+        // A new fishing boat waits here until it claims a wharf; only the next fishing boat waits for it.
+        if (has_figure_of_type(BUILDING_SLOT_BOAT, FIGURE_FISHING_BOAT)) {
+            break;
+        }
         if ((params.fishingboat_progress_cost > 0) && base.progress >= params.fishingboat_progress_cost) {
             figure *f = figure_create(FIGURE_FISHING_BOAT, boat_tile, DIR_0_TOP_RIGHT);
             f->action_state = ACTION_0_FISHING_BOAT_CREATED;
