@@ -1,28 +1,35 @@
 log_info("akhenaten: mission 20 djedu started")
 
-// Empire / requests aligned with original campaign scenario 20 (2026-07-26 dump).
-// Empire id=19. Enemy ENEMY_5_HYKSOS. Gods: Osiris, Ra, Bast.
-// Funds Normal 7500 / loan 2500 / debt 20. Rank 7.
-// Win: pop 4500 / culture 45 / prosperity 40 / monuments 13 / kingdom 50 / housing 10.
-// Monuments goal 13 (pak; Sun Temple weight 4). Burial empty.
-// Trade: On(1 sea) Dunqul(3). Display Iunet(2) Saqqara(4) Dahshur(5) Abedju(6). Men-nefer stub 19.
-// Triage: SKIP empty map_obj idx=12; SKIP orphan route 25.
-// Events: oil×500 ok→KR+8→gamemeat×5 ladder (i=5…11);
-// fish×6 ladder i=12…17 (NEW_TRADE Byblos→demand/price meat; refuse→gamemeat×5 re-arm);
-// fish×7 ladder i=21…27 (NEW_TRADE Dahshur→demand/price beer→price barley; refuse→timber×12 re-arm);
-// timber×10 ladder i=28…33 (NEW_TRADE Dahshur→demand/price timber; refuse→linen×10 re-arm);
-// fish×12 i=34…37+46 chain_only (entry: water i=45 ok / KR i=46); ok→Dahshur→demand timber×2→price i=31 shared;
-// timber×15 recurring i=18…20 (ok→KR+1→gift sandstone×13; refuse/late→shared KR−6 i=2);
-// linen×9 recurring i=38…40 idle-gated (ok→KR+7; refuse→land trade; late→shared KR−6);
-// favour i=41…44: Pharaoh 25→25→25→45 (attack=RANDOM);
-// wage i=4 separate recurring.
-// Gamemeat triage: i=9 NEW_TRADE pak city=7 (Djedu=ours) → remap Dunqul Oasis.
-// i=7 LOST_TRADE pak city=6 Dahshur. Fish i=13 NEW_TRADE pak city=5 Byblos.
+// Mission 20 — Djedu (Abusir), "The Temple of the Sun". Rank 7 (Nomarch).
 //
-// Tag_id scheme:
-//   1000 + i               chain-only leaves / chain requests
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring calendar roots
+// Goals:     population 4500, culture 45, prosperity 40, monuments 13, kingdom 50, housing level 10.
+// Start:     funds 7500, rescue loan 2500, debt interest 20% (normal difficulty).
+// Gods:      Osiris, Ra, Bast.
+// Monuments: Sun Temple.
+// Trade:     nothing open at start; can open — On (by sea), Dunqul Oasis; opened by events — Dunqul
+//            Oasis, Dahshur, Byblos (see the timeline); display only — Iunet, Saqqara, Abedju, Bahariya
+//            Oasis, Behdet, Buhen, Henen-nesw, Kharga Oasis, Men-nefer, Nekhen.
+// Enemies:   no raids; Pharaoh's army (25, then 25, 25 and 45) if the kingdom rating falls to 0.
+//            The scenario enemy is set to Hyksos, but no Hyksos army is sent.
+// Timeline:  y2m0 Pharaoh asks for 500 oil (delivered: the game meat ask below comes at once);
+//            y4m0 request 5 game meat (refused: Dahshur loses its route; refused or late: 13 game meat,
+//            which opens Dunqul Oasis and then asks for 8 more); y4m3 request 7 fish (delivered:
+//            Dahshur route opens, beer and barley get dearer; otherwise 12 timber instead); y5m4
+//            request 10 timber (delivered: Dahshur route opens, timber in demand; otherwise 10 linen
+//            instead); y6m1 request 6 fish (delivered: Byblos route opens, meat in demand; otherwise
+//            5 game meat instead); every m8 from y10 wages rise; y16m4 contaminated water, followed by
+//            a request for 12 fish (delivered: Dahshur route opens); every m6 from y31 request 9 linen
+//            (refused: land trade trouble; not while the last one is open); every m2 from y43 request
+//            15 timber (delivered: gift of 13 sandstone). A failed fallback ask costs kingdom rating
+//            and is asked again.
+//
+// Notes for developers:
+// - The original's Dunqul route event names Djedu itself; it is pointed at Dunqul Oasis.
+// - Dahshur and Byblos have no goods in the original, so opening their routes adds no trade; Byblos
+//   gets a stub route (it has none in the original) so the event has a route to open.
+// - tag_id: 1000 + i chained events and requests, 2000 + i calendar events, 3000 + i*100 + year yearly
+//   events, 7000 + i Pharaoh's army (i = event index in the original scenario, also quoted as "pak i="
+//   in comments below).
 
 mission20 { // Djedu (Abusir) — The Temple of the Sun
 	map_file : "data/maps/m_020_djedu.map"
@@ -60,7 +67,6 @@ mission20 { // Djedu (Abusir) — The Temple of the Sun
 	initial_funds [15000, 10000, 7500, 5000, 4000]
 	rescue_loans [5000, 3300, 2500, 1700, 1300]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -119,6 +125,69 @@ mission20 { // Djedu (Abusir) — The Temple of the Sun
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=41
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 25 }
+			months_initial : 9
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7041
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=42
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 25 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7042
+			on_completed_action : 2
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=43
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 25 }
+			months_initial : 0
+			location_fields [ 3, 3, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7043
+			on_completed_action : 3
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=44
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 45 }
+			months_initial : 0
+			location_fields [ 4, 4, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7044
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
 cities [
@@ -141,8 +210,6 @@ cities [
 			cost_to_open : 1300
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GAMEMEAT, RESOURCE_GEMS, RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_SANDSTONE ]
 			buys [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_REEDS, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -168,8 +235,6 @@ cities [
 			cost_to_open : 300
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_MEAT, RESOURCE_CLAY, RESOURCE_REEDS, RESOURCE_LIMESTONE ]
 			buys [ RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_GRANITE ]
 			route_limits [
@@ -218,8 +283,6 @@ cities [
 			is_sea_trade : false
 			trade : false
 			type : EMPIRE_CITY_EGYPTIAN
-			max_traders : 1
-			trade_limits : default_trade_limits
 		}
 
 		{
@@ -271,8 +334,6 @@ cities [
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_EGYPTIAN
-			max_traders : 1
-			trade_limits : default_trade_limits
 		}
 
 		{
@@ -435,13 +496,6 @@ cities [
 		linen_recurring_was_busy : false
 		linen_recurring_idle_since_abs : -1
 
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_wave3_done : false
-		pharaoh_favour_wave4_done : false
-		pharaoh_favour_wave2_enemies_seen : false
-		pharaoh_favour_wave3_enemies_seen : false
-		pharaoh_favour_wave4_enemies_seen : false
 		start_message_shown : false
 	}
 }
@@ -841,72 +895,4 @@ function mission20_requests_and_economy(ev) {
 		mission20_fire_request(3000 + 38 * 100 + ev.years_since_start,
 			RESOURCE_LINEN, 9, 6, 1039, 1040, 1002, 0, 0)
 	}
-}
-
-function mission20_favour_wave(size, invasion_id) {
-	log_info("akhenaten: mission 20 favour wave size=" + size + " kr=" + city.rating_kingdom)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	})
-}
-
-// pak i=41→42→43→44: favour Pharaoh 25→25→25→45 (helper only supports two waves).
-[es=event_advance_month, mission=mission20]
-function mission20_pharaoh_favour_invasion(ev) {
-	if (mission.pharaoh_favour_wave3_done && !mission.pharaoh_favour_wave4_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_wave4_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_wave4_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_wave4_done = true
-		mission20_favour_wave(45, 28)
-		return
-	}
-
-	if (mission.pharaoh_favour_wave2_done && !mission.pharaoh_favour_wave3_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_wave3_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_wave3_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_wave3_done = true
-		mission20_favour_wave(25, 27)
-		return
-	}
-
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_wave2_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_wave2_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_wave2_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_wave2_done = true
-		mission20_favour_wave(25, 26)
-		return
-	}
-
-	if (mission.pharaoh_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	mission20_favour_wave(25, 25)
 }

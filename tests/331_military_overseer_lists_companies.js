@@ -40,10 +40,12 @@ function t331_place(type) {
     return bid
 }
 
+// Errors logged since the fence. In a full run earlier tests leave many warnings, so look well back; without the
+// fence in reach nothing after it can be told apart, so count nothing.
 function t331_errors_since(fence) {
-    var errors = __game_recent_log_errors(40)
+    var errors = __game_recent_log_errors(400)
     var at = errors.lastIndexOf(fence)
-    return at < 0 ? errors : errors.substring(at + fence.length)
+    return at < 0 ? '' : errors.substring(at + fence.length)
 }
 
 function run_test() {

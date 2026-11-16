@@ -24,11 +24,11 @@ batalion_info_window {
         morale_lb     : text({ pos[100, 120], text:"${138.36}", font: FONT_NORMAL_BLACK_ON_LIGHT }),
         morale_num    : text({ pos[290, 120], font: FONT_NORMAL_BLACK_ON_LIGHT }),
 
-        formation_1   : image_button({pos[86 * 0 + 16, 174], pack:PACK_UNLOADED, id:34, offset:0, offset_pressed:0, offset_focused:0, border:true }),
-        formation_2   : image_button({pos[86 * 1 + 16, 174], pack:PACK_UNLOADED, id:34, offset:1, offset_pressed:0, offset_focused:0, border:true }),
-        formation_3   : image_button({pos[86 * 2 + 16, 174], pack:PACK_UNLOADED, id:34, offset:2, offset_pressed:0, offset_focused:0, border:true }),
-        formation_4   : image_button({pos[86 * 3 + 16, 174], pack:PACK_UNLOADED, id:34, offset:3, offset_pressed:0, offset_focused:0, border:true }),
-        return_to_fort: image_button({pos[86 * 5 + 16, 174], pack:PACK_UNLOADED, id:34, offset:4, offset_pressed:0, offset_focused:0, border:true }),
+        formation_1   : image_button({size:[81, 80], pos[86 * 0 + 16, 174], pack:PACK_UNLOADED, id:34, offset:0, offset_pressed:0, offset_focused:0, border:true }),
+        formation_2   : image_button({size:[81, 80], pos[86 * 1 + 16, 174], pack:PACK_UNLOADED, id:34, offset:1, offset_pressed:0, offset_focused:0, border:true }),
+        formation_3   : image_button({size:[81, 80], pos[86 * 2 + 16, 174], pack:PACK_UNLOADED, id:34, offset:2, offset_pressed:0, offset_focused:0, border:true }),
+        formation_4   : image_button({size:[81, 80], pos[86 * 3 + 16, 174], pack:PACK_UNLOADED, id:34, offset:3, offset_pressed:0, offset_focused:0, border:true }),
+        return_to_fort: image_button({size:[81, 80], pos[86 * 5 + 16, 174], pack:PACK_UNLOADED, id:34, offset:4, offset_pressed:0, offset_focused:0, border:true }),
 
         inner_panel   : inner_panel({pos[16, 260], size[32, 5],
                                             ui : {

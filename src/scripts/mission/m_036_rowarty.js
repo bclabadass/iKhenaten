@@ -1,14 +1,35 @@
 log_info("akhenaten: mission 36 rowarty started")
 
-// Empire id=35. Enemy ASSYRIAN (pak; briefing Sea People = flavor). Gods Osiris/Ptah/Seth×2.
-// Funds 10000/5000/20. Rank 10. Win pop 7000 / C65 / Pr50 / M29 / K80 / house 10.
-// Monuments 26/4/3 = Mausoleum skin1 + Medium + Small Mudbrick (W=5+8+4 ≥29).
-// Briefing «pair of mausoleums + brick» = flavor; keep as-pak (Hetep pattern).
-// Burial pottery×12 beer×12 linen×8 luxury×4. next_mission -1 (no Hetep/Cleo).
-// SKIP map_obj idx=12. Routes 1–8 copy. Mycenae route 5.
-// Invasions: events[] no-op -> JS calendar + favour egypt x30 x3 + enemy x30 (i=60); sea loc>=9 via_sea.
-// Henna i=6 ONLY_VIA (raid wipe unlock + calendar y8m3). Troops fail→i=56 via request_cleared.
-// Dump 2026-08-01. events[] engine + JS invasion poll.
+// Mission 36 — Rowarty (Avaris), "The Sea People". Rank 10 (Pharaoh).
+//
+// Goals:     population 7000, culture 65, prosperity 50, monuments 29, kingdom 80, housing level 10.
+// Start:     funds 10000, rescue loan 5000, debt interest 20% (normal difficulty).
+// Gods:      Osiris, Ptah, Seth (patron).
+// Monuments: mausoleum, medium mudbrick pyramid, small mudbrick pyramid (burial goods: 12 pottery,
+//            12 beer, 8 linen, 4 luxury goods).
+// Trade:     nothing open at start; can open — Abu (by sea), Byblos (by sea), Itjtawy; route-status
+//            events of the request chains can change routes; display only — Bahariya Oasis, Dakhla
+//            Oasis, Farafra Oasis, Gaza, Heh, Iken, Kerma, Men-nefer, Mycenae, Qadesh, Tyre.
+// Enemies:   Assyrian raids by sea (the briefing's Sea People); favour armies of 30 in four waves
+//            (Egyptian, Egyptian, scenario enemy, Egyptian) if the kingdom rating falls to 0.
+// Timeline:  raids by sea (announced, then attacking): 38 with 5 warships y2m8, y3m1 (as it attacks:
+//            request 42 henna, which otherwise comes at y8m3); 20 with 2 y3m1, y3m7; 35 with 6 y5m8,
+//            y6m2; 44 with 8 y7m1, y7m7; 56 with 6 y45m10, y46m4, again every time its army is gone. Requests: y6m9 10 grain; y10m11 93 henna; y22m1 80 troops; y34m7
+//            19 oil; recurring from y23m5 6 grain, y24m9 6 grain, y39m2 6 timber, y42m4 6 weapons,
+//            y52m4 70 troops (not sent: raid 72 by sea with 12 warships announced 9 months later, attacking
+//            6 months after that). The henna, oil and troops
+//            requests lead into chained requests whose outcomes conquer cities, open or lose routes,
+//            bring gifts (sandstone, limestone, granite, oil) or move the kingdom rating.
+//
+// Notes for developers:
+// - events[] holds the original event table and is run by the engine. Its invasion entries are
+//   no-ops except the favour armies, so the timed raids and the troops-70 raid follow the OG invasion
+//   cycle from JS (missions.js mission_raids_month: warnings from the event's month, the attack
+//   months_initial months later, the point rolled from the event's location_fields: 1..8 land points,
+//   9..16 sea points).
+// - The briefing speaks of two mausoleums; the original monument slots are kept (mausoleum, medium
+//   and small mudbrick pyramids).
+// - next_mission is -1: the campaign ends here.
 
 mission36 { // Rowarty (Avaris) — The Sea People
 	map_file : "data/maps/m_036_rowarty.map"
@@ -22,7 +43,6 @@ mission36 { // Rowarty (Avaris) — The Sea People
 	initial_funds [20000, 13300, 10000, 6700, 5300]
 	rescue_loans [10000, 6700, 5000, 3400, 2700]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		// pak animals=0; enable so prey update after create_herds (hunting lodge).
@@ -64,7 +84,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 		BUILDING_SCRIBAL_SCHOOL, BUILDING_LIBRARY, BUILDING_ZOO,
 	]
 
-	// Soft goal 29; engine weights Mausoleum+Med+Small mudbrick W=5+8+4 → rating ≥29.
+	// Goal 29 = pak: Mausoleum+Med+Small mudbrick (5+12+4) → 29; burial goods all below one divisor.
 	win_criteria {
 		population    {enabled : true, goal : 7000 }
 		culture       {enabled : true, goal : 65 }
@@ -114,6 +134,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			amount { value : 20 }
 			months_initial : 6
 			location_fields [ 11, -1, 9, 13 ]
+			warships : 2
 			event_trigger_type : EVENT_TRIGGER_ONCE
 			tag_id : 0
 			on_completed_action : -1
@@ -132,6 +153,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			amount { value : 35 }
 			months_initial : 6
 			location_fields [ 11, -1, 9, 15 ]
+			warships : 6
 			event_trigger_type : EVENT_TRIGGER_ONCE
 			tag_id : 1
 			on_completed_action : -1
@@ -201,6 +223,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			amount { value : 44 }
 			months_initial : 6
 			location_fields [ 10, -1, 9, 13 ]
+			warships : 8
 			event_trigger_type : EVENT_TRIGGER_ONCE
 			tag_id : 5
 			on_completed_action : -1
@@ -253,6 +276,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			amount { value : 38 }
 			months_initial : 5
 			location_fields [ 9, -1, 9, 13 ]
+			warships : 5
 			event_trigger_type : EVENT_TRIGGER_ONCE
 			tag_id : 8
 			on_completed_action : 6
@@ -305,6 +329,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			amount { value : 56 }
 			months_initial : 6
 			location_fields [ 12, -1, 9, 13 ]
+			warships : 6
 			event_trigger_type : EVENT_TRIGGER_RECURRING
 			tag_id : 11
 			on_completed_action : -1
@@ -1071,6 +1096,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			amount { value : 72 }
 			months_initial : 6
 			location_fields [ 10, -1, 9, 16 ]
+			warships : 12
 			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
 			tag_id : 56
 			on_completed_action : -1
@@ -1194,8 +1220,6 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			cost_to_open : 1100
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_STRAW, RESOURCE_FLAX, RESOURCE_LINEN, RESOURCE_GEMS, RESOURCE_GRANITE, RESOURCE_SANDSTONE ]
 			buys [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_REEDS, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -1229,8 +1253,6 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			cost_to_open : 550
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -1289,8 +1311,6 @@ mission36 { // Rowarty (Avaris) — The Sea People
 			cost_to_open : 175
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_MEAT, RESOURCE_POTTERY, RESOURCE_LINEN, RESOURCE_PAPYRUS, RESOURCE_LIMESTONE ]
 			buys [ RESOURCE_BEER ]
 			route_limits [
@@ -1473,89 +1493,10 @@ mission36 { // Rowarty (Avaris) — The Sea People
 	]
 
 	vars {
+		raids : ""
 		start_message_shown : false
-		inv0_done : false
-		inv1_done : false
-		inv5_done : false
-		inv8_done : false
-		inv11_last_year : -1
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_wave3_done : false
-		pharaoh_favour_wave4_done : false
-		pharaoh_favour_enemies_seen : false
-		inv56_done : false
 		henna6_fired : false
 	}
-}
-
-// pak location_fields = 1-based invasion point index (land 1–8, sea 9–16).
-function mission36_land(i) {
-	var pts = [[121,112],[180,82],[158,71],[132,50],[117,30],[99,6],[56,117],[151,153]]
-	if (i < 0 || i >= pts.length) { return [-1, -1] }
-	return pts[i]
-}
-
-function mission36_sea(i) {
-	var pts = [[215,3],[155,33],[177,44],[204,65],[218,85],[209,109],[166,6],[40,183]]
-	if (i < 0 || i >= pts.length) { return [-1, -1] }
-	return pts[i]
-}
-
-function mission36_attack_target(attack) {
-	if (attack == 0) { return EVENT_ATTACK_TARGET_FOOD }
-	if (attack == 1) { return EVENT_ATTACK_TARGET_VAULTS }
-	if (attack == 2) { return EVENT_ATTACK_TARGET_BEST_BUILDINGS }
-	if (attack == 3) { return EVENT_ATTACK_TARGET_TROOPS }
-	return EVENT_ATTACK_TARGET_RANDOM
-}
-
-function mission36_enemy_raid(invasion_id, size, loc, attack, on_completed_tag) {
-	var via_sea = loc >= 9
-	var opts = {
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_1_ASSYRIAN,
-		size: size,
-		invasion_id: invasion_id,
-		want_destroy_buildings: size,
-		invasion_attack_target: mission36_attack_target(attack === undefined ? 4 : attack)
-	}
-	if (via_sea) {
-		opts.via_sea = 1
-		opts.sea_point = loc - 9
-		var sea = mission36_sea(loc - 9)
-		opts.tilex = sea[0]
-		opts.tiley = sea[1]
-	} else {
-		var land = mission36_land(loc - 1)
-		opts.tilex = land[0]
-		opts.tiley = land[1]
-	}
-	if (on_completed_tag !== undefined && on_completed_tag > 0) {
-		opts.on_completed_tag = on_completed_tag
-	}
-	log_info("akhenaten: mission 36 raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " sea=" + via_sea)
-	__image_request_pak(PACK_ENEMY_ASSYRIAN)
-	return city.start_foreign_army_invasion(opts)
-}
-
-function mission36_favour_wave(size, invasion_id, loc) {
-	var land = mission36_land(loc - 1)
-	log_info("akhenaten: mission 36 favour wave size=" + size + " kr=" + city.rating_kingdom
-		+ " id=" + invasion_id + " loc=" + loc)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: land[0],
-		tiley: land[1],
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	})
 }
 
 [es=event_mission_start, mission=mission36]
@@ -1577,100 +1518,47 @@ function mission36_on_start(ev) {
 	}
 }
 
-// Calendar invasions (events[] EVENT_TYPE_INVASION is engine no-op — B2).
-[es=event_advance_month, mission=mission36]
-function mission36_calendar_invasions(ev) {
-	// pak i=8 y2m8 enemy×38 loc9 sea → ok henna×42 (i=6, ONLY_VIA)
-	if (!mission.inv8_done && ev.years_since_start == 2 && ev.month == 8) {
-		mission.inv8_done = true
-		mission36_enemy_raid(8, 38, 9, 1, 6)
+// pak i=0, 1, 5, 8 (chains the henna request i=6 as it attacks), 11 (recurring), 56 (after troops-70 fails).
+function mission36_raid_list() {
+	var A = ENEMY_1_ASSYRIAN
+	var E = EVENT_INVADER_ENEMY
+	return [
+		{ key: "i0", invasion_id: 0, year: 3, month: 1, invader: E, enemy: A, amount: 20, months_initial: 6,
+			location: [11, -1, 9, 13], warships: 2, attack_target: EVENT_ATTACK_TARGET_FOOD },
+		{ key: "i1", invasion_id: 1, year: 5, month: 8, invader: E, enemy: A, amount: 35, months_initial: 6,
+			location: [11, -1, 9, 15], warships: 6, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i5", invasion_id: 5, year: 7, month: 1, invader: E, enemy: A, amount: 44, months_initial: 6,
+			location: [10, -1, 9, 13], warships: 8, attack_target: EVENT_ATTACK_TARGET_FOOD },
+		{ key: "i8", invasion_id: 8, year: 2, month: 8, invader: E, enemy: A, amount: 38, months_initial: 5,
+			location: [9, -1, 9, 13], warships: 5, attack_target: EVENT_ATTACK_TARGET_VAULTS, on_attack: mission36_raid_i8_chain },
+		{ key: "i11", invasion_id: 11, year: 45, month: 10, invader: E, enemy: A, amount: 56, months_initial: 6,
+			location: [12, -1, 9, 13], warships: 6, attack_target: EVENT_ATTACK_TARGET_RANDOM, recurring: true },
+		{ key: "i56", invasion_id: 56, invader: E, enemy: A, amount: 72, months_initial: 6, location: [10, -1, 9, 16],
+			warships: 12, attack_target: EVENT_ATTACK_TARGET_RANDOM }
+	]
+}
+
+function mission36_raid_i8_chain() {
+	if (!mission.henna6_fired) {
+		mission.henna6_fired = true
+		__city_event_fire_chain(6)
 	}
-	// pak i=6 y8m3 henna×42 if raid wipe did not already unlock it.
+}
+
+[es=event_advance_month, mission=mission36]
+function mission36_raids(ev) {
+	mission_raids_month(mission, mission36, ev, mission36_raid_list())
 	if (!mission.henna6_fired && ev.years_since_start == 8 && ev.month == 3) {
 		mission.henna6_fired = true
 		log_info("akhenaten: mission 36 henna×42 calendar (i=6)")
 		__city_event_fire_chain(6)
 	}
-	// pak i=0 y3m1 enemy×20 loc11 sea
-	if (!mission.inv0_done && ev.years_since_start == 3 && ev.month == 1) {
-		mission.inv0_done = true
-		mission36_enemy_raid(0, 20, 11, 0)
-	}
-	// pak i=1 y5m8 enemy×35 loc11 sea attack random
-	if (!mission.inv1_done && ev.years_since_start == 5 && ev.month == 8) {
-		mission.inv1_done = true
-		mission36_enemy_raid(1, 35, 11, 4)
-	}
-	// pak i=5 y7m1 enemy×44 loc10 sea
-	if (!mission.inv5_done && ev.years_since_start == 7 && ev.month == 1) {
-		mission.inv5_done = true
-		mission36_enemy_raid(5, 44, 10, 0)
-	}
-	// pak i=11 y45m10+ recurring enemy×56 loc12 sea
-	if (ev.years_since_start >= 45 && ev.month == 10
-			&& mission.inv11_last_year != ev.years_since_start) {
-		mission.inv11_last_year = ev.years_since_start
-		mission36_enemy_raid(11, 56, 12, 4)
-	}
 }
 
-// pak i=58→59→60→61: favour egypt×30 loc1 → egypt×30 loc3 → enemy×30 loc5 → egypt×30 loc7.
-[es=event_advance_month, mission=mission36]
-function mission36_pharaoh_favour_invasion(ev) {
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_wave4_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_enemies_seen = false
-		if (!mission.pharaoh_favour_wave2_done) {
-			mission.pharaoh_favour_wave2_done = true
-			mission36_favour_wave(30, 59, 3)
-			return
-		}
-		if (!mission.pharaoh_favour_wave3_done) {
-			mission.pharaoh_favour_wave3_done = true
-			// pak i=60 item=1 enemy (not egypt)
-			mission36_enemy_raid(60, 30, 5, 4)
-			return
-		}
-		mission.pharaoh_favour_wave4_done = true
-		mission36_favour_wave(30, 61, 7)
-		return
-	}
-	if (mission.pharaoh_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	mission.pharaoh_favour_enemies_seen = false
-	log_info("akhenaten: mission 36 favour egypt×30 (i=58)")
-	mission36_favour_wave(30, 58, 1)
-}
-
-// pak i=54 troops×70 refuse/late/defeat → i=56 enemy×72 loc10 sea (events[] invasion no-op).
-// Defeat emits event_request_cleared from fight_distant_battle (fulfilled=0).
+// pak i=54 troops×70 refused, late or lost → i=56, due 9 months on (its time.year).
 [es=event_request_cleared, mission=mission36]
-function mission36_troops70_invasion_proxy(ev) {
-	if (mission.inv56_done) { return }
-	if (ev.tag_id != 54) { return }
-	var outcome = mission_request_outcome(ev)
-	if (outcome == "ok") { return }
-	mission.inv56_done = true
-	log_info("akhenaten: mission 36 troops×70 fail → enemy×72 (i=56)")
-	mission36_enemy_raid(56, 72, 10, 4)
-}
-
-// Mark henna unlocked when invasion wipe fires chain tag 6 (so calendar does not re-fire).
-[es=event_advance_month, mission=mission36]
-function mission36_henna_unlock_watch(ev) {
-	if (mission.henna6_fired) { return }
-	if (mission.inv8_done && city.has_active_request(RESOURCE_HENNA)) {
-		mission.henna6_fired = true
+function mission36_on_request_cleared(ev) {
+	if (ev.tag_id == 54 && mission_request_outcome(ev) != "ok") {
+		mission_raid_schedule(mission, mission36_raid_list(), "i56", 9)
 	}
 }

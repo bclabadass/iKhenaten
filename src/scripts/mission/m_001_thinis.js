@@ -1,5 +1,23 @@
 log_info("akhenaten: mission 1 started")
 
+// Mission 1 — Thinis, "The Dawn of Civilization". Rank 0 (Village Elder). Tutorial.
+//
+// Goals:     housing count 10, housing level 5, plus the tutorial steps: 500 deben of gold delivered, a temple of
+//            Bast, a booth and a juggler school built.
+// Start:     funds 3750, rescue loan 3750 (normal difficulty).
+// Gods:      Bast (unlocked by the tutorial).
+// Monuments: none.
+// Trade:     none (empire map off).
+// Enemies:   none.
+// Timeline:  housing, roads, architect, firehouse, police, bazaar, granary, water supply, gold mine, village
+//            palace and hunting lodge at start; population capped at 150 until a granary is built. 500 deben
+//            of gold delivered this year — temple and shrine of Bast, festival square; first temple of
+//            Bast — booth and juggler school.
+//
+// Notes for developers:
+// - Victory also waits a few days after the last tutorial step (victory_last_action_delay); the win
+//   screen is skipped (hide_won_screen).
+
 mission1 {
 	map_file : "data/maps/m_001_thinis.map"
 
@@ -110,7 +128,7 @@ function mission1_check_gold_mined(ev) {
 
 [event=event_migration_update, mission=mission1]
 function mission1_handle_population_cap(ev) {
-    var granary_built = city.count_active_buildings(BUILDING_GRANARY)
+    var granary_built = city.count_total_buildings(BUILDING_GRANARY)
     var max_pop = (granary_built > 0) ? 0 : mission.nogranary_population_cap
 
     migration.set_population_cap("no_granary_population_cap", max_pop)
@@ -133,7 +151,7 @@ function mission1_on_build_temple(ev) {
         return
     }
 
-    var temples_count = city.count_active_buildings(BUILDING_TEMPLE_BAST)
+    var temples_count = city.count_total_buildings(BUILDING_TEMPLE_BAST)
     if (temples_count == 0) {
         return
     }
@@ -155,7 +173,7 @@ function mission1_on_build_booth(ev) {
         return
     }
 
-    var booth_count = city.count_active_buildings(BUILDING_BOOTH)
+    var booth_count = city.count_total_buildings(BUILDING_BOOTH)
     if (booth_count == 0) {
         return
     }
@@ -170,7 +188,7 @@ function mission1_on_build_juggler_school(ev) {
 		return
 	}
 
-	var juggler_school_count = city.count_active_buildings(BUILDING_JUGGLER_SCHOOL)
+	var juggler_school_count = city.count_total_buildings(BUILDING_JUGGLER_SCHOOL)
 	if (juggler_school_count == 0) {
 		return
 	}

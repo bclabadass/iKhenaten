@@ -45,9 +45,14 @@ public:
     void follow_closely(figure_id fid, figure_id leader_id, int climb_step_n, int distance);
     figure_id find_train_leader(figure_id fid, int *position) const;
     void train_follow(figure_id fid, int is_sled);
-    void spawn_sled_train(figure_id laborer_fid, building *monument);
+    void spawn_sled_train(figure_id laborer_fid);
+    void spawn_single_sled(figure_id laborer_fid);
+    figure* create_sled(figure* laborer, figure_id front_id);
+    void drop_train(figure_id member_fid);
 
     building_id find_mason_waiting_for_block(building *head, int clear_partner);
+    void sort_frontier(building_id* parts, int count) const;
+    void wake_pair_mason(figure_id mason_fid);
     building_id next_on_ring(building_id part_id) const;
 
     pyramid_figure_work_t *work_data(figure *f) const;
@@ -70,6 +75,7 @@ private:
     int rotated_tile_kind(building *part) const;
     void neighbour_part_tile(int grid_offset, int rotation, building *head, int *x, int *y) const;
     const pyramid_paired_parts *pair_table_for(building *head, int &count) const;
+    building_id part_pair(building* head, building_id part_id) const;
     building_id frontier_pair_part(building_id part_id, const svector<building_id, PYRAMID_PARTS_CAPACITY> &frontier,
         uint8_t *is_first) const;
     int pair_waiting_mason(building_id part_id, const svector<building_id, PYRAMID_PARTS_CAPACITY> &frontier) const;
@@ -127,8 +133,11 @@ inline figure_id pyramid_figure_find_train_leader(figure_id fid, int *position) 
 inline void pyramid_figure_train_follow(figure_id fid, int is_sled) {
     g_monument_pyramid_figure.train_follow(fid, is_sled);
 }
-inline void pyramid_figure_spawn_sled_train(figure_id laborer_fid, building *monument) {
-    g_monument_pyramid_figure.spawn_sled_train(laborer_fid, monument);
+inline void pyramid_figure_spawn_sled_train(figure_id laborer_fid) {
+    g_monument_pyramid_figure.spawn_sled_train(laborer_fid);
+}
+inline void pyramid_figure_spawn_single_sled(figure_id laborer_fid) {
+    g_monument_pyramid_figure.spawn_single_sled(laborer_fid);
 }
 inline pyramid_figure_work_t *pyramid_figure_work_data(figure *f) {
     return g_monument_pyramid_figure.work_data(f);

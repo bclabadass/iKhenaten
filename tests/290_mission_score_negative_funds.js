@@ -7,12 +7,27 @@
 //   [test-marker] positive_funds_score
 //   [test-marker] positive_record_keeps_stored_score
 
+// The mission record's score (player_record::calc_score); the win screen's own score is now the original's
+// (months and monuments), so the record's formula lives here.
+function t290_calc_score(funds, population, culture, prosperity, kingdom, months, difficulty) {
+    if (months < 1) {
+        months = 1
+    }
+    var score = (difficulty + 1.0) / 3.0
+        * ((funds / (months / 30.0))
+           + population * 0.002 * (culture + prosperity + kingdom))
+    if (score < 0) {
+        score = 0
+    }
+    return score | 0
+}
+
 var T290_FAMILY = 'Integral Tests'
 var T290_SCENARIO = 6
 
 function t290_expected() {
     var s = T290_SCENARIO
-    return mission_won_calc_score(__game_player_scenario_record_final_funds(s),
+    return t290_calc_score(__game_player_scenario_record_final_funds(s),
         __game_player_scenario_record_final_population(s),
         __game_player_scenario_record_rating_culture(s),
         __game_player_scenario_record_rating_prosperity(s),

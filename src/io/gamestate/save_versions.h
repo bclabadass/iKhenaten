@@ -38,6 +38,17 @@
 //  189 akhenaten: sectioned .svx container (chunk layout unchanged)
 //  190 akhenaten: bazaar second_trader_id (OG fancy second market trader)
 //  191 akhenaten: mastaba OG block-engine fields on monument runtime (og_main/og_part)
-constexpr uint32_t latest_save_version = 191;
+//  192 akhenaten: pyramid OG block-engine fields on monument runtime (og_main/og_part)
+//  193 akhenaten: sphinx work spots (work + figure) on each sphinx part runtime
+//  194 akhenaten: bookmarks in the OG layout (int32 grid offset + reserved int32)
+//  195 akhenaten: shipyard saves the ship under repair (repair_fid)
+//  196 akhenaten: compact pyramid/mastaba runtime (resources on the main part only, no ramp draw cache)
+//  197 akhenaten: (unused)
+//  198 akhenaten: "mods" chunk — ids + versions of the mods enabled when the game was saved
+//  199 akhenaten: city_data chunk in the OG city_player layout
+//  200 akhenaten: cloud positions in their own "clouds" chunk; building_list_small bytes 0..63 written as zero
+//  201 akhenaten: caesareum work spots (work + figure) on each of its 9 parts, sled count on the main part
+//  202 akhenaten: royal tombs in the OG part-chain layout (part, stage, work, worker, lamp stock per record)
+constexpr uint32_t latest_save_version = 202;
 // Saves written by the original game (Pharaoh + Cleopatra) are at most this version.
 constexpr uint32_t last_original_save_version = 160;

@@ -223,11 +223,11 @@ int figure_trader::get_closest_storageyard(tile2i tile, empire_city_handle city,
     return min_building->id;
 }
 
-uint8_t original_trader_city(const figure_original_fields &og) {
-    const empire_city *city = g_empire.city(og.empire_city_id);
+uint8_t original_trader_city(const figure_original_fields& og) {
+    const empire_city* city = g_empire.city(og.empire_city_id);
     return (city && city->in_use) ? og.empire_city_id : 0;
 }
 
-uint8_t original_trader_id(const figure_original_fields &og) {
+uint8_t original_trader_id(const figure_original_fields& og) {
     return og.trader_id < g_empire_traders.traders.size() ? og.trader_id : 0;
 }

@@ -200,7 +200,7 @@ int message_manager_t::alloc_message(xstring template_id) {
     current_message_id = id;
 
     city_message &msg = messages[id];
-    memset(&msg, 0, sizeof(city_message));
+    msg = city_message{};
     // Non-event list UI treats unset eventmsg ids as "no eventmsg".
     msg.eventmsg_body_id = -1;
     msg.eventmsg_title_id = -1;
@@ -238,8 +238,8 @@ static void fill_from_event(city_message &msg, const event_ph_t *event, int pare
         msg.req_months_left = event->months_initial;
     }
 
-    if (parent_event_id >= 0) {
-        const event_ph_t *parent_event = g_scenario.events.at(parent_event_id);
+    const event_ph_t* parent_event = parent_event_id >= 0 ? g_scenario.events.at(parent_event_id) : nullptr;
+    if (parent_event) {
         msg.req_resource_past = parent_event->item.value;
         msg.req_amount_past = parent_event->amount.value;
         msg.req_city_past = parent_event->location_fields[0] - 1;
@@ -365,7 +365,9 @@ void city_message_apply_sound_interval(int category) {
     }
 }
 
-void city_message_post_full(bool use_popup, xstring template_id, const event_ph_t *event, int parent_event_id, int title_id, int body_id, int phrase_id, int param1, int param2, e_popup_message_category popup_cat) {
+void city_message_post_full(bool use_popup, xstring template_id, const event_ph_t* event, int parent_event_id,
+  int title_id, int body_id, int phrase_id, int param1, int param2, e_popup_message_category popup_cat,
+  city_message_gift gift) {
     auto& data = g_message_manager;
     int id = data.alloc_message(template_id);
     if (id < 0) {
@@ -380,6 +382,8 @@ void city_message_post_full(bool use_popup, xstring template_id, const event_ph_
     msg.param2 = param2;
     msg.god = GOD_UNKNOWN;
     fill_from_event(msg, event, parent_event_id);
+    msg.delivered_amount = gift.delivered_amount;
+    msg.gift_buttons = gift.buttons;
 
     if (popup_cat == POPUP_MSG_NONE) {
         popup_cat = popup_message_category_for_key(template_id);
@@ -695,8 +699,8 @@ io_buffer* iob_messages = new io_buffer([](io_buffer* iob, size_t version) {
 
         iob->bind(BIND_SIGNATURE_INT16, &msg.eventmsg_phrase_id);
         iob->bind(BIND_SIGNATURE_INT16, &msg.req_city_past); // enum?
-        iob->bind(BIND_SIGNATURE_INT16, &msg.unk_09);        // 00 00
-        iob->bind(BIND_SIGNATURE_UINT8, &msg.unk_10);        // 00 00
+        iob->bind(BIND_SIGNATURE_INT16, &msg.delivered_amount); // OG phrases[EVENT_PHRASE_DELIVERED_AMOUNT]
+        iob->bind(BIND_SIGNATURE_UINT8, &msg.gift_buttons);     // OG phrases[EVENT_PHRASE_BUTTONS], low byte
         iob->bind(BIND_SIGNATURE_UINT8, &msg.hide_img);        // 00 00
 
         iob->bind(BIND_SIGNATURE_INT16, &msg.req_amount_past);

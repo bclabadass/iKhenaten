@@ -1,5 +1,40 @@
 log_info("akhenaten: mission 30 heh started")
 
+// Mission 30 — Heh (Semna), "The Gauntlet". Rank 10 (Pharaoh).
+//
+// Goals:     population 6000, culture 50, prosperity 45, monuments 15, kingdom 60, housing level 10.
+// Start:     funds 5500, no rescue loan, debt interest 20% (normal difficulty).
+// Gods:      Osiris (patron), Ra, Seth.
+// Monuments: mausoleum (burial goods: 16 weapons, 8 pottery, 8 beer, 16 gems).
+// Trade:     nothing open at start; can open — Buhen (by sea), Byblos (by sea), Dakhla Oasis, Pwenet;
+//            opened by events — Men-nefer, Itjtawy (troops delivered), Baki and Sawu (henna delivered);
+//            display only — Iken, Kebet, Menat Khufu, Toshka, Waset.
+// Enemies:   Kushite raids, mostly by sea; Egyptian army (60, then 60 more) if the kingdom rating
+//            falls to 0.
+// Timeline:  y0m7 gems price drops, then request 16 troops (sent: kingdom +2, Men-nefer route opens;
+//            otherwise kingdom -2 and the request repeats); y2m0 timber price drops, then request
+//            24 troops (same pattern, Itjtawy route opens); y3m4 request 27 troops (sent: gift of
+//            32 chickpeas; otherwise kingdom -9); y5m0 timber demand rises; y5m10 timber price rises,
+//            then request 40 henna (sent: Baki is conquered, Baki and Sawu routes open; otherwise
+//            kingdom -5 and the request repeats); y10m6 request 13 chickpeas; y12m9 gift of
+//            32 sandstone.
+//            Kushite raids (announced, then attacking): 16 by sea with 2 warships y6m11, y7m5; 38 by sea
+//            with 6 y8m4, y9m1; 40 by sea with 4 y10m0, y10m9; 40 by land y12m6, y13m3, and as it attacks
+//            20 by sea with 2; 16 by land y14m0, y14m6, again every time its army is gone; 60 by sea with 6
+//            y16m0, y16m9; 40 by land y19m6, y20m6; 24 by land y21m0, y21m3; 72 by land y40m0, y41m0;
+//            72 by sea with 6 y50m7, y51m7; 72 by sea with 7 y60m10, y61m10.
+//
+// Notes for developers:
+// - Raid locations follow OG: 1..8 = land points [80,123] / [112,71] (empty ones wrap round), 9+ = sea
+//   point loc - 9 with the event's warships.
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields; a recurring
+//   raid comes back its year plus the years since start later (OG scenario_events_rearm).
+// - The original gives Itjtawy, Men-nefer, Sawu and Baki no goods; goods are filled in so their
+//   unlocks are playable (Baki sells sandstone, as the briefing says).
+// - tag_id: 1000 + i chained events and requests, 2000 + i calendar events, 7000 + i Egyptian army
+//   (i = event index in the original scenario, "pak i=" in comments below).
+
 mission30 { // Heh (Semna) — The Gauntlet
 	map_file : "data/maps/m_030_heh.map"
 
@@ -36,7 +71,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 	initial_funds [11000, 7300, 5500, 3700, 2900]
 	rescue_loans [0, 0, 0, 0, 0]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -78,7 +112,7 @@ mission30 { // Heh (Semna) — The Gauntlet
 		BUILDING_MAUSOLEUM,
 	]
 
-	// Monuments goal 15 = pak; Mausoleum W=5 → trunc(2.25*5+4.5)=15.
+	// Monuments goal 15 = pak; Mausoleum (5) + burial weapons 16/16 (1) → trunc(6.32·√6+0.5)=15.
 	win_criteria {
 		population    {enabled : true, goal : 6000 }
 		culture       {enabled : true, goal : 50 }
@@ -107,6 +141,39 @@ mission30 { // Heh (Semna) — The Gauntlet
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=35
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 60 }
+			months_initial : 9
+			location_fields [ 4, -1, 4, 5 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7035
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=36
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 60 }
+			months_initial : 0
+			location_fields [ 6, 6, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7036
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	map_background : {pack:PACK_EMPIRE, id:20}
 	hide_pak_cities : true
 	cities [
@@ -129,8 +196,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			cost_to_open : 150
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_BARLEY, RESOURCE_BEER ]
 			buys [ RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_COPPER ]
 			route_limits [
@@ -151,8 +216,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			cost_to_open : 1000
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -171,8 +234,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			cost_to_open : 500
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_BRICKS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_MEAT, RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_PAPYRUS, RESOURCE_GRANITE ]
 			route_limits [
@@ -195,8 +256,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			cost_to_open : 500
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS ]
 			route_limits [
 				{ resource: RESOURCE_LUXURY_GOODS, limit: 1500 }
@@ -224,8 +283,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_EGYPTIAN
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN ]
 			buys [ RESOURCE_CHICKPEAS, RESOURCE_POMEGRANATES, RESOURCE_GEMS, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -260,8 +317,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_EGYPTIAN
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_LETTUCE, RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -297,8 +352,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_EGYPTIAN
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_COPPER ]
 			buys [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_WEAPONS ]
 			route_limits [
@@ -341,8 +394,6 @@ mission30 { // Heh (Semna) — The Gauntlet
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_FOREIGN
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_SANDSTONE ]
 			route_limits [
 				{ resource: RESOURCE_SANDSTONE, limit: 2500 }
@@ -544,6 +595,7 @@ mission30 { // Heh (Semna) — The Gauntlet
 		{ name : "#canaan", pos : [850, 271] }
 	]
 	vars {
+		raids : ""
 		misc_leaves_wired : false
 		troops_i6_leaves_wired : false
 		troops_i1_leaves_wired : false
@@ -555,25 +607,9 @@ mission30 { // Heh (Semna) — The Gauntlet
 		event10_troops_done : false
 		event14_price_done : false
 		event26_sandstone_gift_done : false
-		event18_invasion_done : false
-		event20_invasion_done : false
-		event21_invasion_done : false
-		event22_invasion_done : false
-		event22_enemies_seen : false
-		event23_invasion_done : false
-		event24_invasion_done : false
-		event25_invasion_done : false
-		event27_invasion_done : false
-		event28_invasion_last_year : -1
-		event29_invasion_done : false
-		event30_invasion_done : false
-		event31_invasion_done : false
 		event32_chickpeas_done : false
 		event37_demand_done : false
 
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_enemies_seen : false
 
 		start_message_shown : false
 	}
@@ -665,86 +701,6 @@ function mission30_fire_request(tag, resource, amount, months, ok_tag, refuse_ta
 	}
 	request.event_is_active = true
 	return request
-}
-
-// pak location_fields = 1-based packed (land first, then sea). MAX editor slots 8+.
-// land[0]=[80,123] land[1]=[112,71]; sea[0]=[127,84] sea[1]=[95,4].
-// loc3/4 = sea → via_sea. OOB navy (prefer_sea) → sea0. Egyptian OOB → map entry.
-function mission30_apply_invasion_loc(opts, loc, prefer_sea) {
-	if (loc == 1) {
-		opts.tilex = 80
-		opts.tiley = 123
-		return false
-	}
-	if (loc == 2) {
-		opts.tilex = 112
-		opts.tiley = 71
-		return false
-	}
-	if (loc == 3) {
-		opts.via_sea = 1
-		opts.sea_point = 0
-		opts.tilex = 127
-		opts.tiley = 84
-		return true
-	}
-	if (loc == 4) {
-		opts.via_sea = 1
-		opts.sea_point = 1
-		opts.tilex = 95
-		opts.tiley = 4
-		return true
-	}
-	if (prefer_sea) {
-		opts.via_sea = 1
-		opts.sea_point = 0
-		opts.tilex = 127
-		opts.tiley = 84
-		return true
-	}
-	opts.tilex = -1
-	opts.tiley = -1
-	return false
-}
-
-function mission30_kushite_raid(invasion_id, size, loc, on_completed_tag) {
-	if (loc === undefined) {
-		loc = 9
-	}
-	var opts = {
-		enemy: ENEMY_6_KUSHITE,
-		amount: size,
-		size: size,
-		invasion_id: invasion_id,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM,
-		on_completed_tag: on_completed_tag
-	}
-	var via_sea = mission30_apply_invasion_loc(opts, loc, true)
-	log_info("akhenaten: mission 30 kushite raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " sea=" + via_sea + " tile=" + opts.tilex + "," + opts.tiley)
-	return city.start_foreign_army_invasion(opts)
-}
-
-function mission30_pharaoh_raid(invasion_id, size, loc, on_completed_tag) {
-	if (loc === undefined) {
-		loc = 4
-	}
-	var opts = {
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		amount: size,
-		size: size,
-		invasion_id: invasion_id,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM,
-		on_completed_tag: on_completed_tag
-	}
-	// Sea locs (3/4) still via_sea; OOB without prefer_sea → map entry.
-	var via_sea = mission30_apply_invasion_loc(opts, loc, false)
-	log_info("akhenaten: mission 30 pharaoh raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " sea=" + via_sea + " tile=" + opts.tilex + "," + opts.tiley)
-	return city.start_foreign_army_invasion(opts)
 }
 
 function mission30_ensure_troops_i1_leaves() {
@@ -888,65 +844,6 @@ function mission30_requests_and_events(ev) {
 		log_info("akhenaten: mission 30 gift sandstone×32 (i=26)")
 		mission30_fire_simple_event(2026, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_SANDSTONE, 32)
 	}
-	// Kushite invasions — loc from pak; packed sea/OOB-navy → via_sea (E3c)
-	if (!mission.event18_invasion_done && ev.years_since_start == 6 && ev.month == 11) {
-		mission.event18_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×16 (i=18)")
-		mission30_kushite_raid(18, 16, 10)
-	}
-	if (!mission.event20_invasion_done && ev.years_since_start == 8 && ev.month == 4) {
-		mission.event20_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×38 (i=20)")
-		mission30_kushite_raid(20, 38, 9)
-	}
-	if (!mission.event21_invasion_done && ev.years_since_start == 10 && ev.month == 0) {
-		mission.event21_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×40 (i=21)")
-		mission30_kushite_raid(21, 40, 9)
-	}
-	if (!mission.event22_invasion_done && ev.years_since_start == 12 && ev.month == 6) {
-		mission.event22_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×40 (i=22) → chain i=23×20")
-		mission30_kushite_raid(22, 40, 1)
-	}
-	if (!mission.event24_invasion_done && ev.years_since_start == 16 && ev.month == 0) {
-		mission.event24_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×60 (i=24)")
-		mission30_kushite_raid(24, 60, 9)
-	}
-	if (!mission.event25_invasion_done && ev.years_since_start == 19 && ev.month == 6) {
-		mission.event25_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×40 (i=25)")
-		mission30_kushite_raid(25, 40, 2)
-	}
-	if (!mission.event27_invasion_done && ev.years_since_start == 21 && ev.month == 0) {
-		mission.event27_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×24 (i=27)")
-		mission30_kushite_raid(27, 24, 8)
-	}
-	// pak i=28 recurring ×16 from y14m0 every 8 years (loc months field)
-	if (ev.years_since_start >= 14 && ev.month == 0 &&
-		(ev.years_since_start - 14) % 8 == 0 &&
-		mission.event28_invasion_last_year != ev.years_since_start) {
-		mission.event28_invasion_last_year = ev.years_since_start
-		log_info("akhenaten: mission 30 kushite×16 recurring (i=28)")
-		mission30_kushite_raid(28, 16, 6)
-	}
-	if (!mission.event29_invasion_done && ev.years_since_start == 40 && ev.month == 0) {
-		mission.event29_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×72 (i=29)")
-		mission30_kushite_raid(29, 72, 3)
-	}
-	if (!mission.event30_invasion_done && ev.years_since_start == 50 && ev.month == 7) {
-		mission.event30_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×72 (i=30)")
-		mission30_kushite_raid(30, 72, 9)
-	}
-	if (!mission.event31_invasion_done && ev.years_since_start == 60 && ev.month == 10) {
-		mission.event31_invasion_done = true
-		log_info("akhenaten: mission 30 kushite×72 (i=31)")
-		mission30_kushite_raid(31, 72, 9)
-	}
 	// pak i=32 chickpeas×13 /12mo y10m6
 	if (!mission.event32_chickpeas_done && ev.years_since_start == 10 && ev.month == 6) {
 		mission.event32_chickpeas_done = true
@@ -955,36 +852,39 @@ function mission30_requests_and_events(ev) {
 	}
 }
 
-[es=event_update_day, mission=mission30]
-function mission30_update_day(ev) {
-	// pak i=22 ok→i=23 kushite×20 loc=9 (after wave1 cleared)
-	if (mission.event22_invasion_done && !mission.event23_invasion_done) {
-		if (!mission.event22_enemies_seen) {
-			if (city.num_enemy_formations > 0) {
-				mission.event22_enemies_seen = true
-			}
-		} else if (city.num_enemy_formations == 0) {
-			mission.event23_invasion_done = true
-			log_info("akhenaten: mission 30 kushite×20 chain (i=23)")
-			mission30_kushite_raid(23, 20, 9)
-		}
-	}
+// pak i=18..31: the Kushite raids; i=22 chains i=23 (delay 0) as it attacks, i=28 recurs.
+function mission30_raid_list() {
+	var E = EVENT_INVADER_ENEMY
+	var K = ENEMY_6_KUSHITE
+	return [
+		{ key: "i18", invasion_id: 18, year: 6, month: 11, invader: E, enemy: K, amount: 16, months_initial: 6,
+			location: [10, 10, -1, -1], warships: 2, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i20", invasion_id: 20, year: 8, month: 4, invader: E, enemy: K, amount: 38, months_initial: 9,
+			location: [9, 9, -1, -1], warships: 6, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i21", invasion_id: 21, year: 10, month: 0, invader: E, enemy: K, amount: 40, months_initial: 9,
+			location: [9, 9, -1, -1], warships: 4, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i22", invasion_id: 22, year: 12, month: 6, invader: E, enemy: K, amount: 40, months_initial: 9,
+			location: [1, -1, 1, 3], attack_target: EVENT_ATTACK_TARGET_RANDOM, then: [{ key: "i23", delay: 0 }] },
+		{ key: "i23", invasion_id: 23, invader: E, enemy: K, amount: 20, months_initial: 0,
+			location: [9, 9, -1, -1], warships: 2, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i24", invasion_id: 24, year: 16, month: 0, invader: E, enemy: K, amount: 60, months_initial: 9,
+			location: [9, 9, -1, -1], warships: 6, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i25", invasion_id: 25, year: 19, month: 6, invader: E, enemy: K, amount: 40, months_initial: 12,
+			location: [2, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i27", invasion_id: 27, year: 21, month: 0, invader: E, enemy: K, amount: 24, months_initial: 3,
+			location: [8, 8, -1, -1], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i28", invasion_id: 28, year: 14, month: 0, invader: E, enemy: K, amount: 16, months_initial: 6,
+			location: [6, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM, recurring: true },
+		{ key: "i29", invasion_id: 29, year: 40, month: 0, invader: E, enemy: K, amount: 72, months_initial: 12,
+			location: [3, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i30", invasion_id: 30, year: 50, month: 7, invader: E, enemy: K, amount: 72, months_initial: 12,
+			location: [9, 9, -1, -1], warships: 6, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i31", invasion_id: 31, year: 60, month: 10, invader: E, enemy: K, amount: 72, months_initial: 12,
+			location: [9, 9, -1, -1], warships: 7, attack_target: EVENT_ATTACK_TARGET_RANDOM }
+	]
+}
 
-	// Favour egypt×60→×60 (pak i=35/36) — loc 4 / 6 via loc_tile
-	if (!mission.pharaoh_favour_invasion_done && city.rating_kingdom < 30) {
-		mission.pharaoh_favour_invasion_done = true
-		log_info("akhenaten: mission 30 favour egypt×60 (i=35)")
-		mission30_pharaoh_raid(35, 60, 4)
-	}
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_wave2_done) {
-		if (!mission.pharaoh_favour_enemies_seen) {
-			if (city.num_enemy_formations > 0) {
-				mission.pharaoh_favour_enemies_seen = true
-			}
-		} else if (city.num_enemy_formations == 0) {
-			mission.pharaoh_favour_wave2_done = true
-			log_info("akhenaten: mission 30 favour egypt×60 wave2 (i=36)")
-			mission30_pharaoh_raid(36, 60, 6)
-		}
-	}
+[es=event_advance_month, mission=mission30]
+function mission30_raids(ev) {
+	mission_raids_month(mission, mission30, ev, mission30_raid_list())
 }

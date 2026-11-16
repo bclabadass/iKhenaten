@@ -9,7 +9,7 @@ option(OPTION_ENABLE_TRACY "Enable Tracy profiler support" ON)
 option(OPTION_STEAMDECK "Force Steam Deck platform defaults (GAME_PLATFORM_STEAMDECK)" OFF)
 # Download prebuilt innoextract host tool (not linked into the game).
 # Desktop platforms that can spawn helpers and unpack Windows/GOG Inno Setup .exe files.
-if((WIN32 OR UNIX) AND NOT ANDROID AND NOT EMSCRIPTEN)
+if((WIN32 OR UNIX) AND NOT ANDROID AND NOT EMSCRIPTEN AND NOT CMAKE_BUILD_PLATFORM STREQUAL "win_emscripten")
     option(OPTION_ENABLE_INNOEXTRACT "Download innoextract helper for GOG/Inno Setup installers" ON)
 else()
     option(OPTION_ENABLE_INNOEXTRACT "Download innoextract helper for GOG/Inno Setup installers" OFF)
@@ -65,6 +65,24 @@ endif()
 
 set(GAME akhenaten)
 project(${GAME} C CXX)
+
+# Nested dependency builds do not inherit emcmake's toolchain; on Windows they would
+# otherwise fall back to the Visual Studio generator and build native libs.
+# The wrapper relaxes find-root to BOTH so harfbuzz can find our freetype outside the sysroot.
+if(WIN_EMSCRIPTEN AND DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(NESTED_EMSCRIPTEN_TOOLCHAIN "${CMAKE_BINARY_DIR}/nested_emscripten_toolchain.cmake")
+    file(WRITE "${NESTED_EMSCRIPTEN_TOOLCHAIN}"
+        "set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)\n"
+        "set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)\n"
+        "set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)\n"
+        "include(\"${CMAKE_TOOLCHAIN_FILE}\")\n")
+    # zlib 1.3.1 declares libz.a twice, which Ninja rejects: a caller may preset
+    # CMAKE_GENERATOR in the environment (e.g. "NMake Makefiles") for nested builds only.
+    if(NOT DEFINED ENV{CMAKE_GENERATOR})
+        set(ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
+    endif()
+    set(ENV{CMAKE_TOOLCHAIN_FILE} "${NESTED_EMSCRIPTEN_TOOLCHAIN}")
+endif()
 message("C++ compiler is ${CMAKE_CXX_COMPILER_ID}" )
 
 set(GAME_ARCH_64 TRUE)
@@ -248,6 +266,12 @@ if(NOT WIN_EMSCRIPTEN AND NOT MACOS_X64_BUILD AND NOT IOS)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    # curl 8.23 defaults these ON: ~100 example projects, man pages and install targets.
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_LIBCURL_DOCS OFF CACHE BOOL "" FORCE)
+    set(BUILD_MISC_DOCS OFF CACHE BOOL "" FORCE)
+    set(ENABLE_CURL_MANUAL OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
     set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
     set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
     set(CURL_DISABLE_TELNET ON CACHE BOOL "" FORCE)
@@ -274,7 +298,13 @@ if(NOT WIN_EMSCRIPTEN AND NOT MACOS_X64_BUILD AND NOT IOS)
     set(CURL_CA_BUNDLE "auto" CACHE STRING "Use system default CA bundle" FORCE)
     set(CURL_CA_PATH "auto" CACHE STRING "" FORCE)
 
+    # curl adds curl-ca-bundle / curl-ca-firefox / curl-lint / curl-optiontable whenever it finds
+    # Perl; no option for that. The normal variable shadows a PERL_EXECUTABLE already in the cache.
+    set(CMAKE_DISABLE_FIND_PACKAGE_Perl ON)
+    set(PERL_EXECUTABLE "")
     FetchContent_MakeAvailable(curl)
+    unset(PERL_EXECUTABLE)
+    unset(CMAKE_DISABLE_FIND_PACKAGE_Perl)
 
     add_definitions(-DGAME_HAVE_CURL)
 endif()
@@ -828,13 +858,12 @@ set(IMGUI_FILES
 )
 file(GLOB GRAPHICS_FILES ${PROJECT_SOURCE_DIR}/src/graphics/*.cpp)
 file(GLOB IO_FILES ${PROJECT_SOURCE_DIR}/src/io/*.cpp)
-file(GLOB IO_CONFIG_FILES ${PROJECT_SOURCE_DIR}/src/io/config/*.cpp)
 file(GLOB IO_GAMEFILES_FILES ${PROJECT_SOURCE_DIR}/src/io/gamefiles/*.cpp)
 file(GLOB IO_GAMESTATE_FILES ${PROJECT_SOURCE_DIR}/src/io/gamestate/*.cpp)
-file(GLOB IO_IMAGEPAKS_FILES ${PROJECT_SOURCE_DIR}/src/io/imagepaks/*.cpp)
-file(GLOB IO_PLAYERDATA_FILES ${PROJECT_SOURCE_DIR}/src/io/playerdata/*.cpp)
+file(GLOB IO_OG_SAVE_FILES ${PROJECT_SOURCE_DIR}/src/io/og_save/*.cpp)
 file(GLOB RESOURCE_FILES ${PROJECT_SOURCE_DIR}/src/resource/*.cpp)
 file(GLOB JS_FILES ${PROJECT_SOURCE_DIR}/src/js/*.cpp)
+file(GLOB JS_TEST_FILES ${PROJECT_SOURCE_DIR}/src/js/test/*.cpp)
 file(GLOB SCRIPTS_FILES ${PROJECT_SOURCE_DIR}/src/scripts/*.cpp)
 file(GLOB LZMA_FILES ${PROJECT_SOURCE_DIR}/src/lzma/*.c)
 file(GLOB BZIP_FILES ${PROJECT_SOURCE_DIR}/src/bzip/*.c)
@@ -878,6 +907,34 @@ message(STATUS "GAME_BUILD_TIME is ${GAME_BUILD_TIME}")
 add_definitions(-DGAME_BUILD_NUMBER=${GAME_BUILD_NUMBER})
 add_definitions(-DGAME_BUILD_DATE=\"${GAME_BUILD_DATE}\")
 add_definitions(-DGAME_BUILD_TIME=\"${GAME_BUILD_TIME}\")
+
+# The game's own update (src/platform/app_updater.cpp): on by default in the CI's builds only, whose artifacts
+# nightly.link serves, so a build of one's own is never replaced by them. The commit and its time decide whether the
+# newest master build is newer than this one.
+if(DEFINED ENV{GITHUB_ACTIONS})
+    set(updater_default ON)
+else()
+    set(updater_default OFF)
+endif()
+option(AKHENATEN_UPDATER "The game updates itself from the nightly.link master builds (Windows, Linux, macOS)" ${updater_default})
+set(GAME_BUILD_COMMIT "")
+set(GAME_BUILD_COMMIT_TIME 0)
+execute_process(COMMAND git rev-parse HEAD WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE git_commit OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE git_result)
+if(git_result EQUAL 0 AND git_commit MATCHES "^[0-9a-f]+$")
+    set(GAME_BUILD_COMMIT ${git_commit})
+endif()
+execute_process(COMMAND git log -1 --format=%ct HEAD WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE git_commit_time OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET RESULT_VARIABLE git_result)
+if(git_result EQUAL 0 AND git_commit_time MATCHES "^[0-9]+$")
+    set(GAME_BUILD_COMMIT_TIME ${git_commit_time})
+endif()
+message(STATUS "AKHENATEN_UPDATER=${AKHENATEN_UPDATER}, commit ${GAME_BUILD_COMMIT} (${GAME_BUILD_COMMIT_TIME})")
+set(updater_definitions "GAME_BUILD_COMMIT=\"${GAME_BUILD_COMMIT}\";GAME_BUILD_COMMIT_TIME=${GAME_BUILD_COMMIT_TIME}LL")
+if(AKHENATEN_UPDATER)
+    list(APPEND updater_definitions GAME_UPDATER)
+endif()
+set_source_files_properties("${PROJECT_SOURCE_DIR}/src/platform/app_updater.cpp" PROPERTIES COMPILE_DEFINITIONS "${updater_definitions}")
 
 set(BUILD_INFO_DIR "${CMAKE_BINARY_DIR}")
 file(MAKE_DIRECTORY "${BUILD_INFO_DIR}")
@@ -955,6 +1012,7 @@ if(MSVC)
     source_group("graphics" FILES ${GRAPHICS_FILES})
     source_group("fontgen" FILE ${GRAPHICS_FONTGEN_FILES})
     source_group("js" FILES ${JS_FILES})
+    source_group("js/test" FILES ${JS_TEST_FILES})
     source_group("lzma" FILES ${LZMA_FILES})
     source_group("bzip" FILES ${BZIP_FILES})
     source_group("lame" FILES ${LAME_FILES})
@@ -972,11 +1030,9 @@ set(SOURCE_FILES
     ${CORE_FILES} ${CORE_HEADERS}
     ${NET_FILES}
     ${IO_FILES} ${IO_HEADERS}
-    ${IO_CONFIG_FILES}
     ${IO_GAMEFILES_FILES}
     ${IO_GAMESTATE_FILES}
-    ${IO_IMAGEPAKS_FILES}
-    ${IO_PLAYERDATA_FILES}
+    ${IO_OG_SAVE_FILES}
     ${BUILDING_FILES}
     ${CITY_FILES}
     ${EMPIRE_FILES}
@@ -1014,6 +1070,7 @@ set(SOURCE_FILES
     ${TRACY_FILES}
     ${RESOURCE_FILES}
     ${JS_FILES}
+    ${JS_TEST_FILES}
     ${SCRIPTS_FILES}
     ${LZMA_FILES}
     ${BZIP_FILES}
@@ -1063,25 +1120,12 @@ if(WIN32 AND NOT WIN_EMSCRIPTEN)
         @ONLY
     )
     target_sources(${GAME} PRIVATE "${CMAKE_SOURCE_DIR}/res/akhenaten.rc")
+    if(MSVC)
+        target_sources(${GAME} PRIVATE "${CMAKE_SOURCE_DIR}/res/akhenaten.manifest")
+    endif()
     set_source_files_properties("${CMAKE_SOURCE_DIR}/res/akhenaten.rc" PROPERTIES
         INCLUDE_DIRECTORIES "${CMAKE_BINARY_DIR}"
     )
-endif()
-
-# Standalone in-place update helper (desktop only). Game downloads/extracts, then
-# launches this binary and exits so files can be overwritten.
-if(NOT PLATFORM_ANDROID AND NOT WIN_EMSCRIPTEN AND NOT EMSCRIPTEN AND NOT IOS)
-    add_executable(akhenaten-updater "${PROJECT_SOURCE_DIR}/tools/akhenaten-updater/main.cpp")
-    set_target_properties(akhenaten-updater PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-        OUTPUT_NAME "akhenaten-updater"
-    )
-    if(MSVC)
-        # No console flash when launched from the game with CREATE_NO_WINDOW.
-        target_compile_definitions(akhenaten-updater PRIVATE _CRT_SECURE_NO_WARNINGS)
-    endif()
-    add_dependencies(${GAME} akhenaten-updater)
 endif()
 
 if(OPTION_ENABLE_INNOEXTRACT)
@@ -1303,22 +1347,13 @@ if(APPLE AND NOT IOS)
         COMMAND chmod +x "${MACOS_DIR}/launch.sh"
         VERBATIM
     )
-    if(TARGET akhenaten-updater)
-        add_custom_command(TARGET ${GAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-                    "$<TARGET_FILE:akhenaten-updater>"
-                    "${MACOS_DIR}/akhenaten-updater"
-            COMMAND chmod +x "${MACOS_DIR}/akhenaten-updater"
-            VERBATIM
-        )
-    endif()
 endif()
 
 #
 # Apple specific End
 #
 
-# Copy buildnumber.txt beside binary; ship akhenaten-updater next to the game.
+# Copy buildnumber.txt beside binary.
 
 set(BUILD_NUMBER_SRC "${CMAKE_BINARY_DIR}/buildnumber.txt")
 
@@ -1339,15 +1374,6 @@ if(UNIX AND NOT APPLE)
                 "${BUILD_NUMBER_SRC}"
                 "${UNIX_DIR}/buildnumber.txt"
     )
-    if(TARGET akhenaten-updater)
-        add_custom_command(TARGET ${GAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-                    "$<TARGET_FILE:akhenaten-updater>"
-                    "${UNIX_DIR}/akhenaten-updater"
-            COMMAND chmod +x "${UNIX_DIR}/akhenaten-updater"
-            VERBATIM
-        )
-    endif()
 endif()
 
 if(WIN32)
@@ -1357,13 +1383,6 @@ if(WIN32)
                 "${BUILD_NUMBER_SRC}"
                 "${WIN32_DIR}/buildnumber.txt"
     )
-    if(TARGET akhenaten-updater)
-        add_custom_command(TARGET ${GAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-                    "$<TARGET_FILE:akhenaten-updater>"
-                    "$<TARGET_FILE_DIR:${GAME}>/akhenaten-updater.exe"
-        )
-    endif()
 endif()
 
 target_include_directories(${GAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
@@ -1445,6 +1464,9 @@ if(WIN_EMSCRIPTEN)
                             ${HARFBUZZ_LIBRARY}
                             ${ZLIB_LIBRARY}
                             akhenaten::rc)
+    # Mission scripts load data/maps/*.map; the launcher only uploads the Pharaoh install
+    # into the IDBFS-mounted HOME, so ship the maps inside the module (see vfs::path::resolve).
+    target_link_options(${GAME} PRIVATE "SHELL:--embed-file ${CMAKE_SOURCE_DIR}/data/maps@/engine/data/maps")
 else()
     target_link_libraries (${GAME}
                             ${SDL2_LIBRARY}
@@ -1510,9 +1532,6 @@ endif()
 
 if(NOT APPLE)
     install(TARGETS ${GAME} RUNTIME DESTINATION bin)
-    if(TARGET akhenaten-updater)
-        install(TARGETS akhenaten-updater RUNTIME DESTINATION bin)
-    endif()
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -1536,9 +1555,6 @@ if (MSVC)
         "$<TARGET_PDB_FILE:${GAME}>"
         "${CMAKE_SOURCE_DIR}/ext/bugtrap/BugTrap-x64.dll"
     )
-    if(TARGET akhenaten-updater)
-        list(APPEND BINARY_FILES "$<TARGET_FILE:akhenaten-updater>")
-    endif()
     add_custom_command(
         TARGET ${GAME}
         POST_BUILD

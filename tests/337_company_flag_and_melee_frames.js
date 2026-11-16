@@ -85,8 +85,11 @@ function t337_check_melee(entry, recruiter) {
         __log_info_native('[test:337] no soldier of type ' + entry.type)
         return false
     }
+    // A recruit with no road out has no tile yet: stand it beside its fort to fight.
+    var ft = __building_tile(fort)
+    __test_figure_place(soldier, ft.x, ft.y + 6)
     var tile = __figure_get_tile(soldier)
-    var foe = test_figure_create(FIGURE_MUMMY, tile.x, tile.y)
+    var foe = test_figure_create(FIGURE_ENEMY_EGYPTIAN_SWORD, tile.x, tile.y)
     __test_figure_attack_figure_at(soldier, tile.x, tile.y)
 
     var first = __test_image_from_desc(PACK_SPR_MAIN, entry.group, 0)
@@ -118,6 +121,12 @@ function run_test() {
     __test_set_treasury(100000)
     __scenario_building_allow(BUILDING_FORT_GROUND, true)
     var recruiter = t337_place(BUILDING_RECRUITER)
+    // Without the game's images (CI) the flag and fighting pictures can't be told apart.
+    if (__test_image_from_desc(PACK_GENERAL, 126, 0) <= 0) {
+        __log_marker('flag_and_melee_check_skipped_no_images')
+        __test_signal_ready()
+        return
+    }
 
     var melee_ok = true
     for (var i = 0; i < T337_ATTACK_GROUPS.length; i++) {
@@ -133,6 +142,7 @@ function run_test() {
 }
 
 function check_valid() {
-    return __test_find_inlog('[test-marker] flag_frames_own_strip')
-        && __test_find_inlog('[test-marker] melee_frames_own_group')
+    return (__test_find_inlog('[test-marker] flag_frames_own_strip')
+            && __test_find_inlog('[test-marker] melee_frames_own_group'))
+        || __test_find_inlog('[test-marker] flag_and_melee_check_skipped_no_images')
 }

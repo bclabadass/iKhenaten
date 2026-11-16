@@ -77,11 +77,12 @@ declare_console_command_p(sink_all_ships) {
 
 int figure_trade_ship::is_trading() const {
     building* b = destination();
-    if (b->state != BUILDING_STATE_VALID || b->type != BUILDING_DOCK) {
+    building_dock *dock_b = (b->state == BUILDING_STATE_VALID) ? b->dcast_dock() : nullptr;
+    if (!dock_b) {
         return TRADE_SHIP_BUYING;
     }
 
-    const auto &dock = b->dcast_dock()->runtime_data();
+    const auto &dock = dock_b->runtime_data();
     for (int i = 0; i < 3; i++) {
         figure* f = figure_get(dock.docker_ids[i]);
         if (!dock.docker_ids[i] || f->state != FIGURE_STATE_ALIVE)
@@ -107,11 +108,12 @@ int figure_trade_ship::is_trading() const {
 bool figure_trade_ship::lost_queue() {
     building* b = destination();
 
-    if (b->state != BUILDING_STATE_VALID || b->type != BUILDING_DOCK) {
+    building_dock *dock_b = (b->state == BUILDING_STATE_VALID) ? b->dcast_dock() : nullptr;
+    if (!dock_b) {
         return true;
     }
 
-    const auto &dock = b->dcast_dock()->runtime_data();
+    const auto &dock = dock_b->runtime_data();
     if (b->num_workers > 0 && dock.trade_ship == id()) {
         return false;
     }
@@ -122,25 +124,23 @@ bool figure_trade_ship::lost_queue() {
 bool figure_trade_ship::done_trading() {
     building* b = destination();
     auto& d = runtime_data();
-    if (b->state == BUILDING_STATE_VALID && b->type == BUILDING_DOCK && b->num_workers > 0) {
-        auto *dock = b->dcast_dock();
-        if (dock) {
-            for (const int docker_id : dock->runtime_data().docker_ids) {
-                if (!docker_id) {
-                    continue;
-                }
-                figure *docker = figure_get(docker_id);
-                if (docker->state == FIGURE_STATE_ALIVE && docker->action_state != ACTION_0_DOCKER_IDLING) {
-                    return false;
-                }
-            }
-        }
-        if (++d.failed_dock_attempts < TRADE_SHIP_IDLE_TICKS_MAX) {
-            return false;
-        }
-        d.failed_dock_attempts = TRADE_SHIP_IDLE_TICKS_MAX + 1;
+    building_dock *dock = (b->state == BUILDING_STATE_VALID && b->num_workers > 0) ? b->dcast_dock() : nullptr;
+    if (!dock) {
         return true;
     }
+    for (const int docker_id : dock->runtime_data().docker_ids) {
+        if (!docker_id) {
+            continue;
+        }
+        figure *docker = figure_get(docker_id);
+        if (docker->state == FIGURE_STATE_ALIVE && docker->action_state != ACTION_0_DOCKER_IDLING) {
+            return false;
+        }
+    }
+    if (++d.failed_dock_attempts < TRADE_SHIP_IDLE_TICKS_MAX) {
+        return false;
+    }
+    d.failed_dock_attempts = TRADE_SHIP_IDLE_TICKS_MAX + 1;
     return true;
 }
 
@@ -260,8 +260,8 @@ void figure_trade_ship::on_create() {
         : current_params().max_capacity;
 }
 
-void figure_trade_ship::on_post_load_original(const figure_original_fields &og) {
-    auto &d = runtime_data();
+void figure_trade_ship::on_post_load_original(const figure_original_fields& og) {
+    auto& d = runtime_data();
     d = {};
     d.empire_city = empire_city_handle{original_trader_city(og)};
     d.trader = empire_trader_handle{original_trader_id(og)};
@@ -447,7 +447,6 @@ void figure_trade_ship::figure_action() {
         base.height_adjusted_ticks = 0;
         if (direction() == DIR_FIGURE_NONE) {
             base.action_state = ACTION_114_TRADE_SHIP_ANCHORED;
-            base.direction = rand() % 8;
         } else if (direction() == DIR_FIGURE_REROUTE) {
             route_remove();
         } else if (direction() == DIR_FIGURE_CAN_NOT_REACH) {

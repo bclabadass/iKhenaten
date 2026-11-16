@@ -1,5 +1,42 @@
 log_info("akhenaten: mission 28 iken started")
 
+// Mission 28 — Iken (Mirgissa), "Into Nubia". Rank 10 (Pharaoh).
+//
+// Goals:     population 6000, culture 45, prosperity 40, monuments 11, kingdom 80, housing level 10.
+// Start:     funds 7000, rescue loan 3000, no debt interest (normal difficulty).
+// Gods:      Osiris, Seth, Bast.
+// Monuments: large obelisk.
+// Trade:     nothing open at start; can open — Buhen, Kebet, Men-nefer, Sawu, Waset (all by sea),
+//            Dakhla Oasis, Farafra Oasis; opened by events — Byblos (y3m0), Kerma (after the Hittite
+//            raid series), Sawu (linen delivered), Waset (weapons); display only — Kharga Oasis,
+//            Menat Khufu.
+// Enemies:   Bedouin raids (Libyan army), Hittite raids (some by sea), one Egyptian raid after a
+//            refused request; Egyptian army (three waves of 40) if the kingdom rating falls to 0.
+// Timeline:  y0m2 request 6 game meat (sent: gift of 8 copper; refused: granite price rises);
+//            y0m9 Kebet buys less copper; y1m1 request 200 copper in one month — whatever the outcome,
+//            a Hittite raid series follows, each announced a few months after the previous one attacks:
+//            32 by sea with 5 warships (announced 6 months on, attacks 9 later), 64 (3, 12), 72 (3, 12),
+//            24 by sea with 6 warships (9, 9), 96 (2, 4); as the last attacks, kingdom +25 and the Kerma
+//            route opens; y1m8 request 1168 oil (sent: gift of 8 copper; refused: Egyptian raid 64
+//            announced 6 months later, attacking 6 months after that); y2m3 request 7 barley (sent: gift
+//            of 16 copper); Bedouin raid 12 announced y2m8, attacks y3m2;
+//            yearly from y2m8 request 10 linen while none is open (sent: gift of 8 copper, Sawu route
+//            opens, Sawu buys more copper); y3m0 Byblos route opens; y7m7 request 15 weapons (sent or
+//            late: Waset route opens; refused: Sawu is besieged, loses its route, then reopens it);
+//            Hittite raid 12 by sea with 2 warships announced y10m7, attacks y10m11; Bedouin raids
+//            announced y12m9 64, y15m3 64, y20m10 64, y23m7 96, y27m0 96, attacking 6, 6, 4, 6, 4 months
+//            later.
+//
+// Notes for developers:
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields: 1..8 the
+//   land points [221,187] / [152,100] (empty ones wrap round), 9 = sea point [109,148].
+// - The original gives Byblos no goods; timber and luxury goods are filled in so its unlock is playable.
+// - Route events name the route city (Sawu, Kerma, Kebet); the city named in the original event is
+//   often wrong.
+// - tag_id: 1000 + i chained events, 2000 + i calendar events, 7000 + i Egyptian army
+//   (i = event index in the original scenario, "pak i=" in comments below).
+
 mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 	map_file : "data/maps/m_028_iken.map"
 
@@ -37,7 +74,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 	initial_funds [14000, 9300, 7000, 4700, 3700]
 	rescue_loans [6000, 4000, 3000, 2000, 1600]
 	debt_interest [0, 0, 0, 0, 0]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -77,7 +113,7 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 		BUILDING_SCRIBAL_SCHOOL, BUILDING_LIBRARY,
 	]
 
-	// Large Obelisk weight 4 → rating 13.5 ≥ pak goal 11 — keep 11.
+	// Monuments 11 = pak: Large Obelisk (3) → trunc(6.32·√3+0.5)=11.
 	win_criteria {
 		population    {enabled : true, goal : 6000 }
 		culture       {enabled : true, goal : 45 }
@@ -96,6 +132,54 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 	invasion_points_sea [ [109, 148], [183, 15] ]
 
 	enable_scenario_events : true
+
+	events [
+		{ // pak i=27
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 40 }
+			months_initial : 6
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7027
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=28
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 40 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7028
+			on_completed_action : 2
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=29
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 40 }
+			months_initial : 0
+			location_fields [ 8, 8, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7029
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_FOOD
+		}
+	]
 
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
@@ -119,8 +203,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 100
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_BARLEY, RESOURCE_BEER ]
 				buys [ RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_COPPER ]
 				route_limits [
@@ -141,8 +223,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 685
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_BRICKS, RESOURCE_TIMBER ]
 				buys [ RESOURCE_MEAT, RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_PAPYRUS, RESOURCE_GRANITE ]
 				route_limits [
@@ -165,8 +245,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 815
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_CLAY, RESOURCE_TIMBER ]
 				route_limits [
 					{ resource: RESOURCE_CLAY, limit: 2500 }
@@ -183,8 +261,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 675
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_GRANITE, RESOURCE_COPPER ]
 				route_limits [
 					{ resource: RESOURCE_CLAY, limit: 1500 }
@@ -203,8 +279,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 1335
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 				buys [ RESOURCE_LETTUCE, RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 				route_limits [
@@ -231,8 +305,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				is_sea_trade : false
 				trade : false
 				type : EMPIRE_CITY_FOREIGN
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_TIMBER ]
 				buys [ RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_PAPYRUS ]
 				route_limits [
@@ -254,8 +326,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				is_sea_trade : false
 				trade : false
 				type : EMPIRE_CITY_FOREIGN
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS ]
 				buys [ RESOURCE_LINEN, RESOURCE_LUXURY_GOODS ]
 				route_limits [
@@ -291,8 +361,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 890
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS, RESOURCE_COPPER ]
 				buys [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_WEAPONS ]
 				route_limits [
@@ -314,8 +382,6 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 				cost_to_open : 570
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN ]
 				buys [ RESOURCE_FIGS, RESOURCE_BARLEY, RESOURCE_FLAX, RESOURCE_GAMEMEAT ]
 				route_limits [
@@ -487,11 +553,8 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 			{ name : "#canaan", pos : [850, 271] }
 		]
 	vars {
+		raids : ""
 		shared_leaves_wired : false
-		copper_ladder_active : false
-		copper_ladder_pending : false
-		copper_ladder_step : 0
-		copper_ladder_enemies_seen : false
 
 		event0_gamemeat_done : false
 		event3_oil_done : false
@@ -501,23 +564,11 @@ mission28 { // Iken (Mirgissa) — Into Nubia; briefing key = mirgissa
 		event26_newtrade_done : false
 		event34_demand_done : false
 
-		event6_beduin_done : false
-		event7_enemy_done : false
-		event36_beduin_done : false
-		event37_beduin_done : false
-		event38_beduin_done : false
-		event39_beduin_done : false
-		event40_beduin_done : false
 
-		oil_egypt_raid_done : false
 
 		linen_recurring_was_busy : false
 		linen_recurring_idle_since_abs : -1
 
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_wave3_done : false
-		pharaoh_favour_enemies_seen : false
 
 		start_message_shown : false
 	}
@@ -583,91 +634,6 @@ function mission28_fire_request(tag, resource, amount, months, ok_tag, fail_tag,
 	}
 	request.execute()
 	return request
-}
-
-// pak inv_land[0]=[221,187] [1]=[152,100]; loc is 1-based; out of range → entry fallback.
-function mission28_loc_tile(loc) {
-	if (loc == 1) {
-		return [221, 187]
-	}
-	if (loc == 2) {
-		return [152, 100]
-	}
-	return [-1, -1]
-}
-
-function mission28_egypt_raid(invasion_id, size, attack_target, loc) {
-	var tile = mission28_loc_tile(loc === undefined ? 0 : loc)
-	log_info("akhenaten: mission 28 egypt raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_3_EGYPTIAN,
-		size: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target
-	})
-}
-
-function mission28_beduin_raid(invasion_id, size, loc, attack_target) {
-	var tile = mission28_loc_tile(loc === undefined ? 0 : loc)
-	log_info("akhenaten: mission 28 beduin raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_LIBIAN)
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_7_LIBIAN,
-		size: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target === undefined ? EVENT_ATTACK_TARGET_RANDOM : attack_target
-	})
-}
-
-function mission28_hittite_raid(invasion_id, size, loc, attack_target) {
-	var tile = mission28_loc_tile(loc === undefined ? 0 : loc)
-	log_info("akhenaten: mission 28 hittite raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_HITTITE)
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_4_HITTITE,
-		size: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target === undefined ? EVENT_ATTACK_TARGET_RANDOM : attack_target
-	})
-}
-
-function mission28_favour_wave(size, invasion_id, loc, attack_target) {
-	var tile = mission28_loc_tile(loc === undefined ? 1 : loc)
-	log_info("akhenaten: mission 28 favour wave size=" + size + " kr=" + city.rating_kingdom
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: 0,
-		invasion_attack_target: attack_target === undefined ? EVENT_ATTACK_TARGET_RANDOM : attack_target
-	})
-}
-
-function mission28_start_copper_ladder() {
-	// pak i=18→19→21→22→23 enemy sizes 32/64/72/24/96 then i=25 KR+ → i=24 NEW_TRADE.
-	mission.copper_ladder_active = true
-	mission.copper_ladder_step = 0
-	mission.copper_ladder_enemies_seen = false
-	mission28_hittite_raid(18, 32, 9, EVENT_ATTACK_TARGET_RANDOM)
 }
 
 function mission28_ensure_shared_leaves() {
@@ -811,128 +777,54 @@ function mission28_requests_and_events(ev) {
 	}
 }
 
-[es=event_advance_month, mission=mission28]
-function mission28_timed_invasions(ev) {
-	if (!mission.event6_beduin_done && ev.years_since_start == 2 && ev.month == 8) {
-		mission.event6_beduin_done = true
-		mission28_beduin_raid(6, 12, 3, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (!mission.event7_enemy_done && ev.years_since_start == 10 && ev.month == 7) {
-		mission.event7_enemy_done = true
-		mission28_hittite_raid(7, 12, 9, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (!mission.event36_beduin_done && ev.years_since_start == 12 && ev.month == 9) {
-		mission.event36_beduin_done = true
-		mission28_beduin_raid(36, 64, 7, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (!mission.event37_beduin_done && ev.years_since_start == 15 && ev.month == 3) {
-		mission.event37_beduin_done = true
-		mission28_beduin_raid(37, 64, 2, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (!mission.event38_beduin_done && ev.years_since_start == 20 && ev.month == 10) {
-		mission.event38_beduin_done = true
-		mission28_beduin_raid(38, 64, 7, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (!mission.event39_beduin_done && ev.years_since_start == 23 && ev.month == 7) {
-		mission.event39_beduin_done = true
-		mission28_beduin_raid(39, 96, 6, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (!mission.event40_beduin_done && ev.years_since_start == 27 && ev.month == 0) {
-		mission.event40_beduin_done = true
-		mission28_beduin_raid(40, 96, 4, EVENT_ATTACK_TARGET_RANDOM)
-	}
+// pak i=6, 36..40: Bedouins (Libyan soldiers); i=7: Hittites by sea; i=5 after the oil refusal; i=18 -> 19 -> 21 ->
+// 22 -> 23 -> kingdom +25 (pak i=25), each chained as the previous one attacks, after the copper request i=16.
+function mission28_raid_list() {
+	var H = ENEMY_4_HITTITE
+	var L = ENEMY_7_LIBIAN
+	var E = EVENT_INVADER_ENEMY
+	var B = EVENT_INVADER_BEDUINS
+	return [
+		{ key: "i6", invasion_id: 6, year: 2, month: 8, invader: B, enemy: L, amount: 12, months_initial: 6,
+			location: [3, 3, -1, -1], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i7", invasion_id: 7, year: 10, month: 7, invader: E, enemy: H, amount: 12, months_initial: 4,
+			location: [9, 9, -1, -1], warships: 2, attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i36", invasion_id: 36, year: 12, month: 9, invader: B, enemy: L, amount: 64, months_initial: 6,
+			location: [7, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i37", invasion_id: 37, year: 15, month: 3, invader: B, enemy: L, amount: 64, months_initial: 6,
+			location: [2, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i38", invasion_id: 38, year: 20, month: 10, invader: B, enemy: L, amount: 64, months_initial: 4,
+			location: [7, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i39", invasion_id: 39, year: 23, month: 7, invader: B, enemy: L, amount: 96, months_initial: 6,
+			location: [6, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i40", invasion_id: 40, year: 27, month: 0, invader: B, enemy: L, amount: 96, months_initial: 4,
+			location: [4, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i5", invasion_id: 5, invader: EVENT_INVADER_EGYPT, enemy: ENEMY_3_EGYPTIAN, amount: 64, months_initial: 6,
+			location: [4, 4, -1, -1], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS },
+		{ key: "i18", invasion_id: 18, invader: E, enemy: H, amount: 32, months_initial: 9, location: [9, 9, -1, -1],
+			warships: 5, attack_target: EVENT_ATTACK_TARGET_RANDOM, then: [{ key: "i19", delay: 3 }] },
+		{ key: "i19", invasion_id: 19, invader: E, enemy: H, amount: 64, months_initial: 12, location: [2, -1, 1, 3],
+			attack_target: EVENT_ATTACK_TARGET_FOOD, then: [{ key: "i21", delay: 3 }] },
+		{ key: "i21", invasion_id: 21, invader: E, enemy: H, amount: 72, months_initial: 12, location: [3, 3, -1, -1],
+			attack_target: EVENT_ATTACK_TARGET_TROOPS, then: [{ key: "i22", delay: 9 }] },
+		{ key: "i22", invasion_id: 22, invader: E, enemy: H, amount: 24, months_initial: 9, location: [9, 9, -1, -1],
+			warships: 6, attack_target: EVENT_ATTACK_TARGET_FOOD, then: [{ key: "i23", delay: 2 }] },
+		{ key: "i23", invasion_id: 23, invader: E, enemy: H, amount: 96, months_initial: 4, location: [3, 3, -1, -1],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM, chain_tag: 1025 }
+	]
 }
 
-// Oil refuse → egypt×64 (pak i=5).
-// Copper: KR leaf fires via request tags first; ladder starts next month (pak 17/20 → 18).
+[es=event_advance_month, mission=mission28]
+function mission28_raids(ev) {
+	mission_raids_month(mission, mission28, ev, mission28_raid_list())
+}
+
+// pak i=3 oil refused -> i=5 (6 months on); pak i=16 copper, any outcome (kingdom -35 / +15 first) -> i=18 (6 on).
 [es=event_request_cleared, mission=mission28]
 function mission28_on_request_cleared(ev) {
-	var outcome = mission_request_outcome(ev)
-	if (ev.tag_id == 2003 && outcome == "refuse" && !mission.oil_egypt_raid_done) {
-		mission.oil_egypt_raid_done = true
-		log_info("akhenaten: mission 28 egypt×64 after oil refuse (i=5)", {ev:ev})
-		mission28_egypt_raid(5, 64, EVENT_ATTACK_TARGET_BEST_BUILDINGS, 4)
-		return
+	if (ev.tag_id == 2003 && mission_request_outcome(ev) == "refuse") {
+		mission_raid_schedule(mission, mission28_raid_list(), "i5", 6)
+	} else if (ev.tag_id == 2016) {
+		mission_raid_schedule(mission, mission28_raid_list(), "i18", 6)
 	}
-	if (ev.tag_id == 2016 && !mission.copper_ladder_active && !mission.copper_ladder_pending) {
-		mission.copper_ladder_pending = true
-		log_info("akhenaten: mission 28 copper cleared → ladder pending after KR", {ev:ev, outcome:outcome})
-	}
-}
-
-// Copper invasion ladder wipe poll: 32→64→72→24→96 then fire KR+25 leaf.
-[es=event_advance_month, mission=mission28]
-function mission28_copper_ladder_poll(ev) {
-	if (mission.copper_ladder_pending && !mission.copper_ladder_active) {
-		mission.copper_ladder_pending = false
-		log_info("akhenaten: mission 28 copper ladder start (after KR leaf)")
-		mission28_start_copper_ladder()
-		return
-	}
-	if (!mission.copper_ladder_active) {
-		return
-	}
-	if (city.num_enemy_formations > 0) {
-		mission.copper_ladder_enemies_seen = true
-		return
-	}
-	if (!mission.copper_ladder_enemies_seen) {
-		return
-	}
-	mission.copper_ladder_enemies_seen = false
-	mission.copper_ladder_step = mission.copper_ladder_step + 1
-	var step = mission.copper_ladder_step
-	if (step == 1) {
-		mission28_hittite_raid(19, 64, 2, EVENT_ATTACK_TARGET_FOOD)
-	} else if (step == 2) {
-		mission28_hittite_raid(21, 72, 3, EVENT_ATTACK_TARGET_TROOPS)
-	} else if (step == 3) {
-		mission28_hittite_raid(22, 24, 9, EVENT_ATTACK_TARGET_FOOD)
-	} else if (step == 4) {
-		mission28_hittite_raid(23, 96, 3, EVENT_ATTACK_TARGET_RANDOM)
-	} else {
-		mission.copper_ladder_active = false
-		log_info("akhenaten: mission 28 copper ladder complete → KR+25 (i=25)")
-		__city_event_fire_chain(1025)
-	}
-}
-
-// pak i=27→28→29: favour egypt×40 loc=1 → ×40 loc=2 → ×40 loc=8.
-[es=event_advance_month, mission=mission28]
-function mission28_pharaoh_favour_invasion(ev) {
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_wave3_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_enemies_seen = false
-		if (!mission.pharaoh_favour_wave2_done) {
-			mission.pharaoh_favour_wave2_done = true
-			mission28_favour_wave(40, 28, 2, EVENT_ATTACK_TARGET_RANDOM)
-			return
-		}
-		mission.pharaoh_favour_wave3_done = true
-		// pak i=29 attack=0 FOOD
-		mission28_favour_wave(40, 29, 8, EVENT_ATTACK_TARGET_FOOD)
-		return
-	}
-	if (mission.pharaoh_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	mission.pharaoh_favour_enemies_seen = false
-	log_info("akhenaten: mission 28 favour egypt×40 (i=27)")
-	mission28_favour_wave(40, 27, 1, EVENT_ATTACK_TARGET_RANDOM)
 }

@@ -21,43 +21,43 @@ sidebar_window_collapsed {
         expand         : image_button({pos[8, 30], pack:PACK_GENERAL, id:110, offset:10, tooltip:[68, 12]})
 
         build_house    : image_button({
-                            pos[9, 21+30], pack:PACK_GENERAL, id:108, offset:0, tooltip:[68, 20]
+                            pos[9, 21+30], pack:PACK_GENERAL, id:108, offset:0, size[27, 35], tooltip:[68, 20]
                          })
         build_road     : image_button({
-                            pos[9, 21+66], pack:PACK_GENERAL, id:108, offset:4, tooltip:[68, 21]
+                            pos[9, 21+66], pack:PACK_GENERAL, id:108, offset:4, size[27, 34], tooltip:[68, 21]
                          })
         clear_land     : image_button({
-                            pos[9, 122], pack:PACK_GENERAL, id:108, offset:8, tooltip:[68, 22]
+                            pos[9, 122], pack:PACK_GENERAL, id:108, offset:8, size[27, 36], tooltip:[68, 22]
                          })
 
         build_food     : image_button({
-                            pos[9, 159], pack:PACK_GENERAL, id:108, offset:12, tooltip:[68, 23]
+                            pos[9, 159], pack:PACK_GENERAL, id:108, offset:12, size[27, 33], tooltip:[68, 23]
                          })
         build_industry : image_button({
-                            pos[9, 193], pack:PACK_GENERAL, id:108, offset:16, tooltip:[68, 24]
+                            pos[9, 193], pack:PACK_GENERAL, id:108, offset:16, size[27, 34], tooltip:[68, 24]
                          })
         build_distribution : image_button({
-                            pos[9, 228], pack:PACK_GENERAL, id:108, offset:20, tooltip:[68, 25]
+                            pos[9, 228], pack:PACK_GENERAL, id:108, offset:20, size[27, 34], tooltip:[68, 25]
                          })
 
         build_entertainment: image_button({
-                            pos[9, 263], pack:PACK_GENERAL, id:108, offset:24, tooltip:[68, 26]
+                            pos[9, 263], pack:PACK_GENERAL, id:108, offset:24, size[27, 32], tooltip:[68, 26]
                          })
         build_religion : image_button({
-                            pos[9, 296], pack:PACK_GENERAL, id:108, offset:28, tooltip:[68, 27]
+                            pos[9, 296], pack:PACK_GENERAL, id:108, offset:28, size[27, 35], tooltip:[68, 27]
                          })
         build_education: image_button({
-                            pos[9, 332], pack:PACK_GENERAL, id:108, offset:32, tooltip:[68, 28]
+                            pos[9, 332], pack:PACK_GENERAL, id:108, offset:32, size[27, 34], tooltip:[68, 28]
                          })
 
         build_health   : image_button({
-                            pos[9, 368], pack:PACK_GENERAL, id:108, offset:36, tooltip:[68, 29]
+                            pos[9, 368], pack:PACK_GENERAL, id:108, offset:36, size[27, 35], tooltip:[68, 29]
                          })
         build_admin    : image_button({
-                            pos[9, 404], pack:PACK_GENERAL, id:108, offset:40, tooltip:[68, 30]
+                            pos[9, 404], pack:PACK_GENERAL, id:108, offset:40, size[27, 31], tooltip:[68, 30]
                          })
         build_security : image_button({
-                            pos[9, 436], pack:PACK_GENERAL, id:108, offset:44, tooltip:[68, 31]
+                            pos[9, 436], pack:PACK_GENERAL, id:108, offset:44, size[27, 39], tooltip:[68, 31]
                          })
     }
 }

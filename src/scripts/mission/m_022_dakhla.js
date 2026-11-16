@@ -1,23 +1,41 @@
 log_info("akhenaten: mission 22 dakhla started")
 
-// Empire / events aligned with original campaign scenario 22 (2026-07-26 dump).
-// Empire id=1. Enemy ENEMY_6_KUSHITE. Favour Pharaoh×90.
-// Gods: Ra, Ptah, Bast. Funds Normal 6000 / loan 2500 / debt 8. Rank 8.
-// Win: pop 5000 / culture 50 / prosperity 45 / monuments TEMP 9 (pak 6 small obelisk) / kingdom 65 / housing 11.
-// Burial empty. Climate desert.
-// Trade: Nekhen(9) On(2) Saqqara(8) Selima(6). Display Buhen/Byblos/Djedu/Dunqul/Henen/Iunet/Kharga(stub12)/Men-nefer.
-// Triage: SKIP empty map_obj idx=9; omit river/disembark/inv points (pak 0).
-// Events: early grain/timber/beer; timber×18 gift ladder (ONCE ONLY_VIA); bricks×25 Pepy;
-// luxury/grain/pottery recurring — KR via request_cleared (B14 / Sumur); favour×90.
-// late-game luxury ladders / pottery / clay floods simplified where noted.
-// Ebony briefing → luxury_goods (RESOURCE_EBONY absent).
+// Mission 22 — Dakhla Oasis (Dakhla), "The Caravan Trail". Rank 8 (Chancellor).
 //
-// Tag_id scheme:
-//   1000 + i               chain-only leaves (timber gift once)
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring calendar roots
-//   50000 + seq            fire_kr / unique ONCE
-//   9000 + seq             luxury i=39 refuse follow-up requests
+// Goals:     population 5000, culture 50, prosperity 45, monuments 6, kingdom 65, housing level 11.
+// Start:     funds 6000, rescue loan 2500, debt interest 8% (normal difficulty).
+// Gods:      Ra, Ptah, Bast.
+// Monuments: small obelisk.
+// Trade:     nothing open at start; can open — Nekhen, On, Saqqara, Selima Oasis (also opened by the
+//            y3 timber request); display only — Buhen, Byblos, Djedu, Dunqul Oasis, Henen-nesw, Iunet,
+//            Kharga Oasis, Men-nefer.
+// Enemies:   no raids; Pharaoh's army (90) if the kingdom rating falls to 0. The scenario enemy is set
+//            to Kushite, but no Kushite army is sent.
+// Timeline:  y3m3 request 18 timber (delivered: gift of 14 meat and the Selima Oasis route opens;
+//            refused: kingdom -28, then 17 bricks; late: Selima Oasis opens).
+//            One-off requests (delivered kingdom +6, refused -7, late -4): y7m2 4 grain, y10m10
+//            4 timber, y12m7 9 grain, y14m1 5 luxury goods, y16m9 8 beer, y18m7 11 grain (late: wages
+//            drop instead), y20m0 6 luxury goods, y25m4 7 grain, y30m11 5 beer, y35m7 5 grain, y47m11
+//            9 grain, y55m9 23 grain, y57m3 14 beer; y71m10 15 pottery and y84m9 27 grain score
+//            +17 / -14 / -4.
+//            Yearly requests (not while the last one of the same good is open): every January from y4
+//            6 grain (+6 / -7 / -4); from y23m4 18 luxury goods, from y36m7 14 luxury goods, from y80m7
+//            47 pottery, from y88m8 24 grain (each +17 / -14 / -4); from y25m5 Pharaoh asks for 25 bricks
+//            for his tomb (delivered: kingdom +18 and wages rise; refused -27; late -4); from y65m8
+//            25 luxury goods (delivered: more demand; refused: less demand, then 11 luxury goods).
+//            Other: y11m4 wages drop; y21m8 stone dearer; y34m8 contaminated water; y35m2 more timber
+//            demand; y60m1 wages rise; land trade trouble every m8 from y17, m7 from y28, m1 from y42,
+//            m7 from y72; clay pits flood every m6 from y25, m5 from y34, m6 from y53, m5 from y81.
+//
+// Notes for developers:
+// - The briefing asks for ebony; there is no ebony resource, so the luxury goods requests stand in.
+// - Repeating outcomes fire one-off events (mission22_fire_kr and friends, 50000..56000 + n) instead of
+//   shared chain leaves, which can only fire once. The y65 luxury request has no late outcome in the
+//   original data; none is applied.
+// - The map has no invasion, river or disembark points.
+// - tag_id: 1000 + i the timber chain, 2000 + i calendar events, 3000 + i*100 + year yearly events,
+//   9000 + n luxury follow-up requests, 7000 + i Pharaoh's army (i = event index in the original
+//   scenario, also quoted as "pak i=" in comments below).
 
 mission22 { // Dakhla Oasis — The Caravan Trail
 	map_file : "data/maps/m_022_dakhla.map"
@@ -54,7 +72,6 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 	initial_funds [12000, 8000, 6000, 4000, 3000]
 	rescue_loans [5000, 3300, 2500, 1700, 1300]
 	debt_interest [0, 4, 8, 12, 16]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -91,12 +108,12 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 		BUILDING_TEMPLE_COMPLEX_RA, BUILDING_TEMPLE_COMPLEX_PTAH, BUILDING_TEMPLE_COMPLEX_BAST,
 	]
 
-	// Monuments TEMP 9 (pak raw 6; one small obelisk → formula 9, same as Buhen).
+	// Monuments 6 = pak; one small obelisk, OG weight 1 → trunc(6.32·√1+0.5)=6.
 	win_criteria {
 		population    {enabled : true, goal : 5000 }
 		culture       {enabled : true, goal : 50 }
 		prosperity    {enabled : true, goal : 45 }
-		monuments     {enabled : true, goal : 9 }
+		monuments     {enabled : true, goal : 6 }
 		kingdom       {enabled : true, goal : 65 }
 		housing_level {enabled : true, goal : 11 }
 	}
@@ -105,6 +122,24 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 	exit_point [92, 8]
 
 	enable_scenario_events : true
+
+	events [
+		{ // pak i=56
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 90 }
+			months_initial : 9
+			location_fields [ 4, -1, 1, 8 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7056
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
 
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
@@ -128,8 +163,6 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 				cost_to_open : 600
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_FLAX, RESOURCE_LINEN ]
 				buys [ RESOURCE_PAPYRUS ]
 				route_limits [
@@ -150,8 +183,6 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 				cost_to_open : 1070
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_MEAT, RESOURCE_CLAY, RESOURCE_REEDS, RESOURCE_LIMESTONE ]
 				buys [ RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_GRANITE ]
 				route_limits [
@@ -177,8 +208,6 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 				cost_to_open : 1250
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS, RESOURCE_STONE ]
 				buys [ RESOURCE_CLAY, RESOURCE_BRICKS, RESOURCE_POTTERY, RESOURCE_TIMBER, RESOURCE_REEDS, RESOURCE_PAPYRUS, RESOURCE_LIMESTONE ]
 				route_limits [
@@ -203,8 +232,6 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 				cost_to_open : 645
 				is_sea_trade : false
 				type : EMPIRE_CITY_FOREIGN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 				buys [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_PAPYRUS, RESOURCE_COPPER ]
 				route_limits [
@@ -502,7 +529,6 @@ mission22 { // Dakhla Oasis — The Caravan Trail
 		luxury_recurring_idle_since_abs : -1
 		pottery_recurring_was_busy : false
 		pottery_recurring_idle_since_abs : -1
-		pharaoh_favour_invasion_done : false
 		start_message_shown : false
 	}
 }
@@ -936,11 +962,5 @@ function mission22_on_request_cleared(ev) {
 	if (early_once[tag] || (tag >= 7900 && tag < 8000)) {
 		mission22_apply_early_kr(outcome)
 	}
-}
-
-[es=event_advance_month, mission=mission22]
-function mission22_pharaoh_favour_invasion(ev) {
-	// pak i=56: favour Pharaoh ×90 (no chain).
-	mission_pharaoh_favour_invasion_tick(mission, 90)
 }
 

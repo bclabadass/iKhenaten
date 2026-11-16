@@ -1,5 +1,7 @@
 #include "building.h"
 
+#include <new>
+
 #include "building/rotation.h"
 #include "building/building_type.h"
 #include "building/building_storage.h"
@@ -420,9 +422,6 @@ building_impl *building::dcast() {
     return _ptr;
 }
 
-building::building() {
-}
-
 const building* building::main() const {
     OZZY_PROFILER_SECTION(_, "building_main")
 
@@ -463,6 +462,15 @@ building* building::top_xy() {
 
 bool building::is_main() {
     return (prev_part_building_id == 0);
+}
+
+void building::reset_slot(building_id slot_id) {
+    this->~building();
+    // Members without an initializer were zero in the OG records. Value-initialization zeroes them
+    // before the constructor runs; a memset between the destructor and placement new is a store to
+    // dead storage, which GCC's lifetime DSE drops (stale next_part_building_id etc. survived).
+    new (this) building();
+    id = slot_id;
 }
 
 void building::clear_impl() {
@@ -659,7 +667,7 @@ void building::destroy_on_fire_impl(bool plagued) {
     clear_related_data();
 
     int waterside_building = 0;
-    if (type == BUILDING_DOCK || type == BUILDING_FISHING_WHARF || type == BUILDING_SHIPWRIGHT) {
+    if (type == BUILDING_DOCK || type == BUILDING_DOCK_UP || type == BUILDING_FISHING_WHARF || type == BUILDING_SHIPWRIGHT) {
         waterside_building = 1;
     }
 
@@ -749,65 +757,7 @@ xstring building::cls_name() const {
 }
 
 tile2i building::access_tile() {
-    switch (type) {
-    case BUILDING_SMALL_MASTABA:
-    case BUILDING_SMALL_MASTABA_ENTRANCE:
-    case BUILDING_SMALL_MASTABA_WALL:
-    case BUILDING_SMALL_MASTABA_SIDE:
-    case BUILDING_SMALL_STEPPED_PYRAMID:
-    case BUILDING_SMALL_BENT_PYRAMID:
-    case BUILDING_SMALL_PYRAMID:
-    case BUILDING_SMALL_MUDBRICK_PYRAMID:
-    case BUILDING_SMALL_MUDBRICK_PYRAMID_CORNER:
-    case BUILDING_SMALL_MUDBRICK_PYRAMID_WALL:
-    case BUILDING_SMALL_MUDBRICK_PYRAMID_CONE:
-        return main()->tile.shifted(0, 10);
-
-    case BUILDING_MEDIUM_MASTABA:
-    case BUILDING_MEDIUM_MASTABA_ENTRANCE:
-    case BUILDING_MEDIUM_MASTABA_WALL:
-    case BUILDING_MEDIUM_MASTABA_SIDE:
-    case BUILDING_MEDIUM_STEPPED_PYRAMID:
-    case BUILDING_MEDIUM_BENT_PYRAMID:
-    case BUILDING_MEDIUM_PYRAMID:
-    case BUILDING_MEDIUM_MUDBRICK_PYRAMID:
-    case BUILDING_MEDIUM_MUDBRICK_PYRAMID_CORNER:
-    case BUILDING_MEDIUM_MUDBRICK_PYRAMID_WALL:
-    case BUILDING_MEDIUM_MUDBRICK_PYRAMID_CONE:
-        return main()->tile.shifted(0, 14);
-
-    case BUILDING_LARGE_MASTABA:
-    case BUILDING_LARGE_MASTABA_ENTRANCE:
-    case BUILDING_LARGE_MASTABA_WALL:
-    case BUILDING_LARGE_MASTABA_SIDE:
-    // Mudbrick large is 16×16 (true large is 20×20 → shift 22).
-    case BUILDING_LARGE_MUDBRICK_PYRAMID:
-    case BUILDING_LARGE_MUDBRICK_PYRAMID_CORNER:
-    case BUILDING_LARGE_MUDBRICK_PYRAMID_WALL:
-    case BUILDING_LARGE_MUDBRICK_PYRAMID_CONE:
-        return main()->tile.shifted(0, 18);
-
-    case BUILDING_MUDBRICK_PYRAMID_COMPLEX:
-    case BUILDING_GRAND_MUDBRICK_PYRAMID_COMPLEX:
-    case BUILDING_LARGE_STEPPED_PYRAMID:
-    case BUILDING_STEPPED_PYRAMID_COMPLEX:
-    case BUILDING_GRAND_STEPPED_PYRAMID_COMPLEX:
-    case BUILDING_LARGE_PYRAMID:
-    case BUILDING_PYRAMID_COMPLEX:
-    case BUILDING_GRAND_PYRAMID_COMPLEX:
-        return main()->tile.shifted(0, 22);
-
-    case BUILDING_SPHINX:
-        if (auto *m = dcast_monument()) {
-            return m->access_point();
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return road_access;
+    return dcast()->access_tile();
 }
 
 int building::worker_percentage() const {
@@ -923,6 +873,5 @@ io_buffer* iob_building_highest_id = new io_buffer([](io_buffer* iob, size_t ver
 io_buffer* iob_building_highest_id_ever = new io_buffer([](io_buffer* iob, size_t version) {
     //iob->bind(BIND_SIGNATURE_INT32, &building_extra_data.highest_id_ever);
     iob->bind____skip(4);
-    iob->bind____skip(4);
-    //    highest_id_ever->skip(4);
+    iob->bind(BIND_SIGNATURE_INT32, &g_city.plagues.locusts_countdown);
 });

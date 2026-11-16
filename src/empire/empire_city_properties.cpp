@@ -5,6 +5,7 @@
 #include "imgui_internal.h"
 #include "empire/empire_map.h"
 #include "empire/empire.h"
+#include "graphics/elements/ui.h"
 
 ANK_REGISTER_PROPS_ITERATOR(config_load_selected_empire_city_properties);
 ANK_REGISTER_PROPS_ITERATOR(config_load_all_empire_city_properties);
@@ -34,7 +35,7 @@ void game_debug_show_properties_object(pcstr prefix, empire_city *c) {
         game_debug_show_property("is_open", c->is_open);
         game_debug_show_property("cost_to_open", c->cost_to_open);
         game_debug_show_property("ph_unk01", c->ph_unk01);
-        game_debug_show_property("ph_unk02", c->ph_unk02);
+        game_debug_show_property("trader_blocked", c->trader_blocked);
         game_debug_show_property("trader_entry_delay", c->trader_entry_delay);
         game_debug_show_property("empire_object_id", c->empire_object_id);
         game_debug_show_property("is_sea_trade", c->is_sea_trade);

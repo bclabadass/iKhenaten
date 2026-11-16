@@ -51,7 +51,7 @@ struct city_buildings_t {
     void shutdown();
 
     void update_tick(bool refresh_only);
-    void update_canals_from_water_lifts();
+    void update_water_supply();
     void pump_water_lifts_iterative();
     void stamp_water_lift_irrigation();
     void update_religion_supply_houses();
@@ -67,10 +67,6 @@ struct city_buildings_t {
     building_id temple_complex_id(e_building_type type);
     bool has_temple_complex();
     span_const<e_building_type> temple_complex_types();
-    void register_temple_complex_type(e_building_type type);
-    void clear_temple_complex_types() { temple_complex_type_list.clear(); }
-
-    svector<e_building_type, 16> temple_complex_type_list;
 
     int get_palace_id() const { return palace_building_id; }
     bool has_palace() const;
@@ -88,10 +84,14 @@ struct city_buildings_t {
     void request_warship_ship() { ++warships_requested; }
     void request_transport_ship() { ++transport_ships_requested; }
 
-    bool has_working_dock() const { return !tracked_buildings().at(BUILDING_DOCK).empty(); }
+    bool has_working_dock() const {
+        return !tracked_buildings().at(BUILDING_DOCK).empty()
+            || !tracked_buildings().at(BUILDING_DOCK_UP).empty();
+    }
     bool has_working_shipyard() const { return !tracked_buildings().at(BUILDING_SHIPWRIGHT).empty(); }
 
     void increase_count(e_building_type type, bool active);
+    void increase_active(e_building_type type);
     void increase_industry_count(int resource, bool active);
 
     int count_active(std::initializer_list<e_building_type> types);

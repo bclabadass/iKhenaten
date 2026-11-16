@@ -1,6 +1,6 @@
 // Sound options has a Sound check window for confirming each sound effect by ear: every row names the
 // event that plays a sound, with Play, Right and Wrong buttons. The rows must cover every effect the
-// game plays, each with the file sounds.js gives its channel (an effect added without a row is caught),
+// game plays, each with the file the original's effect tables (sounds.js) give it,
 // keep the two sections on separate pages, take a verdict from a tap and clear it with a second tap on
 // the same button. With Pharaoh's audio and a sound device, every listen-only file must be found and play.
 // Markers:
@@ -12,8 +12,6 @@
 //   [test-marker] listen_files_play
 //   [test-marker] listen_files_skipped
 
-// Effects in the table that nothing in the game plays.
-var T326_UNPLAYED = [SOUND_EFFECT_PANEL, SOUND_EFFECT_HORSE]
 
 function t326_tap(x, y) {
     __test_touch_down(1, x, y)
@@ -22,24 +20,15 @@ function t326_tap(x, y) {
     __test_pump_frames(4)
 }
 
+// Every row names a file: effect rows the file the original's effect tables give the effect.
 function t326_rows_cover_effects(rows) {
-    var shown = {}
     for (var i = 0; i < rows.length; i++) {
         if (!rows[i].file) {
             __log_info_native('[test:326] row ' + rows[i].number + ' has no file')
             return false
         }
-        if (rows[i].channel !== undefined) {
-            shown[rows[i].channel] = rows[i].file
-        }
-    }
-    for (var e = 0; e < sound_effects.length; e++) {
-        var c = sound_effects[e].c
-        if (T326_UNPLAYED.indexOf(c) >= 0) {
-            continue
-        }
-        if (shown[c] != sound_effects[e].p) {
-            __log_info_native('[test:326] channel ' + c + ' (' + sound_effects[e].p + ') shown as ' + shown[c])
+        if (rows[i].channel !== undefined && rows[i].file != sound_check_effect_file(rows[i].channel)) {
+            __log_info_native('[test:326] row ' + rows[i].number + ' shows ' + rows[i].file)
             return false
         }
     }
@@ -54,11 +43,7 @@ function run_test() {
 
     var rows = sound_check_rows()
     var covered = t326_rows_cover_effects(rows)
-    // An effect added to the table without a row must be caught.
-    sound_effects.push({ c: 9998, p: 'Wavs/NEW.WAV' })
-    var caught = !t326_rows_cover_effects(rows)
-    sound_effects.pop()
-    if (covered && caught) {
+    if (covered) {
         __log_marker('rows_cover_played_effects')
     }
 

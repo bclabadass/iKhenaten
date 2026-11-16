@@ -1,20 +1,41 @@
 log_info("akhenaten: mission 41 sumur started")
 
-// Cleopatra campaign scenario 41. Empire id=23.
-
-// Scenario enemy ENEMY_2_CANAANITE (briefing = Hittites — pak id wins).
-// Gods: Ra(2), Ptah(1). MM subtitle: Lands of the Levant. Start year -1300.
-// Funds Normal 5565 / loan 1500 / debt_interest 9. Rank 6 (pak).
-// Win: pop 3000 / culture 35 / prosperity 40 / monuments TEMP 9 (pak raw 6;
-//   first=22 Small Obelisk → formula 2.25×2+4.5=9) / kingdom 90 / housing level 14.
-// Climate northern; map_background empire pack id 21.
-// Full empire redefine (hide_pak_*) + JS event graph. SKIP empty map_obj idx=6.
-// Chain-only invasion i=11 (after LOST Qadesh) → JS chain via event_request_cleared.
-// Favour egypt×23 (i=30). Calendar canaanite×33 (i=31). next_mission 42 (Qadesh §13.4).
-// Recurring request/gift outcomes fire via request_cleared (shared ONLY_VIA = ALREADY_FIRED once).
-// Gift refuse paths are dead (engine gifts always COMPLETE).
-// Timber i=6 vs i=24 same m2/resource: handoff y16 (i=6 stops, i=24 starts).
-// Tag map: gift i5=3500+y; copper i5=7100+y (must differ — execute_event is first-tag-wins).
+// Mission 41 — Sumur, "Lands of the Levant". Rank 6 (Royal Governor).
+//
+// Goals:     population 3000, culture 35, prosperity 40, monuments 6, kingdom 90, housing level 14.
+// Start:     funds 5565, rescue loan 1500, debt interest 9% (normal difficulty).
+// Gods:      Ra (patron), Ptah.
+// Monuments: small obelisk.
+// Trade:     open at start — Qadesh; can open — Men-nefer, Rowarty, Waset, Enkomi (by sea), Timna, Jericho;
+//            opened by events — Knossos, Men-nefer; display only — Bahariya Oasis, Dakhla Oasis, Itjtawy,
+//            Menat Khufu, Pwenet, Tyre.
+// Enemies:   Canaanite raids (the briefing speaks of Hittites); Pharaoh's army (23) by sea with 3 warships
+//            if the kingdom rating falls to 0.
+// Timeline:  y0m2 gift of 16 grain and a request for 8 copper (kingdom +4, refused −3, late +1); y3m6
+//            Knossos asks 7 grain (delivered or late: Knossos route opens; refused: Qadesh asks 9 fish with
+//            the same outcomes); from y4m3 Menat Khufu asks 7 oil every year (delivered: gift of 8 granite);
+//            y5m1 Pwenet asks 9 gems (delivered: Men-nefer asks 20 weapons) — every path ends with the
+//            Qadesh route lost and a Canaanite raid 42 announced, attacking 10 months later; from y5m9 gift of 20 grain every year, each with a
+//            new request for 8 copper; y7m0 wages rise; y7m2..y15 Qadesh asks 21 timber every year
+//            (delivered: gift of 21 lettuce; late: 14 lettuce); y8m0 Pwenet asks 19 timber (delivered or
+//            late: Men-nefer route opens); y8m6 Rowarty buys more copper; y11m9 Men-nefer buys more timber;
+//            Canaanite raid 33 announced y12m3, attacks y12m10; y12m5, y13m8 sea trade problems; from y14m7 contaminated water every
+//            year; from y16m2 Men-nefer asks 14 timber every year (delivered: gift of 15 grain; late: 12
+//            lettuce); y20m0 wages rise. Most refusals cost 3 kingdom.
+//
+// Notes for developers:
+// - Raid locations follow OG: 1..8 = the only land point [54,72] (empty ones wrap round).
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields.
+// - Outcomes of repeating requests run from event_request_cleared and fire unique once-events: a shared
+//   chain-only event fires only once. Gifts always complete, so the original's gift-refusal outcomes are
+//   dead and not wired.
+// - Both timber requests want month 2: the Qadesh one stops after year 15 so the Men-nefer one can start
+//   in year 16.
+// - tag_id: 1000 + i chained events, 2000 + i calendar events, 3000 + i*100 + year repeating requests,
+//   7100 + year the copper request after the yearly gift (it must differ from the gift's 3500 + year:
+//   execute_event takes the first matching tag), 8000+ / 8500+ one-off kingdom changes / gifts,
+//   7030 Pharaoh's army (i = event index in the original scenario, quoted as "pak i=" below).
 
 mission41 { // Sumur — Lands of the Levant
 	map_file : "data/maps/m_041_sumur.map"
@@ -32,7 +53,6 @@ mission41 { // Sumur — Lands of the Levant
 	initial_funds [11130, 7420, 5565, 3730, 2950]
 	rescue_loans [3000, 2000, 1500, 1000, 800]
 	debt_interest [5, 7, 9, 11, 13]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -75,7 +95,7 @@ mission41 { // Sumur — Lands of the Levant
 		population    {enabled : true, goal : 3000 }
 		culture       {enabled : true, goal : 35 }
 		prosperity    {enabled : true, goal : 40 }
-		monuments     {enabled : true, goal : 9 }
+		monuments     {enabled : true, goal : 6 }
 		kingdom       {enabled : true, goal : 90 }
 		housing_level {enabled : true, goal : 14 }
 	}
@@ -92,6 +112,25 @@ mission41 { // Sumur — Lands of the Levant
 	burial_provisions [ ]
 
 	enable_scenario_events : true
+
+	events [
+		{ // pak i=30
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 23, min : 19, max : 28 }
+			months_initial : 10
+			location_fields [ 9, 9, -1, -1 ]
+			warships : 3
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7030
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_TROOPS
+		}
+	]
 
 	map_background : {pack:PACK_EMPIRE, id:21}
 	hide_pak_cities : true
@@ -113,8 +152,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 850
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_FLAX, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_WEAPONS, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_OIL ]
 			route_limits [
@@ -138,8 +175,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 625
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LETTUCE, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN ]
 			buys [ RESOURCE_GEMS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			route_limits [
@@ -161,8 +196,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 1600
 			is_sea_trade : true
 			type : EMPIRE_CITY_PHARAOH_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_FLAX, RESOURCE_GRANITE ]
 			buys [ RESOURCE_WEAPONS, RESOURCE_TIMBER, RESOURCE_OIL ]
 			route_limits [
@@ -183,8 +216,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 450
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_COPPER ]
 			buys [ RESOURCE_CHICKPEAS, RESOURCE_LINEN, RESOURCE_TIMBER ]
 			route_limits [
@@ -204,8 +235,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 210
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_OIL ]
 			buys [ RESOURCE_LINEN ]
 			route_limits [
@@ -223,8 +252,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 65
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_OIL ]
 			buys [ RESOURCE_LINEN, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -243,8 +270,6 @@ mission41 { // Sumur — Lands of the Levant
 			cost_to_open : 185
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_TIMBER, RESOURCE_COPPER, RESOURCE_OIL ]
 			buys [ RESOURCE_LINEN, RESOURCE_GRANITE ]
 			route_limits [
@@ -450,6 +475,7 @@ mission41 { // Sumur — Lands of the Levant
 	fishing_points [ [56, 121], [82, 117], [76, 102], [74, 118] ]
 
 	vars {
+		raids : ""
 		chain_leaves_wired : false
 
 		event0_gift_done : false
@@ -469,7 +495,6 @@ mission41 { // Sumur — Lands of the Levant
 		event24_timber_armed : false
 		event27_sea_done : false
 		event28_timber_done : false
-		event31_invasion_done : false
 
 		timber6_recurring_was_busy : false
 		timber6_recurring_idle_since_abs : -1
@@ -481,7 +506,6 @@ mission41 { // Sumur — Lands of the Levant
 		copper5_recurring_idle_since_abs : -1
 
 		inv_lost_qadesh_done : false
-		pharaoh_favour_invasion_done : false
 
 		kr_seq : 0
 		gift_seq : 0
@@ -572,51 +596,6 @@ function mission41_fire_simple_event(tag, type, resource, amount, city_name, sub
 	}
 	event.execute()
 	return event
-}
-
-// pak loc is 1-based invasion-point index; out of range → entry fallback (-1,-1).
-function mission41_loc_tile(loc) {
-	if (loc == 1) {
-		return [54, 72] // invasion_points_land[0]
-	}
-	if (loc == 2) {
-		return [30, 85] // disembark_points[0]
-	}
-	return [-1, -1]
-}
-
-function mission41_canaanite_raid(invasion_id, size, attack_target, loc) {
-	var tile = mission41_loc_tile(loc === undefined ? 0 : loc)
-	log_info("akhenaten: mission 41 canaanite raid size=" + size + " id=" + invasion_id
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_CANAANITE)
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_2_CANAANITE,
-		size: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target === undefined ? EVENT_ATTACK_TARGET_RANDOM : attack_target
-	})
-}
-
-function mission41_egypt_raid(invasion_id, size, attack_target, loc) {
-	var tile = mission41_loc_tile(loc === undefined ? 0 : loc)
-	log_info("akhenaten: mission 41 egypt raid size=" + size + " id=" + invasion_id
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: 0,
-		invasion_attack_target: attack_target === undefined ? EVENT_ATTACK_TARGET_RANDOM : attack_target
-	})
 }
 
 // Multi-fire outcomes (KR / gifts) must NOT use shared ONLY_VIA leaves — master becomes
@@ -972,34 +951,6 @@ function mission41_event_i28_timber(ev) {
 	mission41_fire_request(2028, RESOURCE_TIMBER, 19, 12, 1029, 0, 1029, 4, 0, "Pwenet")
 }
 
-// pak i=30: by_favour egypt×23 attack=TROOPS loc=9 → entry fallback (KR≤0)
-[es=event_advance_month, mission=mission41]
-function mission41_event_i30_favour(ev) {
-	if (mission.pharaoh_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	log_info("akhenaten: mission 41 favour egypt×23", {ev:ev, kr: city.rating_kingdom})
-	mission41_egypt_raid(30, 23, EVENT_ATTACK_TARGET_TROOPS, 9)
-}
-
-// pak i=31: canaanite×33 once y12m3 attack=BEST_BUILDINGS loc=5 → entry fallback
-[es=event_advance_month, mission=mission41]
-function mission41_event_i31_invasion(ev) {
-	if (mission.event31_invasion_done) {
-		return
-	}
-	if (ev.years_since_start < 12 || (ev.years_since_start == 12 && ev.month < 3)) {
-		return
-	}
-	mission.event31_invasion_done = true
-	log_info("akhenaten: mission 41 canaanite×33", {ev:ev})
-	mission41_canaanite_raid(31, 33, EVENT_ATTACK_TARGET_BEST_BUILDINGS, 5)
-}
-
 // Multi-fire outcomes + LOST Qadesh → canaanite×42 (pak i=11 loc=2)
 [es=event_request_cleared, mission=mission41]
 function mission41_on_request_cleared(ev) {
@@ -1066,6 +1017,23 @@ function mission41_on_request_cleared(ev) {
 	if (lost_chain && !mission.inv_lost_qadesh_done) {
 		mission.inv_lost_qadesh_done = true
 		log_info("akhenaten: mission 41 canaanite×42 after LOST Qadesh chain", {ev:ev, outcome:outcome})
-		mission41_canaanite_raid(11, 42, EVENT_ATTACK_TARGET_RANDOM, 2)
+		mission_raid_schedule(mission, mission41_raid_list(), "i11", 0)
 	}
+}
+
+// pak i=31; i=11 after the Qadesh route is lost (pak i=12, see mission41_on_request_cleared).
+function mission41_raid_list() {
+	var C = ENEMY_2_CANAANITE
+	var E = EVENT_INVADER_ENEMY
+	return [
+		{ key: "i11", invasion_id: 11, invader: E, enemy: C, amount: 42, months_initial: 10, location: [2, -1, 1, 3],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i31", invasion_id: 31, year: 12, month: 3, invader: E, enemy: C, amount: 33, months_initial: 7,
+			location: [5, 5, -1, -1], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS }
+	]
+}
+
+[es=event_advance_month, mission=mission41]
+function mission41_raids(ev) {
+	mission_raids_month(mission, mission41, ev, mission41_raid_list())
 }

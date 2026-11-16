@@ -18,6 +18,7 @@
 #include "grid/grid.h"
 #include "grid/terrain.h"
 
+#include <algorithm>
 #include <cmath>
 
 monument_pyramid_figure g_monument_pyramid_figure;
@@ -168,6 +169,136 @@ const pyramid_paired_parts *monument_pyramid_figure::pair_table_for(building *he
         return count > 0 ? tbl.data() : nullptr;
     }
     return nullptr;
+}
+
+building_id monument_pyramid_figure::part_pair(building* head, building_id part_id) const {
+    auto* ps = pyramid_part_state_get(part_id);
+    int count = 0;
+    const pyramid_paired_parts* table = pair_table_for(head, count);
+    if (!ps || !table) {
+        return 0;
+    }
+    for (int i = 0; i < count; ++i) {
+        if (table[i].second == (int16_t)ps->subtype) {
+            return part_id_by_subtype(head, table[i].first);
+        }
+        if (table[i].first == (int16_t)ps->subtype) {
+            return part_id_by_subtype(head, table[i].second);
+        }
+    }
+    return 0;
+}
+
+template <typename Compare>
+static void og_qsort(building_id* base, int count, Compare compare) {
+    enum { QSORT_STACK = 30, QSORT_CUTOFF = 8 };
+    if (count < 2) {
+        return;
+    }
+    building_id* stack_lo[QSORT_STACK];
+    building_id* stack_hi[QSORT_STACK];
+    int depth = 0;
+    building_id* lo = base;
+    building_id* hi = base + count - 1;
+    for (;;) {
+        const int num = (int)(hi - lo) + 1;
+        if (num <= QSORT_CUTOFF) {
+            while (hi > lo) {
+                building_id* maxp = lo;
+                for (building_id* p = lo + 1; p <= hi; ++p) {
+                    if (compare(*p, *maxp) > 0) {
+                        maxp = p;
+                    }
+                }
+                std::swap(*maxp, *hi);
+                --hi;
+            }
+        } else {
+            std::swap(lo[num >> 1], *lo);
+            building_id* loguy = lo;
+            building_id* higuy = hi + 1;
+            for (;;) {
+                do {
+                    ++loguy;
+                } while (loguy <= hi && compare(*loguy, *lo) <= 0);
+                do {
+                    --higuy;
+                } while (higuy > lo && compare(*higuy, *lo) >= 0);
+                if (higuy < loguy) {
+                    break;
+                }
+                std::swap(*loguy, *higuy);
+            }
+            std::swap(*lo, *higuy);
+            if ((higuy - lo) - 1 < hi - loguy) {
+                if (loguy < hi) {
+                    stack_lo[depth] = loguy;
+                    stack_hi[depth] = hi;
+                    depth++;
+                }
+                if (lo + 1 < higuy) {
+                    hi = higuy - 1;
+                    continue;
+                }
+            } else {
+                if (lo + 1 < higuy) {
+                    stack_lo[depth] = lo;
+                    stack_hi[depth] = higuy - 1;
+                    depth++;
+                }
+                if (loguy < hi) {
+                    lo = loguy;
+                    continue;
+                }
+            }
+        }
+        if (--depth < 0) {
+            return;
+        }
+        lo = stack_lo[depth];
+        hi = stack_hi[depth];
+    }
+}
+
+void monument_pyramid_figure::sort_frontier(building_id* parts, int count) const {
+    if (count < 2) {
+        return;
+    }
+    building* first = building_get(parts[0]);
+    building* head = first ? chain_head_for(first) : nullptr;
+    if (!head) {
+        return;
+    }
+    const int height = part_height_of(parts[0]);
+    int entry_count = 0;
+    const pyramid_entry_point* entries = entry_points_for(head, entry_count);
+    building_id origin_id = parts[0];
+    for (int i = 0; entries && i < entry_count; ++i) {
+        origin_id = part_id_by_subtype(head, entries[i].part);
+        if (entries[i].height >= height) {
+            break;
+        }
+    }
+    building* origin = building_get(origin_id);
+    if (!origin || !origin->id) {
+        origin = first;
+    }
+    const int ox = origin->tile.x();
+    const int oy = origin->tile.y();
+    auto distance = [&](building_id id) {
+        building* b = building_get(id);
+        const int dx = ox - b->tile.x();
+        const int dy = oy - b->tile.y();
+        int d = dy * dy + dx * dx;
+        if (building_id pair = part_pair(head, id)) {
+            building* p = building_get(pair);
+            const int pdx = ox - p->tile.x();
+            const int pdy = oy - p->tile.y();
+            d = std::max(d, pdy * pdy + pdx * pdx);
+        }
+        return d;
+    };
+    og_qsort(parts, count, [&](building_id a, building_id b) { return distance(b) - distance(a); });
 }
 
 building_id monument_pyramid_figure::frontier_pair_part(building_id part_id,
@@ -1026,12 +1157,7 @@ void monument_pyramid_figure::stonemason_arrive_part(figure_id fid) {
     }
 }
 
-building_id monument_pyramid_figure::find_mason_waiting_for_block(building *main, int clear_partner) {
-    building *head = chain_head_for(main);
-    if (!head) {
-        return 0;
-    }
-    svector<building_id, PYRAMID_PARTS_CAPACITY> frontier;
+static void collect_frontier(building* head, svector<building_id, PYRAMID_PARTS_CAPACITY>& frontier) {
     if (g_monument_pyramid_engine.uses_block_engine(head) && !mastaba_engine_is(head)) {
         pyramid_engine_find_frontier(head, frontier);
     } else if (mastaba_engine_is(head)) {
@@ -1041,6 +1167,45 @@ building_id monument_pyramid_figure::find_mason_waiting_for_block(building *main
             frontier.push_back(id);
         }
     }
+}
+
+void monument_pyramid_figure::wake_pair_mason(figure_id mason_fid) {
+    figure* mason = figure_get(mason_fid);
+    if (!mason) {
+        return;
+    }
+    building_id part_id = work_part_bid(mason);
+    if (!part_id) {
+        part_id = map_building_at(mason->destination_tile);
+    }
+    building* part = building_get(part_id);
+    building* head = (part && part->id) ? chain_head_for(part) : nullptr;
+    if (!head) {
+        return;
+    }
+    svector<building_id, PYRAMID_PARTS_CAPACITY> frontier;
+    collect_frontier(head, frontier);
+    const int pair_fid = pair_waiting_mason(part_id, frontier);
+    figure* pair = pair_fid > 0 ? figure_get(pair_fid) : nullptr;
+    if (!pair) {
+        return;
+    }
+    if (pair->type == FIGURE_BRICKLAYER) {
+        pair->advance_action(ACTION_2_BRICKLAYER_WORK);
+    } else if (pair->type == FIGURE_STONEMASON) {
+        pair->advance_action(ACTION_21_MASON_PYRAMID_WORK);
+    }
+    pair->wait_ticks = 0;
+}
+
+building_id monument_pyramid_figure::find_mason_waiting_for_block(building* main, int clear_partner) {
+    building* head = chain_head_for(main);
+    if (!head) {
+        return 0;
+    }
+    svector<building_id, PYRAMID_PARTS_CAPACITY> frontier;
+    collect_frontier(head, frontier);
+    sort_frontier(frontier.data(), (int)frontier.size());
     for (building_id id : frontier) {
         uint8_t is_first = 0;
         if (frontier_pair_part(id, frontier, &is_first) && is_first) {
@@ -1069,9 +1234,9 @@ building_id monument_pyramid_figure::find_mason_waiting_for_block(building *main
             figure *lab = figure_get(laborer_id);
             if (lab) {
                 const int st = lab->action_state;
-                if (st == ACTION_19_WORKER_CLIMB_RAMP || st == ACTION_20_WORKER_TO_MASON_ON_LAYER
-                    || st == ACTION_21_WORKER_WALK_TO_MASON || st == ACTION_17_WORKER_TO_MASON
-                    || st == ACTION_18_WORKER_DELIVER_BLOCK) {
+                if (st == ACTION_18_LABORER_CLIMB_RAMP || st == ACTION_19_LABORER_TO_MASON
+                    || st == ACTION_20_LABORER_WALK_TO_MASON || st == ACTION_17_LABORER_TO_PYRAMID
+                    || st == ACTION_29_LABORER_DELIVERED || st == ACTION_30_LABORER_SLED_AT_RAMP) {
                     laborer_on_way = 1;
                 }
             }
@@ -1129,7 +1294,7 @@ int monument_pyramid_figure::laborer_can_enter_ramp(figure_id fid) const {
             continue;
         }
         const figure *laborer = figure_get(laborer_id);
-        if (laborer && laborer->type == FIGURE_LABORER && laborer->action_state == ACTION_17_WORKER_TO_MASON
+        if (laborer && laborer->type == FIGURE_LABORER && laborer->action_state == ACTION_17_LABORER_TO_PYRAMID
             && laborer->routing_path_id > 0
             && std::abs(laborer->routing_path_length - laborer->routing_path_current_tile - remaining) < PYRAMID_LABORER_NEAR_TILES) {
             return 0;
@@ -1200,6 +1365,7 @@ void monument_pyramid_figure::laborer_pair_with_mason(figure_id fid) {
             frontier.push_back(id);
         }
     }
+    sort_frontier(frontier.data(), (int)frontier.size());
     int mason_index = 0;
     for (; mason_index < (int)frontier.size(); ++mason_index) {
         if (frontier[mason_index] == mason_part_id) {
@@ -1249,7 +1415,7 @@ void monument_pyramid_figure::laborer_pair_with_mason(figure_id fid) {
                 continue;
             } else {
                 const int st = other_laborer->action_state;
-                if (st != ACTION_16_WORKER_TO_YARD && st != ACTION_17_WORKER_TO_MASON) {
+                if (st != ACTION_15_LABORER_TO_STORAGE_YARD && st != ACTION_17_LABORER_TO_PYRAMID) {
                     continue;
                 }
             }
@@ -1307,6 +1473,7 @@ void monument_pyramid_figure::follow_on_ground(figure_id fid, figure *f, const f
         f->previous_tile_direction = f->direction;
         f->direction = leader->direction;
     }
+    f->advance_height();
 }
 
 int monument_pyramid_figure::follow_step_reaches_leader(figure_id fid, figure *f, const figure *leader, int climb_step_n, int distance) {
@@ -1360,11 +1527,17 @@ void monument_pyramid_figure::follow_closely(figure_id fid, figure_id leader_id,
     if (!f || !leader || !leader->is_alive()) {
         return;
     }
+    if (f->tile == f->source_tile) {
+        f->set_flag(e_figure_flag_invisible, true);
+    }
     if (walk_mode(f) != PYRAMID_WALK_NONE && walk_mode(leader) == PYRAMID_WALK_NONE) {
         walk_mode(f) = PYRAMID_WALK_NONE;
     }
     if (follow_step_reaches_leader(fid, f, leader, climb_step_n, distance)) {
         take_leader_walk(fid, f, leader, distance);
+    }
+    if (f->animctx.max_frames > 1) {
+        f->animctx.frame = leader->animctx.frame;
     }
 }
 
@@ -1390,30 +1563,46 @@ figure_id monument_pyramid_figure::find_train_leader(figure_id fid, int *positio
 }
 
 namespace {
-bool laborer_pulls_train(int action) {
-    switch (action) {
-    case ACTION_16_WORKER_TO_YARD:
-    case ACTION_17_WORKER_TO_MASON:
-    case ACTION_19_WORKER_CLIMB_RAMP:
-    case ACTION_20_WORKER_TO_MASON_ON_LAYER:
-    case ACTION_21_WORKER_WALK_TO_MASON:
-    case ACTION_18_WORKER_DELIVER_BLOCK:
-        return true;
-    default:
-        return false;
+    bool laborer_pulls_train(const figure& laborer, bool with_tomb_sled) {
+        const short action = laborer.action_state;
+        if (action == laborer.dcast()->ferry_wait_action() || action == laborer.dcast()->ferry_ride_action()) {
+            return true;
+        }
+        switch (action) {
+        case ACTION_17_LABORER_TO_PYRAMID:
+        case ACTION_30_LABORER_SLED_AT_RAMP:
+        case ACTION_18_LABORER_CLIMB_RAMP:
+        case ACTION_19_LABORER_TO_MASON:
+        case ACTION_20_LABORER_WALK_TO_MASON:
+        case ACTION_23_LABORER_SLED_TO_SUN_TEMPLE:
+        case ACTION_34_LABORER_SLED_TO_CAESAREUM:
+        case ACTION_35_LABORER_SLED_TO_LIGHTHOUSE:
+        case ACTION_31_LABORER_SLED_TO_LIBRARY:
+        case ACTION_26_LABORER_SLED_TO_MAUSOLEUM:
+        case ACTION_37_LABORER_SLED_TO_MASTABA:
+        case ACTION_29_LABORER_DELIVERED:
+            return true;
+        case ACTION_36_LABORER_SLED_TO_TOMB:
+            return with_tomb_sled;
+        default:
+            return false;
+        }
     }
-}
 
-bool front_keeps_pulling(const figure *f, int /*is_sled*/) {
-    figure *front = figure_get(f->leading_figure_id);
-    if (!front || !front->is_alive()) {
-        return false;
+    bool front_keeps_pulling(const figure* f, bool is_sled) {
+        figure* front = figure_get(f->leading_figure_id);
+        if (!front || !front->is_alive()) {
+            return false;
+        }
+        if (front->type == FIGURE_LABORER) {
+            return laborer_pulls_train(*front, is_sled);
+        }
+        return front->type == FIGURE_SLED_PULLER && front->action_state == ACTION_8_SLED_TRAIN_FOLLOW;
     }
-    if (front->type == FIGURE_LABORER) {
-        return laborer_pulls_train(front->action_state);
+
+    bool leader_on_ferry(const figure& leader) {
+        return leader.action_state == leader.dcast()->ferry_ride_action();
     }
-    return front->type == FIGURE_SLED_PULLER && front->action_state == ACTION_8_SLED_TRAIN_FOLLOW;
-}
 } // namespace
 
 void monument_pyramid_figure::train_follow(figure_id fid, int is_sled) {
@@ -1424,11 +1613,7 @@ void monument_pyramid_figure::train_follow(figure_id fid, int is_sled) {
     int position = 0;
     figure_id leader_id = find_train_leader(fid, &position);
     figure *leader = figure_get(leader_id);
-    if (!leader || !leader->is_alive()) {
-        f->poof();
-        return;
-    }
-    if (f->action_state != ACTION_8_SLED_TRAIN_FOLLOW) {
+    if (!leader || !leader->is_alive() || f->action_state != ACTION_8_SLED_TRAIN_FOLLOW) {
         f->poof();
         return;
     }
@@ -1440,9 +1625,14 @@ void monument_pyramid_figure::train_follow(figure_id fid, int is_sled) {
         return;
     }
 
+    if (leader_on_ferry(*leader)) {
+        f->set_flag(e_figure_flag_invisible, true);
+        return;
+    }
+
     int max_spacing = is_sled ? LABORER_SLED_SPACING : LABORER_PULLER_SPACING;
     int spacing = max_spacing;
-    if (leader->action_state == ACTION_18_WORKER_DELIVER_BLOCK) {
+    if (leader->action_state == ACTION_29_LABORER_DELIVERED) {
         const int sled_extra = is_sled ? (LABORER_SLED_SPACING - LABORER_PULLER_SPACING) : 0;
         spacing = (LABORER_PULLER_SPACING * position) - leader->wait_ticks + sled_extra;
         if (spacing < 1) {
@@ -1454,52 +1644,93 @@ void monument_pyramid_figure::train_follow(figure_id fid, int is_sled) {
     follow_closely(fid, f->leading_figure_id, 1, spacing);
 }
 
-void monument_pyramid_figure::spawn_sled_train(figure_id laborer_fid, building *monument) {
+void monument_pyramid_figure::spawn_sled_train(figure_id laborer_fid) {
     figure *laborer = figure_get(laborer_fid);
-    if (!laborer || !monument) {
+    if (!laborer) {
         return;
     }
 
     figure_id previous_id = laborer_fid;
-    int side = 0;
+    uint8_t side = 0;
     for (int i = 0; i < LABORER_SLED_PULLERS; ++i) {
-        figure *puller = figure_create(FIGURE_SLED_PULLER, laborer->tile, laborer->direction);
+        figure* puller = figure_create(FIGURE_SLED_PULLER, laborer->tile, 0);
         if (!puller || !puller->id) {
             return;
         }
         puller->action_state = ACTION_8_SLED_TRAIN_FOLLOW;
         puller->leading_figure_id = (int16_t)previous_id;
-        puller->set_home(0);
         puller->wait_ticks = 0;
         puller->roam_length = 0;
         if (auto *sp = smart_cast<figure_sled_puller>(puller)) {
             sp->runtime_data().walk_mode = PYRAMID_WALK_NONE;
+            sp->runtime_data().side = side;
         }
-        // OG: resource_id toggles side for puller sprite; remake keeps 0/1 in resource_id.
-        puller->resource_id = (e_resource)side;
         side = 1 - side;
         previous_id = puller->id;
     }
 
-    figure *sled = figure_create(FIGURE_SLED, laborer->tile, laborer->direction);
-    if (!sled || !sled->id) {
+    create_sled(laborer, previous_id);
+}
+
+void monument_pyramid_figure::spawn_single_sled(figure_id laborer_fid) {
+    figure *laborer = figure_get(laborer_fid);
+    if (!laborer) {
         return;
     }
+    if (figure* sled = create_sled(laborer, laborer_fid)) {
+        // OG at_storage_yard_lamps: source (0,0), so the lone sled is never hidden on its spawn tile.
+        sled->source_tile = tile2i::invalid;
+    }
+}
+
+// Remake (gameplay_change_sled_pullers_flee): the pullers run off, the sled keeps the laborer's load
+// where it stands and the laborer goes back to its camp empty-handed.
+void monument_pyramid_figure::drop_train(figure_id member_fid) {
+    int position = 0;
+    const figure_id leader_id = find_train_leader(member_fid, &position);
+    figure* laborer = figure_get(leader_id);
+    if (!laborer || !laborer->is_alive()) {
+        return;
+    }
+
+    svector<figure*, LABORER_TRAIN_MAX_LINKS> members;
+    for (figure* f : map_figures()) {
+        if (!f || !f->is_alive() || (f->type != FIGURE_SLED && f->type != FIGURE_SLED_PULLER) || members.full()) {
+            continue;
+        }
+        if (find_train_leader(f->id, &position) == leader_id) {
+            members.push_back(f);
+        }
+    }
+
+    for (figure* m : members) {
+        if (m->type == FIGURE_SLED) {
+            m->action_state = ACTION_9_SLED_DROPPED;
+            m->leading_figure_id = 0;
+            m->resource_amount_full = laborer->resource_amount_full;
+            m->set_flag(e_figure_flag_invisible, false);
+        } else {
+            m->dcast()->begin_runaway();
+        }
+    }
+
+    if (auto* worker = laborer->dcast_worker()) {
+        worker->drop_load();
+    }
+}
+
+figure* monument_pyramid_figure::create_sled(figure* laborer, figure_id front_id) {
+    figure* sled = figure_create(FIGURE_SLED, laborer->tile, 0);
+    if (!sled || !sled->id) {
+        return nullptr;
+    }
     sled->action_state = ACTION_8_SLED_TRAIN_FOLLOW;
-    sled->leading_figure_id = (int16_t)previous_id;
-    sled->set_home(0);
+    sled->resource_id = (e_resource)laborer->collecting_item_id;
+    sled->leading_figure_id = (int16_t)front_id;
     sled->wait_ticks = 0;
     sled->roam_length = 0;
-    sled->set_destination(monument);
     if (auto *sl = smart_cast<figure_sled>(sled)) {
         sl->runtime_data().walk_mode = PYRAMID_WALK_NONE;
-        int amount = monument_engine_config.default_bricks_per_block;
-        if (auto *mon = monument->dcast_monument()) {
-            amount = mon->phase_bricks_per_block(mon->phase());
-            if (amount <= 0) {
-                amount = monument_engine_config.default_bricks_per_block;
-            }
-        }
-        sl->load_resource(RESOURCE_BRICKS, amount);
     }
+    return sled;
 }

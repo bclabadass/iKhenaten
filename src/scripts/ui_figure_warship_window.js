@@ -82,11 +82,11 @@ figure_warship_info_window {
         crewfatique_lb   : text({pos: [102, 88] }),
         crewfatique_val  : text({pos: [232, 88], text:"" }),
 
-        hold_position    : image_button({param1:3, param2:9, pos:[87 * 0 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 0, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        engage_nearby    : image_button({param1:2, param2:11, pos:[87 * 1 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 1, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        seek_and_destroy : image_button({param1:4, param2:13, pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 2, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        repair           : image_button({param1:5, param2:15, pos:[87 * 3 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 3, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        return_to_wharf  : image_button({param1:1, param2:17, pos:[87 * 4 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 4, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        hold_position    : image_button({size:[81, 80], param1:3, param2:9, pos:[87 * 0 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 0, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        engage_nearby    : image_button({size:[81, 80], param1:2, param2:11, pos:[87 * 1 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 1, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        seek_and_destroy : image_button({size:[81, 80], param1:4, param2:13, pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 2, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        repair           : image_button({size:[81, 80], param1:5, param2:15, pos:[87 * 3 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 3, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        return_to_wharf  : image_button({size:[81, 80], param1:1, param2:17, pos:[87 * 4 + 16, 134], pack:PACK_UNLOADED, id:37, offset:0 + 4, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
 
         inner_panel      : inner_panel({pos : [16, 220], size: [27, 6],
             ui : {

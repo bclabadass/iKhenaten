@@ -1,5 +1,36 @@
 log_info("akhenaten: mission 13 buhen started")
 
+// Mission 13 — Buhen, "Expansion to Nubia". Rank 5 (Royal Mayor).
+//
+// Goals:     population 3000, culture 25, prosperity 25, monuments 6, kingdom 75, housing level 10.
+// Start:     funds 10000, rescue loan 5000, debt interest 20% (normal difficulty).
+// Gods:      Ptah, Seth.
+// Monuments: small obelisk.
+// Trade:     nothing open at start; can open — Abu, Selima Oasis, Serabit Khadim, Men-nefer (by sea),
+//            Meidum (by sea), Enkomi (by sea); display only — Behdet, Byblos, Dahshur, Kerma, Kyrene,
+//            Nekhen, Saqqara.
+// Enemies:   Kushite raids by land (8 waves, 8 to 36 soldiers); Pharaoh's army (22, then 21, then 28)
+//            if the kingdom rating falls to 0.
+// Timeline:  every January from y1 clay pits flood; y1m6 request 8 limestone; every m9 from y2 Pharaoh
+//            asks for 9 beer (not while the last ask is open); y3m2 request 16 limestone; y4m7 Kyrene
+//            asks for 60 troops (won: a further 400 troops; refused/late: Dahshur falls, copper and gems
+//            get dearer; lost: Enkomi falls); y4m10 request 25 limestone; y5m1 more granite demand;
+//            y6m1 request 2000 oil; y6m5 raid 8 announced (attacks y8m5); y7m2 request 32 limestone; y7m4
+//            festival request 13 beer (gift of 12 granite, 6 if late); y9m11 request 20 limestone; y10m0 more
+//            granite demand; y10m6 raid 16 announced (attacks y12m6); y11m7 request 11 limestone; raids
+//            announced two years before they attack: 16 y12m8 (y14m8), 24 y13m3 (y15m3), 24 y15m5 (y17m5),
+//            32 y17m1 (y19m1), 32 y18m1 (y20m1); raid 36 announced y20m8, attacks y22m2.
+//
+// Notes for developers:
+// - The map has no invasion points, so raids come in by the map exit.
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields; a recurring
+//   raid comes back its year plus the years since start later (OG scenario_events_rearm).
+// - Sending the troops starts a distant battle; refusing or arriving late skips the battle.
+// - tag_id: 1000 + i chained events and requests, 2000 + i calendar events, 3000 + i*100 + year the
+//   yearly beer ask, 4000 + year*10 + k clay pit floods, 7000 + i Pharaoh's army
+//   (i = event index in the original scenario, also quoted as "pak i=" in comments below).
+
 mission13 { // Buhen — Expansion to Nubia
 	map_file : "data/maps/m_013_buhen.map"
 
@@ -16,7 +47,6 @@ mission13 { // Buhen — Expansion to Nubia
 	initial_funds [20000, 13300, 10000, 6700, 5300]
 	rescue_loans [10000, 6700, 5000, 3300, 2700]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	init_resources : {
 		bricks: { type:RESOURCE_BRICKS, allow: true},
@@ -59,13 +89,13 @@ mission13 { // Buhen — Expansion to Nubia
 	]
 
 	// Goals aligned with original campaign scenario 13: pop 1/3000, culture 1/25, prosperity
-	// 1/25, monuments TEMP 9 (pak raw 6; one small obelisk → formula 9, see header),
+	// 1/25, monuments 1/6 (pak; one small obelisk, OG weight 1 → 6),
 	// kingdom 1/75, housing_level 1/10 (housing count goal 0 ignored).
 	win_criteria {
 		population    {enabled : true, goal : 3000 }
 		culture       {enabled : true, goal : 25 }
 		prosperity    {enabled : true, goal : 25 }
-		monuments     {enabled : true, goal : 9 }
+		monuments     {enabled : true, goal : 6 }
 		kingdom       {enabled : true, goal : 75 }
 		housing_level {enabled : true, goal : 10 }
 	}
@@ -79,6 +109,54 @@ mission13 { // Buhen — Expansion to Nubia
 	disembark_points [ [-1, -1], [-1, -1], [71, 49] ]
 
 	enable_scenario_events : true
+
+	events [
+		{ // pak i=48
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 22, min : 20, max : 30 }
+			months_initial : 9
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7048
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=49
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 21, min : 20, max : 30 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7049
+			on_completed_action : 2
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=50
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 28, min : 20, max : 30 }
+			months_initial : 0
+			location_fields [ 3, 3, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7050
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
 
 	// Empire from original campaign scenario 13 (empire id=13) — full map objects.
 	map_background : {pack:PACK_EMPIRE, id:1}
@@ -103,8 +181,6 @@ mission13 { // Buhen — Expansion to Nubia
 			cost_to_open : 600
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_STRAW, RESOURCE_FLAX, RESOURCE_LINEN, RESOURCE_GEMS, RESOURCE_GRANITE ]
 			buys [ RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -128,8 +204,6 @@ mission13 { // Buhen — Expansion to Nubia
 			cost_to_open : 300
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_PAPYRUS, RESOURCE_COPPER ]
 			route_limits [
@@ -152,8 +226,6 @@ mission13 { // Buhen — Expansion to Nubia
 			cost_to_open : 900
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_TIMBER, RESOURCE_REEDS, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LINEN ]
 			route_limits [
@@ -178,8 +250,6 @@ mission13 { // Buhen — Expansion to Nubia
 			cost_to_open : 800
 			is_sea_trade : true
 			type : EMPIRE_CITY_PHARAOH_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER ]
 			route_limits [
@@ -201,8 +271,6 @@ mission13 { // Buhen — Expansion to Nubia
 			cost_to_open : 1580
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_COPPER ]
 			buys [ RESOURCE_BEER ]
 			route_limits [
@@ -222,8 +290,6 @@ mission13 { // Buhen — Expansion to Nubia
 			cost_to_open : 1250
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_COPPER ]
 			route_limits [
 				{ resource: RESOURCE_GEMS, limit: 2500 }
@@ -398,6 +464,7 @@ mission13 { // Buhen — Expansion to Nubia
 	]
 
 	vars {
+		raids : ""
 		// Chain-leaf wiring (idempotent, all wired once from on_start).
 		shared_kr_leaves_wired : false
 		granite_gift_leaves_wired : false
@@ -422,28 +489,11 @@ mission13 { // Buhen — Expansion to Nubia
 		beer_recurring_idle_since_abs : -1
 
 		// One-shot Kushite invasions (pak i=9/14/16/17/18/19/20/21).
-		kushite_i9_done : false
-		kushite_i14_done : false
-		kushite_i16_done : false
-		kushite_i17_done : false
-		kushite_i18_done : false
-		kushite_i19_done : false
-		kushite_i20_done : false
-		kushite_i21_done : false
 
 		// Recurring clay pit floods (pak i=22-29), fired together every year from y1m0.
 		clay_pit_flood_last_year : -1
 
 		// Favour Pharaoh invasion — three waves (pak i=48→49→50: 22→21→28).
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_chain_done : false
-		pharaoh_favour_enemies_seen : false
-		pharaoh_favour_wave_next : -1
-		pharaoh_favour_wave_seq : 0
-		pharaoh_favour_wave2_enemies_seen : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_wave3_enemies_seen : false
-		pharaoh_favour_wave3_done : false
 
 		start_message_shown : false
 	}
@@ -586,20 +636,6 @@ function mission13_ensure_troops_chain_leaves() {
 	troops2.set_defeat_action_tag(1036)
 }
 
-// pak enemy_id=6 ENEMY_6_KUSHITE. No invasion land points in pak → auto tile (falls
-// back to the map exit point, see scenario_start_invasion_impl).
-function mission13_kushite_raid(invasion_id, size, attack_target) {
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_6_KUSHITE,
-		size: size,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target
-	})
-}
-
 [es=event_mission_start, mission=mission13]
 function mission13_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_KUSHITE)
@@ -738,20 +774,6 @@ function mission13_event_i8_oil_request(ev) {
 	mission13_fire_request(2008, RESOURCE_OIL, 2000, 6, 1030, 1032, 1031, 4, 0)
 }
 
-// pak i=9: year=6 month=5 Kushite invasion size=8 once, attack=BEST_BUILDINGS(2).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i9_kushite_invasion(ev) {
-	if (mission.kushite_i9_done) {
-		return
-	}
-	if (ev.years_since_start < 6 || (ev.years_since_start == 6 && ev.month < 5)) {
-		return
-	}
-	mission.kushite_i9_done = true
-	log_info("akhenaten: mission 13 buhen i9 kushite invasion size=8 y6m5", {ev:ev})
-	mission13_kushite_raid(0, 8, EVENT_ATTACK_TARGET_BEST_BUILDINGS)
-}
-
 // pak i=10: year=7 month=2 limestone×32/24mo once; ok→KR+6 refuse→KR−8 late→KR−4.
 [es=event_advance_month, mission=mission13]
 function mission13_event_i10_limestone_request(ev) {
@@ -809,20 +831,6 @@ function mission13_event_i13_granite_demand(ev) {
 	mission13_fire_simple_event(2013, EVENT_TYPE_DEMAND_INCREASE, RESOURCE_GRANITE, 5)
 }
 
-// pak i=14: year=10 month=6 Kushite invasion size=16 once, attack=BEST_BUILDINGS(2).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i14_kushite_invasion(ev) {
-	if (mission.kushite_i14_done) {
-		return
-	}
-	if (ev.years_since_start < 10 || (ev.years_since_start == 10 && ev.month < 6)) {
-		return
-	}
-	mission.kushite_i14_done = true
-	log_info("akhenaten: mission 13 buhen i14 kushite invasion size=16 y10m6", {ev:ev})
-	mission13_kushite_raid(1, 16, EVENT_ATTACK_TARGET_BEST_BUILDINGS)
-}
-
 // pak i=15: year=11 month=7 limestone×11/18mo once; ok→KR+6 refuse→KR−8 late→KR−4.
 [es=event_advance_month, mission=mission13]
 function mission13_event_i15_limestone_request(ev) {
@@ -835,90 +843,6 @@ function mission13_event_i15_limestone_request(ev) {
 	mission.event15_limestone_done = true
 	log_info("akhenaten: mission 13 buhen i15 limestone request y11m7", {ev:ev})
 	mission13_fire_request(2015, RESOURCE_LIMESTONE, 11, 18, 1030, 1032, 1031, 4, 0)
-}
-
-// pak i=16: year=12 month=8 Kushite invasion size=16 once, attack=RANDOM(4).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i16_kushite_invasion(ev) {
-	if (mission.kushite_i16_done) {
-		return
-	}
-	if (ev.years_since_start < 12 || (ev.years_since_start == 12 && ev.month < 8)) {
-		return
-	}
-	mission.kushite_i16_done = true
-	log_info("akhenaten: mission 13 buhen i16 kushite invasion size=16 y12m8", {ev:ev})
-	mission13_kushite_raid(2, 16, EVENT_ATTACK_TARGET_RANDOM)
-}
-
-// pak i=17: year=13 month=3 Kushite invasion size=24 once, attack=RANDOM(4).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i17_kushite_invasion(ev) {
-	if (mission.kushite_i17_done) {
-		return
-	}
-	if (ev.years_since_start < 13 || (ev.years_since_start == 13 && ev.month < 3)) {
-		return
-	}
-	mission.kushite_i17_done = true
-	log_info("akhenaten: mission 13 buhen i17 kushite invasion size=24 y13m3", {ev:ev})
-	mission13_kushite_raid(3, 24, EVENT_ATTACK_TARGET_RANDOM)
-}
-
-// pak i=18: year=15 month=5 Kushite invasion size=24 once, attack=VAULTS(1).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i18_kushite_invasion(ev) {
-	if (mission.kushite_i18_done) {
-		return
-	}
-	if (ev.years_since_start < 15 || (ev.years_since_start == 15 && ev.month < 5)) {
-		return
-	}
-	mission.kushite_i18_done = true
-	log_info("akhenaten: mission 13 buhen i18 kushite invasion size=24 y15m5", {ev:ev})
-	mission13_kushite_raid(4, 24, EVENT_ATTACK_TARGET_VAULTS)
-}
-
-// pak i=19: year=17 month=1 Kushite invasion size=32 once, attack=FOOD(0).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i19_kushite_invasion(ev) {
-	if (mission.kushite_i19_done) {
-		return
-	}
-	if (ev.years_since_start < 17 || (ev.years_since_start == 17 && ev.month < 1)) {
-		return
-	}
-	mission.kushite_i19_done = true
-	log_info("akhenaten: mission 13 buhen i19 kushite invasion size=32 y17m1", {ev:ev})
-	mission13_kushite_raid(5, 32, EVENT_ATTACK_TARGET_FOOD)
-}
-
-// pak i=20: year=18 month=1 Kushite invasion size=32 once, attack=BEST_BUILDINGS(2).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i20_kushite_invasion(ev) {
-	if (mission.kushite_i20_done) {
-		return
-	}
-	if (ev.years_since_start < 18 || (ev.years_since_start == 18 && ev.month < 1)) {
-		return
-	}
-	mission.kushite_i20_done = true
-	log_info("akhenaten: mission 13 buhen i20 kushite invasion size=32 y18m1", {ev:ev})
-	mission13_kushite_raid(6, 32, EVENT_ATTACK_TARGET_BEST_BUILDINGS)
-}
-
-// pak i=21: year=20 month=8 Kushite invasion size=36 once, attack=RANDOM(4).
-[es=event_advance_month, mission=mission13]
-function mission13_event_i21_kushite_invasion(ev) {
-	if (mission.kushite_i21_done) {
-		return
-	}
-	if (ev.years_since_start < 20 || (ev.years_since_start == 20 && ev.month < 8)) {
-		return
-	}
-	mission.kushite_i21_done = true
-	log_info("akhenaten: mission 13 buhen i21 kushite invasion size=36 y20m8", {ev:ev})
-	mission13_kushite_raid(7, 36, EVENT_ATTACK_TARGET_RANDOM)
 }
 
 // pak i=22-29: year=1+ month=0 CLAY_PIT_FLOOD recurring ×8 (amounts 8,8,9,5,8,6,9,5).
@@ -946,8 +870,31 @@ function mission13_clay_pit_flood_recurring(ev) {
 	}
 }
 
-// pak i=48/49/50: by_favour Pharaoh army size=22 → 21 → 28.
+// pak i=9, 14, 16..21: the Kushite raids.
+function mission13_raid_list() {
+	var E = EVENT_INVADER_ENEMY
+	var K = ENEMY_6_KUSHITE
+	return [
+		{ key: "i9", invasion_id: 9, year: 6, month: 5, invader: E, enemy: K, amount: 8, months_initial: 24,
+			location: [1, 1, -1, -1], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS },
+		{ key: "i14", invasion_id: 14, year: 10, month: 6, invader: E, enemy: K, amount: 16, months_initial: 24,
+			location: [2, 2, -1, -1], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS },
+		{ key: "i16", invasion_id: 16, year: 12, month: 8, invader: E, enemy: K, amount: 16, months_initial: 24,
+			location: [3, 3, -1, -1], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i17", invasion_id: 17, year: 13, month: 3, invader: E, enemy: K, amount: 24, months_initial: 24,
+			location: [2, 2, -1, -1], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i18", invasion_id: 18, year: 15, month: 5, invader: E, enemy: K, amount: 24, months_initial: 24,
+			location: [1, 1, -1, -1], attack_target: EVENT_ATTACK_TARGET_VAULTS },
+		{ key: "i19", invasion_id: 19, year: 17, month: 1, invader: E, enemy: K, amount: 32, months_initial: 24,
+			location: [3, 3, -1, -1], attack_target: EVENT_ATTACK_TARGET_FOOD },
+		{ key: "i20", invasion_id: 20, year: 18, month: 1, invader: E, enemy: K, amount: 32, months_initial: 24,
+			location: [2, 2, -1, -1], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS },
+		{ key: "i21", invasion_id: 21, year: 20, month: 8, invader: E, enemy: K, amount: 36, months_initial: 18,
+			location: [2, -1, 1, 3], attack_target: EVENT_ATTACK_TARGET_RANDOM }
+	]
+}
+
 [es=event_advance_month, mission=mission13]
-function mission13_pharaoh_favour_invasion(ev) {
-	mission_pharaoh_favour_invasion_tick(mission, [22, 21, 28])
+function mission13_raids(ev) {
+	mission_raids_month(mission, mission13, ev, mission13_raid_list())
 }

@@ -1,3 +1,16 @@
+// Custom mission 135 — Enkomi (Cleopatra map Enkomi.map). Rank 0 (Village Elder).
+//
+// Goals:     house count 6, housing level 2.
+// Start:     funds 3750, rescue loan 3750 (normal difficulty).
+// Gods:      none (no temples allowed).
+// Monuments: none.
+// Trade:     no empire cities configured.
+// Enemies:   none.
+// Timeline:  no events.
+//
+// Notes for developers: a placeholder copied from the sandbox stub — only houses and roads can be built,
+// and "message_enkomi" has no entry in the game messages.
+
 mission135 { // Enkomi, custom mission
 	start_message : "message_enkomi"
     selection_title : "Enkomi"
@@ -16,7 +29,6 @@ mission135 { // Enkomi, custom mission
 
 	initial_funds [7500, 5000, 3750, 2500, 2000]
 	rescue_loans [7500, 5000, 3750, 2500, 2000]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	buildings [
 		BUILDING_HOUSE_VACANT_LOT, BUILDING_CLEAR_LAND, BUILDING_ROAD

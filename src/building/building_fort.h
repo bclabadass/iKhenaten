@@ -29,7 +29,6 @@ public:
     } BUILDING_RUNTIME_DATA_T;
 
     virtual void on_place_update_tiles(int orientation, int variant) override;
-    virtual void on_place_checks() override;
     virtual void on_destroy() override;
     virtual void on_post_load() override;
     virtual void spawn_figure() override;

@@ -1,19 +1,35 @@
 log_info("akhenaten: mission 47 tanis started")
 
-// Cleopatra campaign scenario 47. Empire id=1.
-
-// Scenario enemy ENEMY_11_ROMAN (briefing = Persian / Conon - pak id wins).
-// Gods: Osiris(1), Ra(2), Seth(1). MM subtitle: Rebirth of a Navy. Start year -395.
-// Funds Normal 8000 / loan 2000 / debt_interest 8. Rank 6 (pak).
-// Win: pop 2500 / culture 30 / prosperity 40 / monuments off / kingdom 45 /
-//   housing level 10 / survival 10y (m25=3 m50=6 m75=10). time_limit off (pak years=10 unused).
-// Climate central; map_background empire pack id 24.
-// Redefine: enable_scenario_events + events[] (20; favour KR; i=0 ok=55 clamped to -1) + hide_pak empire + texts/ornaments.
-// Config-only fish/herd/disembark/inv (omit -> empty). Must copy from dump.
-// Sparse pak_allowed -> briefing fill; warship TEMP (CL-M / Naval) despite editor slot 43 off.
-// Trade JS: Enkomi (timber+copper) / Men-nefer / Athens.
-// next_mission -1 (campaign end - must not spill to Capital 48).
-// Alt briefing: message_mission_tanis_2 (456). Warship TEMP (CL-M / Naval).
+// Mission 47 — Tanis, "Rebirth of a Navy". Rank 6 (Royal Governor).
+//
+// Goals:     population 2500, culture 30, prosperity 40, kingdom 45, housing level 10, survive 10 years.
+// Start:     funds 8000, rescue loan 2000, debt interest 8% (normal difficulty).
+// Gods:      Osiris, Ra, Seth.
+// Monuments: none.
+// Trade:     can open — Enkomi, Athens (by sea), Men-nefer; display only — Abu, Behdet, Byblos,
+//            Dakhla Oasis, Farafra Oasis, Gaza, Henen-nesw, Jericho, Kyrene, Menat Khufu, Nekhen, On,
+//            Qadesh, Migdol, Sauty, Sawu, Sharuhen, Thinis, Timna, Tyre, Waset.
+// Enemies:   Roman raids by sea (the scenario enemy; the briefing speaks of Persians under Conon);
+//            Pharaoh's army (26) by land if the kingdom rating falls to 0.
+// Timeline:  y2m7 Pharaoh asks 7 papyrus (delivered: gift of 7 chickpeas; late: chickpeas cost more;
+//            refused: Men-nefer route lost, then a request for 10 reeds — delivered or late: the route
+//            reopens; refused: kingdom −4); y3m6 request 5 papyrus (delivered: kingdom +5; refused: Athens
+//            route lost; late: Athens buys fewer pomegranates); 3 warships with no soldiers announced y4m0,
+//            attack y4m2; from y5m3 Pharaoh asks 9 fish every year (delivered: gift of 11 weapons, then
+//            kingdom +4; refused: −4; late: +4); y5m4 locusts; raid 16 with 5 warships announced y6m2,
+//            attacks y6m10, and 3 more warships follow (announced y7m2, attack y7m4); y7m5 Enkomi route lost;
+//            raid 12 with 4 warships announced y8m2, attacks y9m0.
+//
+// Notes for developers:
+// - The calendar invasions of the original (pak i=0, 5, 12) are raids from JS (mission47_raids); their
+//   events[] slots stay as EVENT_TYPE_NONE so the other indexes keep. Points 9..11 are sea points 0..2; the
+//   map has two, so 11 wraps round to sea point 0 as in OG (i=12 rolls 10 or 11).
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields.
+// - The warship wharf is enabled for the navy briefing although the original scenario disallows it.
+// - next_mission -1: the Ancient Conquerors campaign ends here and must not continue into mission 48.
+// - The other events are declared in events[] and run by the engine; on_*_action values are indexes into
+//   that list.
 
 mission47 { // Tanis - Rebirth of a Navy
 	map_file : "data/maps/m_047_tanis.map"
@@ -27,7 +43,6 @@ mission47 { // Tanis - Rebirth of a Navy
 	initial_funds [16000, 10670, 8000, 5360, 4240]
 	rescue_loans [4000, 2670, 2000, 1340, 1060]
 	debt_interest [5, 6, 8, 10, 12]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -98,22 +113,8 @@ mission47 { // Tanis - Rebirth of a Navy
 
 	enable_scenario_events : true
 	events [
-		{
-			type : EVENT_TYPE_INVASION
-			time { year : 4, month : 0 }
-			item { value : 1 }
-			amount { value : 0 }
-			months_initial : 2
-			location_fields [ 9, -1, 9, 10 ]
-			event_trigger_type : EVENT_TRIGGER_ONCE
-			on_completed_action : -1
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 7
-			invasion_attack_target : 3
+		{ // pak i=0: invasion, started from JS (mission47_raids)
+			type : EVENT_TYPE_NONE
 		}
 		{
 			type : EVENT_TYPE_REQUEST
@@ -179,22 +180,8 @@ mission47 { // Tanis - Rebirth of a Navy
 			subtype : 3
 			city_id : 4
 		}
-		{
-			type : EVENT_TYPE_INVASION
-			time { year : 6, month : 2 }
-			item { value : 1 }
-			amount { value : 16 }
-			months_initial : 8
-			location_fields [ 11, 11, -1, -1 ]
-			event_trigger_type : EVENT_TRIGGER_ONCE
-			on_completed_action : 0
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 4
-			invasion_attack_target : 2
+		{ // pak i=5: invasion, started from JS (mission47_raids)
+			type : EVENT_TYPE_NONE
 		}
 		{
 			type : EVENT_TYPE_LOCUSTS
@@ -292,22 +279,8 @@ mission47 { // Tanis - Rebirth of a Navy
 			subtype : 3
 			city_id : 4
 		}
-		{
-			type : EVENT_TYPE_INVASION
-			time { year : 8, month : 2 }
-			item { value : 1 }
-			amount { value : 12 }
-			months_initial : 10
-			location_fields [ 11, -1, 10, 12 ]
-			event_trigger_type : EVENT_TRIGGER_ONCE
-			on_completed_action : -1
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 8
-			invasion_attack_target : 4
+		{ // pak i=12: invasion, started from JS (mission47_raids)
+			type : EVENT_TYPE_NONE
 		}
 		{
 			type : EVENT_TYPE_REQUEST
@@ -445,8 +418,6 @@ mission47 { // Tanis - Rebirth of a Navy
 			cost_to_open : 800
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_POMEGRANATES, RESOURCE_BEER ]
 			route_limits [
@@ -466,8 +437,6 @@ mission47 { // Tanis - Rebirth of a Navy
 			cost_to_open : 150
 			is_sea_trade : false
 			type : EMPIRE_CITY_PHARAOH_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CHICKPEAS, RESOURCE_BARLEY ]
 			buys [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_TIMBER, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -488,8 +457,6 @@ mission47 { // Tanis - Rebirth of a Navy
 			cost_to_open : 1000
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_WEAPONS, RESOURCE_POTTERY, RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_POMEGRANATES, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -720,6 +687,7 @@ mission47 { // Tanis - Rebirth of a Navy
 
 	vars {
 		start_message_shown : false
+		raids : ""
 	}
 }
 
@@ -740,4 +708,25 @@ function mission47_on_start(ev) {
 	for (var i = ADVISOR_NONE + 1; i <= ADVISOR_DIPLOMACY; i++) {
 		city.set_advisor_available(i, 1)
 	}
+}
+
+// pak i=0, 5, 12: the calendar invasions of the scenario enemy, all by sea. As i=5 attacks it chains a copy of
+// i=0 (OG invasion_attack chains on_completed without the chain-only check), due 4 months later (i=0 time.year).
+function mission47_raid_list() {
+	return [
+		{ key: "i0", invasion_id: 0, year: 4, month: 0, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_11_ROMAN, amount: 0,
+			months_initial: 2, location: [9, -1, 9, 10], warships: 3, attack_target: EVENT_ATTACK_TARGET_TROOPS },
+		{ key: "i5", invasion_id: 5, year: 6, month: 2, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_11_ROMAN, amount: 16,
+			months_initial: 8, location: [11, 11, -1, -1], warships: 5, attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS,
+			then: [{ key: "i0_copy", delay: 4 }] },
+		{ key: "i0_copy", invasion_id: 20, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_11_ROMAN, amount: 0,
+			months_initial: 2, location: [9, -1, 9, 10], warships: 3, attack_target: EVENT_ATTACK_TARGET_TROOPS },
+		{ key: "i12", invasion_id: 12, year: 8, month: 2, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_11_ROMAN, amount: 12,
+			months_initial: 10, location: [11, -1, 10, 12], warships: 4, attack_target: EVENT_ATTACK_TARGET_RANDOM }
+	]
+}
+
+[es=event_advance_month, mission=mission47]
+function mission47_raids(ev) {
+	mission_raids_month(mission, mission47, ev, mission47_raid_list())
 }

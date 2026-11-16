@@ -1,22 +1,33 @@
 log_info("akhenaten: mission 24 waset started")
 
-// Empire / events aligned with original campaign scenario 24 (2026-07-26 dump).
-// Empire id=1. Scenario enemy ENEMY_6_KUSHITE; timed invasions invader=egypt(2).
-// Gods: Osiris, Ra (patron), Bast. Funds Normal 9000 / loan 4000 / debt 20. Rank 8.
-// Win: pop 6000 / culture 55 / prosperity 45 / monuments 20 (pak; Sun Temple+pyramid) / kingdom 70 / housing 10.
-// Burial: weapons×16 pottery×16 luxury×10. Climate northern (map).
-// Trade: Dakhla(4) Thinis(1) Dunqul(3) Men-nefer(5 sea) Khmun(6 sea).
-// Display: Henen-nesw(2 sea) Kharga(0) Nekhen Sauty.
-// Kerma: display foreign route 23 (pak 19→23); unlocked y3m1 via i=42 NEW_TRADE (pak city=Kharga+loc23).
-// Triage: SKIP empty map_obj idx=6; SKIP orphan route 19.
-// Events: fish/granite recurring; oil extortion + egypt chain refuse; troops ladders; failed flood;
-// favour 66@loc1→40@loc2→40@loc9. Invasion loc 1-based land point (only land[0]=[23,48] exists).
-// i=7 subtype=3 = Is Naval (editor); via_sea sea[0]=[63,37] + transports (E3c).
+// Mission 24 — Waset (Thebes), "Civil War". Rank 8 (Chancellor).
 //
-// Tag_id scheme:
-//   1000 + i               chain-only leaves
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring calendar roots
+// Goals:     population 6000, culture 55, prosperity 45, monuments 20, kingdom 70, housing level 10.
+// Start:     funds 9000, rescue loan 4000, debt interest 20% (normal difficulty).
+// Gods:      Osiris, Ra, Bast.
+// Monuments: Sun Temple and small pyramid; burial provisions 16 weapons, 16 pottery, 10 luxury goods.
+// Trade:     nothing open at start; can open — Thinis, Dunqul Oasis, Dakhla Oasis, Men-nefer (by sea),
+//            Khmun (by sea); opened by events — Kerma (y3m1); display only — Henen-nesw, Kharga Oasis,
+//            Nekhen, Sauty.
+// Enemies:   no timed raids; small Egyptian raids by sea if an oil request is refused; an Egyptian army
+//            (66, then 40, then 40 by sea with 9 warships) if the kingdom rating falls to 0. The scenario
+//            enemy is set to Kushite, but no Kushite army is sent.
+// Timeline:  every m3 from y2 Nekhen asks for 11 fish (not while the last ask is open); y3m1 Kerma route
+//            opens; y4m10 Nekhen demands 884 oil (refused: Egyptian raid 6 by sea with 1 warship
+//            announced 4 months later, attacking 2 months after that; delivered: kingdom -6); y7m2 Nekhen asks for 8 troops; y9m1 Sauty asks for 7 copper;
+//            y10m4 Sauty demands 238 oil (refused: Egyptian raid 4 by sea with 1 warship announced
+//            4 months later, attacking 3 months after that; delivered: kingdom -15); y11m5 failed flood; y12m1 Kharga Oasis asks for 16 weapons; y15m1 Men-nefer
+//            asks for 20 troops (refused: Kharga Oasis falls, kingdom -34); every m4 from y19 Men-nefer
+//            asks for 20 granite (not while the last ask is open).
+//
+// Notes for developers:
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later; location 9 = sea point [63,37] with the event's warships.
+// - The original's Kerma route event names Kharga Oasis (with Kerma's route number); it is pointed at
+//   Kerma, whose goods are filled in because the original leaves them empty.
+// - tag_id: 1000 + i chained events, 2000 + i calendar events, 3000 + i*100 + year yearly requests,
+//   7000 + i the favour army (i = event index in the original scenario, also quoted as "pak i=" in
+//   comments below).
 
 mission24 { // Waset (Thebes) — Civil War
 	map_file : "data/maps/m_024_waset.map"
@@ -54,7 +65,6 @@ mission24 { // Waset (Thebes) — Civil War
 	initial_funds [18000, 12000, 9000, 6000, 4500]
 	rescue_loans [8000, 5300, 4000, 2700, 2000]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -93,7 +103,7 @@ mission24 { // Waset (Thebes) — Civil War
 		BUILDING_SCRIBAL_SCHOOL, BUILDING_LIBRARY,
 	]
 
-	// Monuments goal 20 (pak threshold; ST weight 4 + small pyramid 8 → 31≥20).
+	// Monuments goal 20 = pak: Sun Temple (4) + small pyramid (4) + burial weapons 16/16, pottery 16/16 (2) → trunc(6.32·√10+0.5)=20.
 	win_criteria {
 		population    {enabled : true, goal : 6000 }
 		culture       {enabled : true, goal : 55 }
@@ -121,6 +131,55 @@ mission24 { // Waset (Thebes) — Civil War
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=41
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 66, min : 60, max : 90 }
+			months_initial : 9
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7041
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=43
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 40 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7043
+			on_completed_action : 2
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=44
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 40 }
+			months_initial : 0
+			location_fields [ 9, 9, -1, -1 ]
+			warships : 9
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7044
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
 	cities [
@@ -142,8 +201,6 @@ mission24 { // Waset (Thebes) — Civil War
 				cost_to_open : 800
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_BRICKS, RESOURCE_TIMBER ]
 				buys [ RESOURCE_MEAT, RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_PAPYRUS, RESOURCE_GRANITE ]
 				route_limits [
@@ -165,8 +222,6 @@ mission24 { // Waset (Thebes) — Civil War
 				cost_to_open : 375
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_BEER ]
 				buys [ RESOURCE_COPPER ]
 				route_limits [
@@ -185,8 +240,6 @@ mission24 { // Waset (Thebes) — Civil War
 				cost_to_open : 400
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_GEMS, RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_SANDSTONE ]
 				buys [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_REEDS, RESOURCE_PAPYRUS ]
 				route_limits [
@@ -211,8 +264,6 @@ mission24 { // Waset (Thebes) — Civil War
 				cost_to_open : 1250
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 				buys [ RESOURCE_LETTUCE, RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 				route_limits [
@@ -235,8 +286,6 @@ mission24 { // Waset (Thebes) — Civil War
 				cost_to_open : 700
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LINEN, RESOURCE_STONE ]
 				buys [ RESOURCE_POTTERY, RESOURCE_TIMBER, RESOURCE_PAPYRUS ]
 				route_limits [
@@ -270,8 +319,6 @@ mission24 { // Waset (Thebes) — Civil War
 				is_sea_trade : false
 				trade : false
 				type : EMPIRE_CITY_FOREIGN
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS ]
 				buys [ RESOURCE_LINEN, RESOURCE_LUXURY_GOODS ]
 				route_limits [
@@ -426,6 +473,7 @@ mission24 { // Waset (Thebes) — Civil War
 		]
 
 	vars {
+		raids : ""
 		fish_leaves_wired : false
 		oil_i4_leaves_wired : false
 		troops_i10_leaves_wired : false
@@ -444,8 +492,6 @@ mission24 { // Waset (Thebes) — Civil War
 		event29_troops_done : false
 		event42_trade_done : false
 
-		oil_i4_egypt_done : false
-		oil_i18_egypt_done : false
 
 		event0_fish_last_year : -1
 		event37_granite_last_year : -1
@@ -454,11 +500,6 @@ mission24 { // Waset (Thebes) — Civil War
 		granite_recurring_was_busy : false
 		granite_recurring_idle_since_abs : -1
 
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_wave3_done : false
-		pharaoh_favour_wave2_enemies_seen : false
-		pharaoh_favour_wave3_enemies_seen : false
 
 		start_message_shown : false
 	}
@@ -519,40 +560,6 @@ function mission24_fire_request(tag, resource, amount, months, ok_tag, fail_tag,
 	}
 	request.execute()
 	return request
-}
-
-// pak location_fields after randomize = 1-based land invasion point index (MAX 8).
-// Map only has land[0]=[23,48] and sea[0]=[63,37]. Missing/OOB → -1 (Egyptian → map entry).
-function mission24_loc_tile(loc) {
-	if (loc == 1) {
-		return [23, 48]
-	}
-	// loc=2: no land point 2 in pak; keep unset (entry fallback for Egyptian).
-	// loc=9: OOB (editor default); same.
-	return [-1, -1]
-}
-
-function mission24_egypt_raid(invasion_id, size, attack_target, loc, naval) {
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	var opts = {
-		invasion_id: invasion_id,
-		enemy: ENEMY_3_EGYPTIAN,
-		size: size,
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target
-	}
-	if (naval) {
-		// pak subtype=3 Is Naval → via_sea at invasion_points_sea[0]
-		opts.via_sea = 1
-		opts.sea_point = 0
-		opts.tilex = 63
-		opts.tiley = 37
-	} else {
-		var tile = mission24_loc_tile(loc === undefined ? 9 : loc)
-		opts.tilex = tile[0]
-		opts.tiley = tile[1]
-	}
-	city.start_foreign_army_invasion(opts)
 }
 
 function mission24_ensure_fish_leaves() {
@@ -665,24 +672,6 @@ function mission24_ensure_granite_leaves() {
 	mission24_make_leaf(1038, EVENT_TYPE_REPUTATION_INCREASE, undefined, 16, 2)
 	mission24_make_leaf(1039, EVENT_TYPE_REPUTATION_DECREASE, undefined, 11, 2)
 	mission24_make_leaf(1040, EVENT_TYPE_REPUTATION_INCREASE, undefined, 7, 2)
-}
-
-function mission24_favour_wave(size, invasion_id, loc) {
-	var tile = mission24_loc_tile(loc === undefined ? 9 : loc)
-	log_info("akhenaten: mission 24 waset favour wave size=" + size + " kr=" + city.rating_kingdom
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	})
 }
 
 [es=event_mission_start, mission=mission24]
@@ -809,61 +798,31 @@ function mission24_event_i42_new_trade_kerma(ev) {
 	}).execute()
 }
 
-// Chain invasions from JS after request refuse (EVENT_TYPE_INVASION no-op).
-[es=event_request_cleared, mission=mission24]
-function mission24_on_request_cleared(ev) {
-	var outcome = mission_request_outcome(ev)
-	if (ev.tag_id == 2004 && outcome == "refuse" && !mission.oil_i4_egypt_done) {
-		mission.oil_i4_egypt_done = true
-		log_info("akhenaten: mission 24 egypt×6 via_sea after oil×884 refuse (i=7 subtype=3)", {ev:ev})
-		// pak subtype=3 Is Naval; i=21 refuse raid is land (subtype=0).
-		mission24_egypt_raid(7, 6, EVENT_ATTACK_TARGET_VAULTS, 9, true)
-		return
-	}
-	if (ev.tag_id == 2018 && outcome == "refuse" && !mission.oil_i18_egypt_done) {
-		mission.oil_i18_egypt_done = true
-		log_info("akhenaten: mission 24 egypt×4 after oil×238 refuse (i=21)", {ev:ev})
-		mission24_egypt_raid(21, 4, EVENT_ATTACK_TARGET_VAULTS, 9)
-	}
+// pak i=7 / i=21: Egyptian raids after the oil requests i=4 / i=18 are refused, due 4 months on (time.year).
+function mission24_raid_list() {
+	var G = ENEMY_3_EGYPTIAN
+	var E = EVENT_INVADER_EGYPT
+	return [
+		{ key: "i7", invasion_id: 7, invader: E, enemy: G, amount: 6, months_initial: 2, location: [9, 9, -1, -1],
+			warships: 1, attack_target: EVENT_ATTACK_TARGET_VAULTS },
+		{ key: "i21", invasion_id: 21, invader: E, enemy: G, amount: 4, months_initial: 3, location: [9, 9, -1, -1],
+			warships: 1, attack_target: EVENT_ATTACK_TARGET_VAULTS }
+	]
 }
 
-// pak i=41→43→44: favour egypt×66 loc=1 →×40 loc=2 →×40 loc=9 (attack=RANDOM).
 [es=event_advance_month, mission=mission24]
-function mission24_pharaoh_favour_invasion(ev) {
-	if (mission.pharaoh_favour_wave2_done && !mission.pharaoh_favour_wave3_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_wave3_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_wave3_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_wave3_done = true
-		mission24_favour_wave(40, 44, 9)
-		return
-	}
+function mission24_raids(ev) {
+	mission_raids_month(mission, mission24, ev, mission24_raid_list())
+}
 
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_wave2_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_wave2_enemies_seen = true
-			return
-		}
-		if (!mission.pharaoh_favour_wave2_enemies_seen) {
-			return
-		}
-		mission.pharaoh_favour_wave2_done = true
-		mission24_favour_wave(40, 43, 2)
+[es=event_request_cleared, mission=mission24]
+function mission24_on_request_cleared(ev) {
+	if (mission_request_outcome(ev) != "refuse") {
 		return
 	}
-
-	if (mission.pharaoh_favour_invasion_done) {
-		return
+	if (ev.tag_id == 2004) {
+		mission_raid_schedule(mission, mission24_raid_list(), "i7", 4)
+	} else if (ev.tag_id == 2018) {
+		mission_raid_schedule(mission, mission24_raid_list(), "i21", 4)
 	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	mission.pharaoh_favour_wave2_enemies_seen = false
-	mission.pharaoh_favour_wave3_enemies_seen = false
-	mission24_favour_wave(66, 41, 1)
 }

@@ -140,7 +140,7 @@ bool building_farm::requested_workers() const {
 }
 
 void building_farm::draw_workers(painter &ctx, building *b, tile2i tile, vec2i pos) {
-    if (b->num_workers == 0) {
+    if (b->num_workers == 0 || g_city.plagues.locusts_countdown > 0) {
         return;
     }
 
@@ -456,9 +456,12 @@ void building_farm::deplete_soil() {
             }
         }
     } else {
+        // OG farm_reduce_fertility_of: an irrigated farm loses 50%, a dry one 80%, never below 1.
+        const int keep = map_is_irrigated_for_farm(tile()) ? 50 : 20;
         for (int _y = tiley(); _y < tiley() + size(); _y++) {
             for (int _x = tilex(); _x < tilex() + size(); _x++) {
-                int new_fert = map_get_fertility(MAP_OFFSET(_x, _y), FERT_WITH_MALUS) * 0.2f;
+                const int fert = map_get_fertility(MAP_OFFSET(_x, _y), FERT_WITH_MALUS);
+                int new_fert = std::max(1, fert * keep / 100);
                 int malus = new_fert - map_get_fertility(MAP_OFFSET(_x, _y), FERT_NO_MALUS);
                 map_soil_set_depletion(MAP_OFFSET(_x, _y), malus);
             }

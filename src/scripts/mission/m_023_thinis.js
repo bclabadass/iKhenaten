@@ -1,27 +1,47 @@
 log_info("akhenaten: mission 23 thinis civil-war started")
 
-// Empire / events aligned with original campaign scenario 23 (2026-07-26 dump).
-// Empire id=23. Scenario enemy ENEMY_6_KUSHITE (Nubian opportunism); Egyptian = loyalist/favour.
-// Gods: Osiris, Ra, Ptah. Funds Normal 13350 / loan 4200 / debt 20. Rank 9. Climate northern.
-// Win: pop 4500 / culture 25 / prosperity 35 / monuments 0 / kingdom 90 / housing count 10 + level 10.
-// Burial empty. No monument slots.
-// Trade: Waset(1) Men-nefer(2) Dunqul(3) Henen-nesw(4) Nekhen(5) Sauty(8) Khmun(9).
-// Display: Kharga(6) Dakhla(7) Kerma(10) Jericho(11). SKIP orphan routes 12/13/14; empty map_obj idx=8.
-// Protect (briefing): Temple Complex of Osiris + family mansion are pre-placed on the map
-// and omitted from buildings[] — cannot rebuild if destroyed (original; not mission-fail).
-// Altar/oracle stay allowed so the existing complex can still be upgraded.
-// Keys: message_mission_thinis (423) — NOT thinis_2 / NOT gold_and_crime (mission 1).
-// Oil i=7: ok/late → KR−10 → LOST×3 → pottery×23 → NEW×3 → (i=17) egypt×38;
-//          refuse → KR+7 → LOST×3 → (i=10) egypt×38. Egypt armed by leaf 1019, spawned next month tick.
-// Troops i=35–44: ok NEW→KR+5→enemy×29 wipe→egypt×33→KR+5; refuse KR−20→egypt×72 wipe→copper×30.
-// Copper outcomes: ok→egypt×72; refuse→enemy×29→egypt×33; late→egypt×33.
-// Henna×60 i=46–54: ok→egypt×32 wipe→enemy×48→KR+5→unlock troops rec; refuse→KR−25→egypt×72→enemy×48→KR+5;
-//   late→KR−12→unlock troops rec (also calendar y17).
+// Mission 23 — Thinis, "Civil War". Rank 9 (Vizier).
 //
-// Tag_id scheme:
-//   1000 + i               chain-only leaves / chain requests
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring calendar roots
+// Goals:     population 4500, culture 25, prosperity 35, kingdom 90, housing count 10, housing level 10.
+// Start:     funds 13350, rescue loan 4200, debt interest 20% (normal difficulty).
+// Gods:      Osiris, Ra, Ptah.
+// Monuments: none. The Temple Complex of Osiris and the family mansion stand on the map and must be
+//            protected: they are not in the buildings list, so they cannot be rebuilt (losing them does
+//            not fail the mission). The altar and oracle stay buildable to upgrade the complex.
+// Trade:     nothing open at start; can open — Waset, Dunqul Oasis, Nekhen, Sauty, Khmun, Men-nefer
+//            (by sea), Henen-nesw (by sea); display only — Kharga Oasis, Dakhla Oasis, Kerma, Jericho.
+//            Several routes are closed and reopened by the oil request (see the timeline).
+// Enemies:   Egyptian loyalist raids and Kushite raids, by land and by sea; an Egyptian army (50, then
+//            50) if the kingdom rating falls to 0.
+// Timeline:  raids are announced months_initial months before they attack. y1m7 request 120 henna within
+//            2 months (whatever the outcome, Henen-nesw falls and loses its route); y2m1 gift of 10 copper;
+//            y2m4 gift of 8 beer; y3m0 Sauty falls; y3m7 more pottery demand; y5m0 Kushite raid 21
+//            (attacks y5m5, and again every time its army is gone); y5m1 request 10 game meat (refused or
+//            late: a gift of 16 copper follows); y6m0 request 142 oil within 2 months (refused: kingdom +7,
+//            Henen-nesw, Sauty and Khmun lose their routes, then Egyptian raid 38 a month later, attacking
+//            4 months after that; delivered or late: kingdom -10, Waset, Men-nefer and Dunqul Oasis lose
+//            their routes, then a request for 23 pottery, repeated until delivered, which reopens them and
+//            brings the Egyptian raid 38; as that raid attacks: kingdom +10 and a request for 39 pottery);
+//            y7m0 Kushite raid 24 by sea with 1 warship (attacks y7m10, kingdom +5); y10m3 Khmun is
+//            besieged and asks for 48 troops (sent: Men-nefer route opens, then Kushite raid 29 by sea with
+//            2 warships and as it attacks Egyptian raid 33 by sea with 4 warships; refused: kingdom -20,
+//            Egyptian raid 72 by sea with 4 warships, which brings a request for 30 copper as it attacks —
+//            delivered: another raid 72, refused: raids 29 and 33, late: raid 33; late or lost: kingdom
+//            -10 and the ask repeats); y14m4 request 60 henna within 3 months (delivered: Egyptian raid 32
+//            by land, then Kushite raid 48 by sea with 3 warships, then the yearly troops asks start early;
+//            refused: kingdom -25, Egyptian raid 72 by sea with 5 warships, then Kushite raid 48 by sea with
+//            3 warships; late: kingdom -12 and the yearly troops asks start early); every January from y17
+//            a request for 48 troops (not while the last one is open).
+//
+// Notes for developers:
+// - Briefing key is message_mission_thinis; not thinis_2 and not mission 1's gold_and_crime.
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, each chained raid due its time.year months after its parent
+//   attacks or its request clears; locations 1 / 2 = land points [10,22] / [54,212], 9+ = sea point
+//   (number - 9; 13 wraps round to sea point 0) with the event's warships.
+// - tag_id: 1000 + i chained events and requests, 2000 + i calendar events, 3000 + i*100 + year yearly
+//   troops asks, 204200 + n copper requests, 7000 + i the favour army (i = event index in the original
+//   scenario, also quoted as "pak i=" in comments below).
 
 mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 	map_file : "data/maps/m_023_thinis.map"
@@ -59,7 +79,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 	initial_funds [26700, 17800, 13350, 8900, 7080]
 	rescue_loans [8400, 5600, 4200, 2800, 2200]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -122,6 +141,39 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=62
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 50 }
+			months_initial : 9
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7062
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=63
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 50 }
+			months_initial : 0
+			location_fields [ 3, 3, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7063
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	hide_pak_cities : true
 	cities [
 		{
@@ -143,8 +195,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 240
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_STONE, RESOURCE_LIMESTONE, RESOURCE_GRANITE, RESOURCE_COPPER ]
 			route_limits [
 				{ resource: RESOURCE_CLAY, limit: 4000 }
@@ -165,8 +215,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 840
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_LETTUCE, RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -190,8 +238,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 475
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GAMEMEAT, RESOURCE_GEMS, RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_SANDSTONE ]
 			buys [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_REEDS, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -217,8 +263,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 580
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FIGS, RESOURCE_CLAY, RESOURCE_BEER, RESOURCE_FLAX ]
 			route_limits [
 				{ resource: RESOURCE_FIGS, limit: 4000 }
@@ -237,8 +281,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 280
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_FLAX, RESOURCE_LINEN ]
 			buys [ RESOURCE_PAPYRUS ]
 			route_limits [
@@ -259,8 +301,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 140
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POMEGRANATES ]
 			buys [ RESOURCE_CHICKPEAS ]
 			route_limits [
@@ -278,8 +318,6 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 			cost_to_open : 180
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LINEN, RESOURCE_STONE ]
 			buys [ RESOURCE_POTTERY, RESOURCE_TIMBER, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -471,11 +509,11 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 	]
 
 	vars {
+		raids : ""
 		gift_copper_done : false
 		gift_beer_done : false
 		gamemeat_done : false
 		oil_done : false
-		enemy24_done : false
 		henna120_done : false
 		siege_khmun_done : false
 		henna60_done : false
@@ -484,28 +522,8 @@ mission23 { // Thinis — Civil War FIP; != mission1 Dawn
 		shared_leaves_wired : false
 		troops_leaves_wired : false
 		henna60_leaves_wired : false
-		egypt38_done : false
-		egypt38_pending : false
-		egypt72_done : false
-		egypt32_done : false
-		enemy29_done : false
-		enemy48_a_done : false
-		enemy48_b_done : false
-		egypt33_done : false
-		// Wipe polls: after wave seen+cleared, spawn next.
-		await_egypt33_after_enemy29 : false
-		enemy29_enemies_seen : false
-		await_copper_after_egypt72 : false
-		egypt72_enemies_seen : false
 		copper_seq : 0
-		// Henna×60 wipe chain: egypt32→enemy48→KR+unlock | egypt72→enemy48→KR
-		henna60_chain : ""
-		henna60_enemies_seen : false
 		troops_recurring_unlocked : false
-		recurring_enemy_last_year : -1
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_chain_done : false
-		pharaoh_favour_enemies_seen : false
 	}
 }
 
@@ -566,91 +584,6 @@ function mission23_fire_request(tag, resource, amount, months, ok_tag, fail_tag,
 	return request
 }
 
-// pak location_fields after randomize = 1-based land invasion point index.
-// Map: land[0]=[10,22] land[1]=[54,212]; sea unused (all invasions subtype=0).
-// Missing/OOB → -1 (engine entry fallback).
-function mission23_loc_tile(loc) {
-	if (loc == 1) {
-		return [10, 22]
-	}
-	if (loc == 2) {
-		return [54, 212]
-	}
-	return [-1, -1]
-}
-
-function mission23_egypt_raid(invasion_id, size, attack_target, on_completed_tag, loc) {
-	var tile = mission23_loc_tile(loc === undefined ? 0 : loc)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	var opts = {
-		invasion_id: invasion_id,
-		enemy: ENEMY_3_EGYPTIAN,
-		size: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target !== undefined ? attack_target : EVENT_ATTACK_TARGET_RANDOM
-	}
-	if (on_completed_tag) {
-		opts.on_completed_tag = on_completed_tag
-	}
-	city.start_foreign_army_invasion(opts)
-}
-
-function mission23_kushite_raid(invasion_id, size, on_completed_tag, loc) {
-	var tile = mission23_loc_tile(loc === undefined ? 0 : loc)
-	__image_request_pak(PACK_ENEMY_KUSHITE)
-	var opts = {
-		invasion_id: invasion_id,
-		enemy: ENEMY_6_KUSHITE,
-		size: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: size,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	}
-	if (on_completed_tag) {
-		opts.on_completed_tag = on_completed_tag
-	}
-	city.start_foreign_army_invasion(opts)
-}
-
-// pak i=38 wipe → i=43 egypt×33 → i=44 KR+5.
-function mission23_start_enemy29_then_egypt33() {
-	mission.await_egypt33_after_enemy29 = true
-	mission.enemy29_enemies_seen = false
-	log_info("akhenaten: mission 23 enemy x29 (then egypt x33 after wipe)")
-	mission23_kushite_raid(38, 29, undefined, 10) // pak loc=10 OOB
-}
-
-// pak i=40 wipe → i=42 copper×30 (fire after wipe; re-arm uses new tag).
-function mission23_start_egypt72_then_copper() {
-	mission.await_copper_after_egypt72 = true
-	mission.egypt72_enemies_seen = false
-	log_info("akhenaten: mission 23 egypt x72 (then copper x30 after wipe)")
-	mission23_egypt_raid(40, 72, undefined, undefined, 10) // pak loc=10 OOB
-}
-
-// pak i=10 / i=17 → i=19: leaf 1019 arms egypt×38; spawn on next month tick (not on oil/pottery cleared).
-function mission23_arm_egypt38() {
-	if (mission.egypt38_done || mission.egypt38_pending) {
-		return
-	}
-	mission.egypt38_pending = true
-	log_info("akhenaten: mission 23 egypt x38 armed (after LOST/NEW leaf)")
-}
-
-function mission23_spawn_egypt38_if_pending() {
-	if (!mission.egypt38_pending || mission.egypt38_done) {
-		return false
-	}
-	mission.egypt38_pending = false
-	mission.egypt38_done = true
-	log_info("akhenaten: mission 23 egypt x38 after LOST/NEW cascade")
-	mission23_egypt_raid(19, 38, undefined, 1027, 1) // pak i=19 loc=1 → land[0]
-	return true
-}
-
 function mission23_fire_copper30() {
 	mission.copper_seq = mission.copper_seq + 1
 	var tag = 2042 * 100 + mission.copper_seq
@@ -665,122 +598,6 @@ function mission23_unlock_troops_recurring() {
 	}
 	mission.troops_recurring_unlocked = true
 	log_info("akhenaten: mission 23 troops recurring unlocked (henna×60 chain)")
-}
-
-// pak henna ok: egypt×32 → enemy×48 → KR+5 → unlock troops.
-function mission23_start_henna60_ok_chain() {
-	mission.henna60_chain = "await_enemy48_after_egypt32"
-	mission.henna60_enemies_seen = false
-	log_info("akhenaten: mission 23 egypt x32 after henna60 ok")
-	mission23_egypt_raid(47, 32, undefined, undefined, 2) // pak i=47 loc=2 → land[1]
-}
-
-// pak henna refuse: KR−25 already; egypt×72 → enemy×48 → KR+5 (no troops unlock).
-function mission23_start_henna60_refuse_chain() {
-	mission.henna60_chain = "await_enemy48_after_egypt72"
-	mission.henna60_enemies_seen = false
-	log_info("akhenaten: mission 23 egypt x72 after henna60 refuse")
-	mission23_egypt_raid(51, 72, undefined, undefined, 9) // pak i=51 loc=9 OOB
-}
-
-// Month tick: resolve wipe → next chain step.
-function mission23_invasion_chain_tick() {
-	// pak i=19 after i=10 LOST / i=17 NEW (armed via leaf 1019).
-	if (mission23_spawn_egypt38_if_pending()) {
-		return
-	}
-
-	if (mission.await_egypt33_after_enemy29) {
-		if (city.num_enemy_formations > 0) {
-			mission.enemy29_enemies_seen = true
-			return
-		}
-		if (!mission.enemy29_enemies_seen) {
-			return
-		}
-		mission.await_egypt33_after_enemy29 = false
-		mission.enemy29_enemies_seen = false
-		mission.egypt33_done = true
-		log_info("akhenaten: mission 23 egypt x33 after enemy x29 wipe")
-		mission23_egypt_raid(43, 33, undefined, 1044, 9) // pak i=43 loc=9 OOB
-		return
-	}
-
-	if (mission.await_copper_after_egypt72) {
-		if (city.num_enemy_formations > 0) {
-			mission.egypt72_enemies_seen = true
-			return
-		}
-		if (!mission.egypt72_enemies_seen) {
-			return
-		}
-		mission.await_copper_after_egypt72 = false
-		mission.egypt72_enemies_seen = false
-		mission23_fire_copper30()
-		return
-	}
-
-	if (mission.henna60_chain == "await_enemy48_after_egypt32") {
-		if (city.num_enemy_formations > 0) {
-			mission.henna60_enemies_seen = true
-			return
-		}
-		if (!mission.henna60_enemies_seen) {
-			return
-		}
-		mission.henna60_enemies_seen = false
-		mission.henna60_chain = "await_kr_unlock_after_enemy48"
-		mission.enemy48_a_done = true
-		log_info("akhenaten: mission 23 enemy x48 after egypt x32 wipe")
-		mission23_kushite_raid(48, 48, undefined, 10) // pak i=48 loc=10 OOB
-		return
-	}
-
-	if (mission.henna60_chain == "await_kr_unlock_after_enemy48") {
-		if (city.num_enemy_formations > 0) {
-			mission.henna60_enemies_seen = true
-			return
-		}
-		if (!mission.henna60_enemies_seen) {
-			return
-		}
-		mission.henna60_chain = ""
-		mission.henna60_enemies_seen = false
-		log_info("akhenaten: mission 23 KR+5 + unlock troops after enemy x48 wipe")
-		__city_event_fire_chain(1049)
-		mission23_unlock_troops_recurring()
-		return
-	}
-
-	if (mission.henna60_chain == "await_enemy48_after_egypt72") {
-		if (city.num_enemy_formations > 0) {
-			mission.henna60_enemies_seen = true
-			return
-		}
-		if (!mission.henna60_enemies_seen) {
-			return
-		}
-		mission.henna60_enemies_seen = false
-		mission.henna60_chain = "await_kr_after_enemy48b"
-		mission.enemy48_b_done = true
-		log_info("akhenaten: mission 23 enemy x48 after henna refuse egypt x72 wipe")
-		mission23_kushite_raid(52, 48, undefined, 13) // pak i=52 loc=13 OOB
-		return
-	}
-
-	if (mission.henna60_chain == "await_kr_after_enemy48b") {
-		if (city.num_enemy_formations > 0) {
-			mission.henna60_enemies_seen = true
-			return
-		}
-		if (!mission.henna60_enemies_seen) {
-			return
-		}
-		mission.henna60_chain = ""
-		mission.henna60_enemies_seen = false
-		log_info("akhenaten: mission 23 KR+5 after henna refuse enemy x48 wipe")
-		__city_event_fire_chain(1053)
-	}
 }
 
 function mission23_ensure_shared_leaves() {
@@ -942,75 +759,11 @@ function mission23_on_start(ev) {
 	mission23_ensure_henna60_leaves()
 }
 
-[es=event_request_cleared, mission=mission23]
-function mission23_on_request_cleared(ev) {
-	var outcome = mission_request_outcome(ev)
-
-	// pak oil refuse → LOST×3 → leaf 1019 (arm). Spawn egypt next month tick, not here.
-	// ok/late → LOST×3 → pottery×23 (egypt after NEW×3 → 1019).
-	if (ev.tag_id == 2007 && outcome == "refuse") {
-		mission23_arm_egypt38()
-	}
-
-	// pak pottery×23 ok → NEW×3 → leaf 1019 (arm). Spawn next month tick.
-	if (ev.tag_id == 1014 && outcome == "ok") {
-		mission23_arm_egypt38()
-	}
-
-	// pak i=30 pottery×39 outcomes (KR leaves already wired).
-	if (ev.tag_id == 1030) {
-		log_info("akhenaten: mission 23 pottery x39 cleared", { outcome: outcome })
-	}
-
-	// pak i=35 troops×48: ok → NEW→KR already cascaded; then enemy×29 wipe→egypt×33→KR+5.
-	// refuse → KR−20 cascaded; then egypt×72 wipe→copper×30.
-	if (ev.tag_id == 1035) {
-		if (outcome == "ok") {
-			mission.enemy29_done = true
-			mission23_start_enemy29_then_egypt33()
-		}
-		if (outcome == "refuse") {
-			mission.egypt72_done = true
-			mission23_start_egypt72_then_copper()
-		}
-	}
-
-	// pak i=42 copper×30: ok→egypt×72; refuse→enemy×29→egypt×33; late→egypt×33→KR+5.
-	if (ev.resource == RESOURCE_COPPER) {
-		log_info("akhenaten: mission 23 copper x30 cleared", { outcome: outcome, tag: ev.tag_id })
-		if (outcome == "ok") {
-			mission.egypt72_done = true
-			mission23_start_egypt72_then_copper()
-		} else if (outcome == "refuse") {
-			mission.enemy29_done = true
-			mission23_start_enemy29_then_egypt33()
-		} else if (outcome == "late") {
-			mission.egypt33_done = true
-			log_info("akhenaten: mission 23 egypt x33 after copper late")
-			mission23_egypt_raid(43, 33, undefined, 1044, 9) // pak i=43 loc=9 OOB
-		}
-	}
-
-	// pak i=46 henna×60: ok→egypt×32→enemy×48→KR+5→unlock; refuse→KR−25→egypt×72→enemy×48→KR+5;
-	// late/defeat→KR−12→unlock. Invasions via wipe poll (not parallel).
-	if (ev.tag_id == 2046) {
-		if (outcome == "ok") {
-			mission.egypt32_done = true
-			mission23_start_henna60_ok_chain()
-		} else if (outcome == "refuse") {
-			mission23_start_henna60_refuse_chain()
-		} else if (outcome == "late") {
-			mission23_unlock_troops_recurring()
-		}
-	}
-}
-
 [es=event_advance_month, mission=mission23]
 function mission23_calendar(ev) {
 	mission23_ensure_shared_leaves()
 	mission23_ensure_troops_leaves()
 	mission23_ensure_henna60_leaves()
-	mission23_invasion_chain_tick()
 	var abs = ev.years_since_start * 12 + ev.month
 	mission_recurring_request_update_idle(mission, RESOURCE_TROOPS, "troops_recurring", abs)
 
@@ -1033,11 +786,6 @@ function mission23_calendar(ev) {
 		mission.oil_done = true
 		log_info("akhenaten: mission 23 oil x142")
 		mission23_fire_request(2007, RESOURCE_OIL, 142, 2, 1026, 1025, 1026, 6, 0)
-	}
-	if (!mission.enemy24_done && ev.years_since_start == 7 && ev.month == 0) {
-		mission.enemy24_done = true
-		log_info("akhenaten: mission 23 kushite x24")
-		mission23_kushite_raid(20, 24, 1028, 10) // pak i=20 loc=10 OOB
 	}
 	if (!mission.henna120_done && ev.years_since_start == 1 && ev.month == 7) {
 		mission.henna120_done = true
@@ -1084,64 +832,81 @@ function mission23_calendar(ev) {
 		mission23_fire_request(3000 + 55 * 100 + ev.years_since_start, RESOURCE_TROOPS, 48, 6,
 			1056, 1057, 1058, 1, 0, 1058)
 	}
-
-	if (ev.years_since_start >= 5 && ev.month == 0
-			&& mission.recurring_enemy_last_year != ev.years_since_start) {
-		mission.recurring_enemy_last_year = ev.years_since_start
-		log_info("akhenaten: mission 23 recurring kushite x21")
-		mission23_kushite_raid(61, 21, undefined, 3) // pak i=61 loc=3 OOB (only land 1–2)
-	}
 }
 
-// pak i=62 favour egypt×50 loc=2 → i=63 chain×50 loc=3 (want_destroy=0 like shared favour helper).
+// pak i=20, i=61 (recurring) on the calendar; the others chained from the requests in mission23_on_request_cleared or
+// from the raid before them as it attacks.
+function mission23_raid_list() {
+	var K = ENEMY_6_KUSHITE
+	var G = ENEMY_3_EGYPTIAN
+	var E = EVENT_INVADER_ENEMY
+	var EG = EVENT_INVADER_EGYPT
+	return [
+		{ key: "i20", invasion_id: 20, year: 7, month: 0, invader: E, enemy: K, amount: 24, months_initial: 10,
+			location: [10, 10, -1, -1], warships: 1, attack_target: EVENT_ATTACK_TARGET_RANDOM, chain_tag: 1028 },
+		{ key: "i61", invasion_id: 61, year: 5, month: 0, invader: E, enemy: K, amount: 21, months_initial: 5,
+			location: [3, -1, 3, 4], attack_target: EVENT_ATTACK_TARGET_RANDOM, recurring: true },
+		{ key: "i19", invasion_id: 19, invader: EG, enemy: G, amount: 38, months_initial: 4, location: [1, 1, -1, -1],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM, chain_tag: 1027 },
+		{ key: "i38", invasion_id: 38, invader: E, enemy: K, amount: 29, months_initial: 4, location: [10, 10, -1, -1],
+			warships: 2, attack_target: EVENT_ATTACK_TARGET_RANDOM, then: [{ key: "i43", delay: 1 }] },
+		{ key: "i43", invasion_id: 43, invader: EG, enemy: G, amount: 33, months_initial: 4, location: [9, 9, -1, -1],
+			warships: 4, attack_target: EVENT_ATTACK_TARGET_RANDOM, chain_tag: 1044 },
+		{ key: "i40", invasion_id: 40, invader: EG, enemy: G, amount: 72, months_initial: 2, location: [10, 10, -1, -1],
+			warships: 4, attack_target: EVENT_ATTACK_TARGET_RANDOM, on_attack: mission23_fire_copper30 },
+		{ key: "i47", invasion_id: 47, invader: EG, enemy: G, amount: 32, months_initial: 1, location: [2, 2, -1, -1],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM, then: [{ key: "i48", delay: 1 }] },
+		{ key: "i48", invasion_id: 48, invader: E, enemy: K, amount: 48, months_initial: 2, location: [10, 10, -1, -1],
+			warships: 3, attack_target: EVENT_ATTACK_TARGET_RANDOM, on_attack: mission23_raid_i48_chain },
+		{ key: "i51", invasion_id: 51, invader: EG, enemy: G, amount: 72, months_initial: 2, location: [9, 9, -1, -1],
+			warships: 5, attack_target: EVENT_ATTACK_TARGET_RANDOM, then: [{ key: "i52", delay: 1 }] },
+		{ key: "i52", invasion_id: 52, invader: E, enemy: K, amount: 48, months_initial: 2, location: [13, 13, -1, -1],
+			warships: 3, attack_target: EVENT_ATTACK_TARGET_RANDOM, chain_tag: 1053 }
+	]
+}
+
+function mission23_raid_i48_chain() {
+	__city_event_fire_chain(1049)
+	mission23_unlock_troops_recurring()
+}
+
 [es=event_advance_month, mission=mission23]
-function mission23_favour(ev) {
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_chain_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.pharaoh_favour_enemies_seen = true
-			return
+function mission23_raids(ev) {
+	mission_raids_month(mission, mission23, ev, mission23_raid_list())
+}
+
+[es=event_request_cleared, mission=mission23]
+function mission23_on_request_cleared(ev) {
+	var outcome = mission_request_outcome(ev)
+	var raids = mission23_raid_list()
+	// pak oil i=7 refused, or pottery i=14 delivered: the route cascade ends in i=19.
+	if ((ev.tag_id == 2007 && outcome == "refuse") || (ev.tag_id == 1014 && outcome == "ok")) {
+		mission_raid_schedule(mission, raids, "i19", 1)
+	}
+	// pak troops i=35: sent -> i=36 -> i=37 -> i=38; refused -> i=39 -> i=40.
+	if (ev.tag_id == 1035 && outcome == "ok") {
+		mission_raid_schedule(mission, raids, "i38", 1)
+	} else if (ev.tag_id == 1035 && outcome == "refuse") {
+		mission_raid_schedule(mission, raids, "i40", 3)
+	}
+	// pak copper i=42: ok -> i=40, refused -> i=38, late -> i=43.
+	if (ev.resource == RESOURCE_COPPER) {
+		if (outcome == "ok") {
+			mission_raid_schedule(mission, raids, "i40", 3)
+		} else if (outcome == "refuse") {
+			mission_raid_schedule(mission, raids, "i38", 1)
+		} else {
+			mission_raid_schedule(mission, raids, "i43", 1)
 		}
-		if (!mission.pharaoh_favour_enemies_seen) {
-			return
+	}
+	// pak henna i=46: ok -> i=47; refused -> i=50 kingdom -25 -> i=51; late -> kingdom -12, troops asks early.
+	if (ev.tag_id == 2046) {
+		if (outcome == "ok") {
+			mission_raid_schedule(mission, raids, "i47", 4)
+		} else if (outcome == "refuse") {
+			mission_raid_schedule(mission, raids, "i51", 1)
+		} else {
+			mission23_unlock_troops_recurring()
 		}
-		mission.pharaoh_favour_chain_done = true
-		log_info("akhenaten: mission 23 pharaoh favour chain x50")
-		var tile2 = mission23_loc_tile(3)
-		__image_request_pak(PACK_ENEMY_EGYPTIAN)
-		city.start_foreign_army_invasion({
-			mode: ATTACK_TYPE_ENEMIES,
-			enemy: ENEMY_3_EGYPTIAN,
-			kind: INVASION_KIND_KINGDOME,
-			size: 50,
-			invasion_id: 25,
-			tilex: tile2[0],
-			tiley: tile2[1],
-			want_destroy_buildings: 0,
-			invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-		})
-		return
 	}
-	if (mission.pharaoh_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	mission.pharaoh_favour_enemies_seen = false
-	mission.pharaoh_favour_chain_done = false
-	log_info("akhenaten: mission 23 pharaoh favour x50")
-	var tile = mission23_loc_tile(2)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: 50,
-		invasion_id: 24,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	})
 }

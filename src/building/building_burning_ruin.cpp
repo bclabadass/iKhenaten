@@ -11,6 +11,7 @@
 #include "grid/image.h"
 #include "grid/property.h"
 #include "grid/grid.h"
+#include "grid/random.h"
 #include "scenario/scenario.h"
 #include "grid/road_access.h"
 #include "grid/routing/routing_terrain.h"
@@ -76,10 +77,10 @@ std::pair<int, tile2i> building_burning_ruin::get_closest_from(tile2i tile) {
 // be executed in on_create()
 void building_burning_ruin::on_create(int orientation) {
     building_impl::on_create(orientation);
-    base.fire_duration = (rand() % 128) + 120;
+    base.fire_duration = RUIN_BURN_DAYS + 1 - initial_burned_days(base);
     base.state = BUILDING_STATE_VALID;
 
-    uint8_t random = rand() % current_params().fire_animations;
+    const uint8_t random = map_random_get(tile()) & (current_params().fire_animations - 1);
     xstring anim_name; anim_name.printf("fire%d", random);
     set_animation(anim_name);
 
@@ -176,7 +177,7 @@ bool building_burning_ruin::update() {
         return true;
     }
 
-    base.fire_duration -= rand() % 16;
+    --base.fire_duration;
     if (base.fire_duration <= 0) {
         game_undo_disable();
         base.state = BUILDING_STATE_RUBBLE;
@@ -188,17 +189,14 @@ bool building_burning_ruin::update() {
         return false;
     }
 
-    if (g_scenario.climate == CLIMATE_DESERT) {
-        if (base.fire_duration & 3) { // check spread every 4 ticks
-            return false;
-        }
-    } else {
-        if (base.fire_duration & 7) { // check spread every 8 ticks
-            return false;
-        }
+    const int burned_days = RUIN_BURN_DAYS + 1 - base.fire_duration;
+    const int spread_check_mask = (g_scenario.climate == CLIMATE_DESERT) ? 3 : 7;
+    if (burned_days & spread_check_mask) {
+        return false;
     }
 
-    if ((base.map_random_7bit & 3) != (random_byte() & 3)) {
+    random_generate_next();
+    if ((base.map_random_7bit & 3) != (random_short() & 3)) {
         return false;
     }
 

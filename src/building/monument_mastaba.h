@@ -49,6 +49,7 @@ public:
     virtual grid_area get_area() const override;
     virtual tile2i center_point() const override;
     virtual tile2i access_point() const override;
+    virtual tile2i access_tile() const override { return access_point(); }
 
     struct base_params {
         // Large mastaba = 4×9 parts (36); keep headroom above medium's 21.
@@ -75,7 +76,6 @@ public:
 
     virtual int needs_resource(e_resource resource) const override;
     virtual int needs_resource(e_resource resource, int phase) const override;
-    virtual bool accepts_yard_delivery(e_resource resource) const override;
     virtual bool need_workers() const override;
     virtual bool need_bricklayers() override;
     virtual int needs_bricklayers(int ph_id) const override;
@@ -84,6 +84,8 @@ public:
 
     static bool clay_delivery_enabled();
     bool clay_stock_ready() const;
+    // Clay of this phase still to haul after what is on site and the loads under way.
+    int clay_to_haul(int loads_under_way, int load) const;
 
     static void update_images(building *b, int curr_phase, const vec2i size_b);
     virtual void sync_visuals() override;

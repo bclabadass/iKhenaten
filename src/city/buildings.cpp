@@ -157,7 +157,7 @@ int city_buildings_t::count_total(std::initializer_list<e_building_type> types) 
 }
 
 int city_buildings_t::count_active(e_building_type type) {
-    return buildings[type].total;
+    return buildings[type].active;
 }
 
 int city_buildings_t::count_total(e_building_type type) {
@@ -167,6 +167,10 @@ int city_buildings_t::count_total(e_building_type type) {
 void city_buildings_t::increase_count(e_building_type type, bool active) {
     buildings[type].total++;
     buildings[type].active += (active ? 1 : 0);
+}
+
+void city_buildings_t::increase_active(e_building_type type) {
+    buildings[type].active++;
 }
 
 void city_buildings_t::increase_industry_count(int resource, bool active) {
@@ -248,13 +252,6 @@ void city_buildings_t::reload_objects() {
     });
 }
 
-void city_buildings_t::register_temple_complex_type(e_building_type type) {
-    if (std::find(temple_complex_type_list.begin(), temple_complex_type_list.end(), type) != temple_complex_type_list.end()) {
-        return;
-    }
-    temple_complex_type_list.push_back(type);
-}
-
 building_id city_buildings_t::temple_complex_id(e_building_type type) {
     const auto &complexes = tracked_buildings().at(type);
     for (building_id id : complexes) {
@@ -267,7 +264,7 @@ building_id city_buildings_t::temple_complex_id(e_building_type type) {
 }
 
 building_id city_buildings_t::temple_complex_id() {
-    for (const e_building_type type : temple_complex_type_list) {
+    for (const e_building_type type : temple_complex_types()) {
         const building_id id = temple_complex_id(type);
         if (id) {
             return id;
@@ -289,7 +286,14 @@ bool city_buildings_t::has_mansion() const {
 }
 
 span_const<e_building_type> city_buildings_t::temple_complex_types() {
-    return make_span(temple_complex_type_list);
+    static svector<e_building_type, 16> types;
+    types.clear();
+    for (int t = BUILDING_NONE + 1; t < BUILDING_MAX && types.size() < types.capacity(); ++t) {
+        if (building_static_params::get((e_building_type)t).flags.is_temple_complex) {
+            types.push_back((e_building_type)t);
+        }
+    }
+    return make_span(types);
 }
 
 void city_buildings_t::update_month() {

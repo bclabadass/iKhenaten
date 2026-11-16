@@ -80,12 +80,12 @@ figure_transport_ship_info_window {
         hullstrength_val : text({pos: [232, 58], text:"" }),
         onboard          : text({pos: [102, 88], text:"", font : FONT_NORMAL_BLACK_ON_DARK }),
 
-        hold_position    : image_button({param1:1, pos:[87 * 0 + 16, 134], pack:PACK_UNLOADED, id:38, offset:0, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        evade            : image_button({param1:2, pos:[87 * 1 + 16, 134], pack:PACK_UNLOADED, id:38, offset:1, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        embark           : image_button({pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:38, offset:2, offset_pressed:0, offset_focused:0, border:true, onclick_event:"embark" }),
-        disembark        : image_button({pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:38, offset:3, offset_pressed:0, offset_focused:0, border:true, onclick_event:"disembark" }),
-        repair           : image_button({param1:3, pos:[87 * 3 + 16, 134], pack:PACK_UNLOADED, id:38, offset:4, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
-        return_to_wharf  : image_button({param1:4, pos:[87 * 4 + 16, 134], pack:PACK_UNLOADED, id:38, offset:5, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        hold_position    : image_button({size:[81, 80], param1:1, pos:[87 * 0 + 16, 134], pack:PACK_UNLOADED, id:38, offset:0, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        evade            : image_button({size:[81, 80], param1:2, pos:[87 * 1 + 16, 134], pack:PACK_UNLOADED, id:38, offset:1, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        embark           : image_button({size:[81, 80], pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:38, offset:2, offset_pressed:0, offset_focused:0, border:true, onclick_event:"embark" }),
+        disembark        : image_button({size:[81, 80], pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:38, offset:3, offset_pressed:0, offset_focused:0, border:true, onclick_event:"disembark" }),
+        repair           : image_button({size:[81, 80], param1:3, pos:[87 * 3 + 16, 134], pack:PACK_UNLOADED, id:38, offset:4, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        return_to_wharf  : image_button({size:[81, 80], param1:4, pos:[87 * 4 + 16, 134], pack:PACK_UNLOADED, id:38, offset:5, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
 
         inner_panel      : inner_panel({pos : [16, 220], size: [27, 6],
             ui : {

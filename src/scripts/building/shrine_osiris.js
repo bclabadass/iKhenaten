@@ -3,6 +3,8 @@ log_info("akhenaten: building_shrine_osiris started")
 [es=building]
 building_shrine_osiris {
     type: BUILDING_SHRINE_OSIRIS
+    always_work: true
+    road_access_distance: 2
     animations : {
       preview : {pack:PACK_GENERAL, id:75, }
       base : {pack:PACK_GENERAL, id:75, offset:0 }
@@ -21,11 +23,4 @@ building_shrine_osiris {
       is_religion: true
       no_road_access: true
     }
-}
-
-[es=(building_shrine_osiris, on_place_checks)]
-function building_shrine_osiris_on_place_checks(ev) {
-    var b = city.get_building(ev.bid)
-    var has_road = __map_road_within_radius(b.tile, b.size, 2)
-    city.warnings.show_if_not(has_road, "#shrines_near_road_required")
 }

@@ -1,5 +1,33 @@
 log_info("akhenaten: mission 43 abu simbel started")
 
+// Mission 43 — Abu Simbel, "Colossi of Abu Simbel". Rank 5 (Royal Mayor).
+//
+// Goals:     population 2200, culture 35, prosperity 35, monuments 44, kingdom 80, housing level 10.
+// Start:     funds 8000, rescue loan 2000, debt interest 10% (normal difficulty); infantry carried over
+//            from the previous mission joins.
+// Gods:      Osiris, Ra, Ptah.
+// Monuments: Abu Simbel.
+// Trade:     can open — Men-nefer, Waset, Sumur, Heh, Kerma (by sea), Pwenet; opened by events — Kharga
+//            Oasis; display only — Bahariya Oasis, Qadesh, Jericho, Enkomi, Timna, Abu, Piramesse.
+// Enemies:   Kushite raids at the land point [51,51]; Pharaoh's army (15) by sea with 2 warships if
+//            the kingdom rating falls to 0.
+// Timeline:  y2m4 request 7 figs (delivered or late: Kharga Oasis route opens; refused: kingdom −2);
+//            from y2m10 Pharaoh's gift of 15 linen every year, each followed by a request for 9 luxury
+//            goods; y3m3, y4m0 wages rise; y4m10 blood river; from y5m1 Pharaoh asks 34 sandstone every
+//            year (kingdom +2, refused −5, late −2); y5m3 request 7 figs (delivered: gift of 334 deben;
+//            late: gift of 3 luxury goods; refused: Kushite raid 25 announced a month later, attacking
+//            6 months after that); from y7m10 Pharaoh asks 6 luxury goods every year (delivered: gift of
+//            10 linen); Kushite raid 27 announced y8m1, attacks y8m10 (as it attacks a trade route is lost
+//            and Pharaoh asks 12 troops — sent: a city is conquered and the route reopens, kingdom +2;
+//            refused: kingdom −5); y9m7 request 11 pottery; y10m4 frogs; y14m6 clay pits flood.
+//
+// Notes for developers:
+// - events[] invasions do not run (no favour trigger): the two Kushite raids follow the OG invasion cycle
+//   from JS (missions.js mission_raids_month: warnings from the event's month, the attack months_initial
+//   months later, the point rolled from the event's location_fields); the chain raid 27 sends as it
+//   attacks is rebuilt in mission43_fire_inv20_win_chain. Only Pharaoh's army runs from events[] (favour
+//   trigger).
+
 mission43 {
 	map_file : "data/maps/m_043_abu_simbel.map"
 
@@ -16,7 +44,6 @@ mission43 {
 	initial_funds [16000, 10670, 8000, 5360, 4240]
 	rescue_loans [4000, 2670, 2000, 1340, 1060]
 	debt_interest [6, 8, 10, 12, 14]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -509,6 +536,7 @@ mission43 {
 			amount { value : 15 }
 			months_initial : 8
 			location_fields [ 9, 9, -1, -1 ]
+			warships : 2
 			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
 			on_completed_action : -1
 			on_refusal_action : -1
@@ -541,8 +569,6 @@ mission43 {
 			cost_to_open : 1300
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_MEAT, RESOURCE_CHICKPEAS, RESOURCE_BEER, RESOURCE_TIMBER ]
 			buys [ RESOURCE_BARLEY, RESOURCE_LUXURY_GOODS, RESOURCE_SANDSTONE ]
 			route_limits [
@@ -564,8 +590,6 @@ mission43 {
 			cost_to_open : 650
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CHICKPEAS, RESOURCE_STRAW, RESOURCE_POTTERY, RESOURCE_FLAX, RESOURCE_LINEN ]
 			buys [ RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -586,8 +610,6 @@ mission43 {
 			cost_to_open : 2000
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_CHICKPEAS, RESOURCE_FIGS, RESOURCE_LINEN ]
 			route_limits [
@@ -608,8 +630,6 @@ mission43 {
 			cost_to_open : 140
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS ]
 			buys [ RESOURCE_MEAT, RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_LINEN ]
 			route_limits [
@@ -629,8 +649,6 @@ mission43 {
 			cost_to_open : 400
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_FIGS, RESOURCE_LINEN ]
 			route_limits [
@@ -648,8 +666,6 @@ mission43 {
 			cost_to_open : 400
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_COPPER ]
 			buys [ RESOURCE_BEER, RESOURCE_LINEN ]
 			route_limits [
@@ -830,12 +846,8 @@ mission43 {
 
 
 	vars {
+		raids : ""
 		start_message_shown : false
-		pharaoh_favour_invasion_done : false
-		inv20_done : false
-		inv20_seq : 0
-		inv20_chain_done : false
-		inv12_done : false
 	}
 }
 
@@ -843,6 +855,7 @@ mission43 {
 function mission43_on_start(ev) {
 	log_info("mission43: on_start", {ev:ev})
 	__image_request_pak(PACK_ENEMY_KUSHITE)
+	__image_request_pak(PACK_ENEMY_EGYPTIAN)
 	scenario.start_year = -1270
 	scenario.climate = 2
 	__scenario_monuments.first = 37
@@ -856,20 +869,6 @@ function mission43_on_start(ev) {
 	for (var i = ADVISOR_NONE + 1; i <= ADVISOR_DIPLOMACY; i++) {
 		city.set_advisor_available(i, 1)
 	}
-}
-
-function mission43_invasion_outcome(seq) {
-	if (!seq) {
-		return -1
-	}
-	var n = city.invasion_history_count()
-	for (var i = 0; i < n; i++) {
-		var h = city.invasion_history_at(i)
-		if (h.seq == seq) {
-			return h.outcome
-		}
-	}
-	return -1
 }
 
 function mission43_fire_inv20_win_chain() {
@@ -925,84 +924,26 @@ function mission43_fire_inv20_win_chain() {
 	troops.execute()
 }
 
-[es=event_advance_month, mission=mission43]
-function mission43_pharaoh_favour_invasion(ev) {
-	if (mission.pharaoh_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.pharaoh_favour_invasion_done = true
-	log_info("akhenaten: mission 43 pharaoh favour invasion size=15 kr=" + city.rating_kingdom)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: 15,
-		invasion_id: 26,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_FOOD
-	})
+// pak i=12 after the figs request (tag 2010) is refused, due a month on (its time.year); i=20 with its chain.
+function mission43_raid_list() {
+	var K = ENEMY_6_KUSHITE
+	var E = EVENT_INVADER_ENEMY
+	return [
+		{ key: "i12", invasion_id: 12, invader: E, enemy: K, amount: 25, months_initial: 6, location: [2, -1, 1, 3],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i20", invasion_id: 20, year: 8, month: 1, invader: E, enemy: K, amount: 27, months_initial: 9,
+			location: [3, 3, -1, -1], attack_target: EVENT_ATTACK_TARGET_TROOPS, on_attack: mission43_fire_inv20_win_chain }
+	]
 }
 
 [es=event_advance_month, mission=mission43]
-function mission43_calendar_invasion_i20(ev) {
-	if (mission.inv20_done) {
-		if (mission.inv20_chain_done || mission.inv20_seq <= 0) {
-			return
-		}
-		var outcome = mission43_invasion_outcome(mission.inv20_seq)
-		if (outcome == 1) {
-			mission.inv20_chain_done = true
-			log_info("akhenaten: mission 43 invasion x27 won -> LOST_TRADE chain", {seq: mission.inv20_seq})
-			mission43_fire_inv20_win_chain()
-		} else if (outcome == 2 || outcome == 3) {
-			mission.inv20_chain_done = true
-			log_info("akhenaten: mission 43 invasion x27 lost/retreat - skip chain", {outcome: outcome})
-		}
-		return
-	}
-	if (ev.years_since_start < 8 || (ev.years_since_start == 8 && ev.month < 1)) {
-		return
-	}
-	mission.inv20_done = true
-	__image_request_pak(PACK_ENEMY_KUSHITE)
-	mission.inv20_seq = city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_6_KUSHITE,
-		size: 27,
-		invasion_id: 20,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_TROOPS
-	})
-	log_info("akhenaten: mission 43 enemy x27 calendar", {seq: mission.inv20_seq})
+function mission43_raids(ev) {
+	mission_raids_month(mission, mission43, ev, mission43_raid_list())
 }
 
 [es=event_request_cleared, mission=mission43]
 function mission43_on_request_cleared(ev) {
-	if (mission.inv12_done || ev.tag_id != 2010) {
-		return
+	if (ev.tag_id == 2010 && mission_request_outcome(ev) == "refuse") {
+		mission_raid_schedule(mission, mission43_raid_list(), "i12", 1)
 	}
-	if (mission_request_outcome(ev) != "refuse") {
-		return
-	}
-	mission.inv12_done = true
-	__image_request_pak(PACK_ENEMY_KUSHITE)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_6_KUSHITE,
-		size: 25,
-		invasion_id: 12,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	})
-	log_info("akhenaten: mission 43 enemy x25 after figs refuse", {ev:ev})
 }

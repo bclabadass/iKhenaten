@@ -1,16 +1,31 @@
 log_info("akhenaten: mission 49 alexandria_2 started")
 
-// Full empire redefine (CC49). Dump 2026-08-01 Cleop.
-// MM briefing: message_mission_ptolemy_alexandria (443) — *A Beacon of Light*.
-// Pak map subtitle: "The Glory of Ptolemy" (UI uses start_message subtitle).
-// Rank 10. Year -305. Enemy ENEMY_10_PHOENICIAN. Empire id 0, image_id 26.
-// Win: pop 7000 / culture 75 / prosperity 75 / monuments 28 /
-//      kingdom 75 / housing 6x lv16 / time_limit OFF (milestones 6/12/18).
-// Monuments: first=29 Library, second=28 Pharos (gr198).
-// Rating: Library W=6 + Pharos W=5 → trunc(2.25*11+4.5)=29 ≥ goal 28.
-// Burial: none. Gods: Ra(2) Ptah(1) Bast(1).
-// Enkomi sells marble (briefing OK). Orphan routes Knossos/Migdol/Waset -> route 0.
-// SKIP empty map_obj idx=8. Invasions: 0. next_mission 50 (Maritis → Notes §13.13).
+// Mission 49 — Ptolemy's Alexandria, "A Beacon of Light". Rank 10 (Pharaoh).
+//
+// Goals:     population 7000, culture 75, prosperity 75, monuments 28, kingdom 75,
+//            6 houses at housing level 16.
+// Start:     funds 30000, rescue loan 5000, debt interest 6% (normal difficulty); archers, infantry and
+//            monuments carried over from the previous mission.
+// Gods:      Ra (patron), Ptah, Bast.
+// Monuments: Great Library, Pharos lighthouse.
+// Trade:     can open — Athens, Enkomi, Kyrene, Iunet, Byblos (by sea), Men-nefer, Meidum, Bahariya Oasis;
+//            opened by events — Gaza, Tyre, Serabit Khadim; display only — Knossos, Pwenet, Migdol, On,
+//            Waset, Buhen.
+// Enemies:   none. The scenario enemy is set to Phoenician, but no army is sent.
+// Timeline:  y1m2 request 5 grain (refused: sea trade problem); y4m2 Pharaoh asks 12 troops (lost: land
+//            trade problem); y6m7 famine request for 7 fish; y7m8 request 19 troops (lost: a request for
+//            8 more troops); y7m8, y11m7, y24m8 clay pits flood; y8m0 sea trade problem; y9m0 a trade
+//            partner buys more grain; from y9m4 request 11 beer every year (gifts of marble); y9m10 wages
+//            fall; y12m0 request 12 troops (sent or late: Gaza, then Tyre routes open and a request for 6
+//            papyrus follows; refused: Byblos buys less papyrus); from y12m2 request 8 pottery every year
+//            (gifts of luxury goods); y13m3 hailstorm; y15m2 request 12 grain (delivered or late: Serabit
+//            Khadim route opens); y17m8 wages rise; y18m0 request 12 beer (gifts of marble); y20m7 famine
+//            request for 13 grain (refused: Bahariya Oasis route lost); from y24m7 request 13 papyrus
+//            every year. Other outcomes are gifts and kingdom changes.
+//
+// Notes for developers:
+// - Every event is declared in events[] and run by the engine; on_*_action values are indexes into that
+//   list, and route events address the city by route number (location_fields).
 
 mission49 { // Ptolemy's Alexandria - A Beacon of Light
 	map_file : "data/maps/m_049_alexandria_2.map"
@@ -26,7 +41,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 	initial_funds [60000, 40000, 30000, 20100, 15900]
 	rescue_loans [10000, 6670, 5000, 3350, 2650]
 	debt_interest [3, 4, 6, 8, 10]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -833,8 +847,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 300
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FIGS, RESOURCE_GAMEMEAT ]
 			buys [ RESOURCE_FISH, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -853,8 +865,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 675
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_TIMBER, RESOURCE_COPPER, RESOURCE_MARBLE ]
 			buys [ RESOURCE_GRAIN, RESOURCE_BEER, RESOURCE_LINEN ]
 			route_limits [
@@ -885,8 +895,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 900
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_BARLEY, RESOURCE_FLAX ]
 			buys [ RESOURCE_STRAW, RESOURCE_TIMBER ]
 			route_limits [
@@ -915,8 +923,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 515
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_GEMS ]
 			buys [ RESOURCE_BEER, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -935,8 +941,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 155
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_BRICKS, RESOURCE_POTTERY, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			route_limits [
@@ -959,8 +963,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 760
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_GRAIN, RESOURCE_BARLEY, RESOURCE_PAPYRUS, RESOURCE_MARBLE ]
 			route_limits [
@@ -1025,8 +1027,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 250
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_STRAW ]
 			buys [ RESOURCE_WEAPONS, RESOURCE_TIMBER ]
 			route_limits [
@@ -1071,8 +1071,6 @@ mission49 { // Ptolemy's Alexandria - A Beacon of Light
 			cost_to_open : 900
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_GRAIN, RESOURCE_BARLEY, RESOURCE_PAPYRUS ]
 			route_limits [

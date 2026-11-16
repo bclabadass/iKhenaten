@@ -1,6 +1,38 @@
 log_info("akhenaten: mission 48 alexandria_1 started")
 
-// Monument: Mausoleum only (gr198:25). W=5 → trunc(2.25*5+4.5)=15 ≥ goal 14.
+// Mission 48 — Alexandria, "Alexander the Great". Rank 5 (Royal Mayor).
+//
+// Goals:     population 4000, culture 45, prosperity 55, monuments 14, kingdom 60,
+//            12 houses at housing level 10, within 12 years.
+// Start:     funds 12980, rescue loan 5000, debt interest 5% (normal difficulty).
+// Gods:      Ra, Ptah.
+// Monuments: mausoleum, with burial provisions: 4 weapons, 10 gems, 8 luxury goods.
+// Trade:     open at start — Byblos; can open — Athens, Enkomi, Kyrene, Men-nefer, Iunet, Pwenet, Gaza,
+//            Buhen (by sea), Meidum, Serabit Khadim; opened by events — On, Bahariya Oasis; display only —
+//            Bubastis, Knossos, Tyre, Migdol, Waset.
+// Enemies:   Phoenician raids by sea (the scenario enemy; the briefing speaks of roaming vandals);
+//            Pharaoh's army (20) by land if the second pomegranate request is refused.
+// Timeline:  raid 7 with 3 warships announced y3m2, attacks y3m10 (the Byblos route is lost and a price
+//            rises as it attacks); y3m5 On
+//            route opens; y3m8 Bahariya Oasis route opens; y4m7 Pharaoh's gift of 72 deben, then a request
+//            for 8 reeds; y5m3 Pharaoh asks 10 troops (lost: land trade problem); from y6m1 request 8 grain,
+//            repeating; y7m2 Pharaoh's gift of 37 deben (also chained to the reeds request); y7m5 request
+//            6 beer (delivered: gift of 9 gems; late: gift of 5 papyrus); y8m1 famine request for
+//            6 pomegranates (refused: a second request for 7 pomegranates; refusing that one sends
+//            Pharaoh's army: announced 4 months later, attacks 6 months after that, with a land trade
+//            problem); 3 warships with no soldiers announced y8m8, attack y9m2; y9m4 request 9 troops; y10m3 request 8 beer. Most requests pay a deben gift when delivered or
+//            late and cost kingdom when refused.
+//
+// Notes for developers:
+// - The invasions of the original are raids from JS (mission48_raids): the calendar ones (pak i=4, 11) and
+//   Pharaoh's army (pak i=26), announced 4 months after the pak i=23 request (tag 1023) is refused
+//   (mission48_on_request_cleared). Their events[] slots stay as EVENT_TYPE_NONE so the other
+//   indexes keep; tags 1005 and 1028 let the raids fire the chained events.
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields.
+// - The other events are declared in events[] and run by the engine; on_*_action values are indexes into
+//   that list.
+
 mission48 { // Alexandria - Alexander the Great
 	map_file : "data/maps/m_048_alexandria_1.map"
 	start_message : "message_mission_alexandria_2"
@@ -12,7 +44,6 @@ mission48 { // Alexandria - Alexander the Great
 	initial_funds [25960, 17310, 12980, 8700, 6880]
 	rescue_loans [10000, 6670, 5000, 3350, 2650]
 	debt_interest [2, 3, 5, 7, 9]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -152,25 +183,12 @@ mission48 { // Alexandria - Alexander the Great
 			subtype : 0
 			city_id : 7
 		}
-		{ // pak i=4
-			type : EVENT_TYPE_INVASION
-			time { year : 3, month : 2 }
-			item { value : 1 }
-			amount { value : 7 }
-			months_initial : 8
-			location_fields [ 9, -1, 9, 11 ]
-			event_trigger_type : EVENT_TRIGGER_ONCE
-			on_completed_action : 5
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 3
-			city_id : 7
-			invasion_attack_target : 4
+		{ // pak i=4: invasion, started from JS (mission48_raids)
+			type : EVENT_TYPE_NONE
 		}
 		{ // pak i=5
 			type : EVENT_TYPE_CITY_STATUS_CHANGE
+			tag_id : 1005
 			time { year : 1, month : 0 }
 			item { value : 1 }
 			amount { value : 11 }
@@ -265,22 +283,8 @@ mission48 { // Alexandria - Alexander the Great
 			subtype : 0
 			city_id : 7
 		}
-		{ // pak i=11 amount=0
-			type : EVENT_TYPE_INVASION
-			time { year : 8, month : 8 }
-			item { value : 1 }
-			amount { value : 0 }
-			months_initial : 6
-			location_fields [ 12, -1, 12, 13 ]
-			event_trigger_type : EVENT_TRIGGER_ONCE
-			on_completed_action : -1
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 6
-			invasion_attack_target : 3
+		{ // pak i=11: invasion, started from JS (mission48_raids)
+			type : EVENT_TYPE_NONE
 		}
 		{ // pak i=12
 			type : EVENT_TYPE_CITY_STATUS_CHANGE
@@ -460,6 +464,7 @@ mission48 { // Alexandria - Alexander the Great
 		}
 		{ // pak i=23
 			type : EVENT_TYPE_REQUEST
+			tag_id : 1023
 			time { year : 2, month : 0 }
 			item { value : RESOURCE_POMEGRANATES }
 			amount { value : 7 }
@@ -506,22 +511,8 @@ mission48 { // Alexandria - Alexander the Great
 			subtype : 0
 			city_id : 8
 		}
-		{ // pak i=26 chain_only
-			type : EVENT_TYPE_INVASION
-			time { year : 4, month : 0 }
-			item { value : 3 }
-			amount { value : 20 }
-			months_initial : 6
-			location_fields [ 1, -1, 1, 3 ]
-			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
-			on_completed_action : 28
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 8
-			invasion_attack_target : 2
+		{ // pak i=26: Pharaoh's army, started from JS (mission48_raids, armed by mission48_on_request_cleared)
+			type : EVENT_TYPE_NONE
 		}
 		{ // pak i=27
 			type : EVENT_TYPE_GIFT_FROM_PHARAOH
@@ -541,6 +532,7 @@ mission48 { // Alexandria - Alexander the Great
 		}
 		{ // pak i=28
 			type : EVENT_TYPE_LAND_TRADE_PROBLEM
+			tag_id : 1028
 			time { year : 1, month : 0 }
 			item { value : 1 }
 			amount { value : 8 }
@@ -764,8 +756,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 675
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POMEGRANATES, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_GRAIN, RESOURCE_BEER, RESOURCE_LINEN ]
 			route_limits [
@@ -786,8 +776,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 700
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_MEAT, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_POMEGRANATES, RESOURCE_LINEN, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -808,8 +796,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 900
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_MEAT, RESOURCE_POTTERY, RESOURCE_FLAX, RESOURCE_LIMESTONE, RESOURCE_GRANITE ]
 			buys [ RESOURCE_STRAW, RESOURCE_TIMBER ]
 			route_limits [
@@ -840,8 +826,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 515
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_WEAPONS, RESOURCE_POTTERY, RESOURCE_GEMS ]
 			buys [ RESOURCE_STRAW, RESOURCE_PAPYRUS, RESOURCE_SANDSTONE ]
 			route_limits [
@@ -862,8 +846,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 290
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_FLAX, RESOURCE_TIMBER, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -886,8 +868,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 760
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_GRAIN, RESOURCE_BARLEY ]
 			route_limits [
@@ -906,8 +886,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 1300
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_COPPER ]
 			buys [ RESOURCE_POMEGRANATES, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -962,8 +940,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 260
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_REEDS ]
 			buys [ RESOURCE_TIMBER, RESOURCE_SANDSTONE ]
 			route_limits [
@@ -990,8 +966,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 600
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_COPPER ]
 			buys [ RESOURCE_GRAIN ]
 			route_limits [
@@ -1009,8 +983,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 1560
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS ]
 			buys [ RESOURCE_POMEGRANATES, RESOURCE_WEAPONS, RESOURCE_LINEN ]
 			route_limits [
@@ -1029,8 +1001,6 @@ mission48 { // Alexandria - Alexander the Great
 			cost_to_open : 900
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_OIL ]
 			buys [ RESOURCE_PAPYRUS, RESOURCE_COPPER ]
 			route_limits [
@@ -1147,6 +1117,7 @@ mission48 { // Alexandria - Alexander the Great
 
 	vars {
 		start_message_shown : false
+		raids : ""
 	}
 }
 
@@ -1165,5 +1136,34 @@ function mission48_on_start(ev) {
 	city.set_scenario_enemy_id(ENEMY_10_PHOENICIAN)
 	for (var i = ADVISOR_NONE + 1; i <= ADVISOR_DIPLOMACY; i++) {
 		city.set_advisor_available(i, 1)
+	}
+}
+
+// pak i=4, 11: the calendar invasions of the scenario enemy, both by sea; i=4 costs the Byblos route (pak i=5,
+// then a price rise) as it attacks. Point 12 is sea point 3, which the map lacks, so it wraps round to sea point 0.
+// pak i=26: Pharaoh's army after the second pomegranate request is refused, see mission48_on_request_cleared.
+function mission48_raid_list() {
+	return [
+		{ key: "i4", invasion_id: 4, year: 3, month: 2, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_10_PHOENICIAN,
+			amount: 7, months_initial: 8, location: [9, -1, 9, 11], warships: 3, attack_target: EVENT_ATTACK_TARGET_RANDOM,
+			chain_tag: 1005 },
+		{ key: "i11", invasion_id: 11, year: 8, month: 8, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_10_PHOENICIAN,
+			amount: 0, months_initial: 6, location: [12, -1, 12, 13], warships: 3, attack_target: EVENT_ATTACK_TARGET_TROOPS },
+		{ key: "i26", invasion_id: 26, invader: EVENT_INVADER_PHARAOH, enemy: ENEMY_3_EGYPTIAN, amount: 20,
+			months_initial: 6, location: [1, -1, 1, 3], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS, chain_tag: 1028 }
+	]
+}
+
+[es=event_advance_month, mission=mission48]
+function mission48_raids(ev) {
+	mission_raids_month(mission, mission48, ev, mission48_raid_list())
+}
+
+// pak i=23 refused -> i=26 Pharaoh's army 20, due 4 months later (its time.year); as it attacks, a land trade
+// problem (pak i=28).
+[es=event_request_cleared, mission=mission48]
+function mission48_on_request_cleared(ev) {
+	if (ev.tag_id == 1023 && mission_request_outcome(ev) == "refuse") {
+		mission_raid_schedule(mission, mission48_raid_list(), "i26", 4)
 	}
 }

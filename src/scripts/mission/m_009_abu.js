@@ -1,8 +1,19 @@
 log_info("akhenaten: mission 9 abu started")
 
-// Empire / requests / events aligned with original campaign scenario 9 (2026-07-25 dump).
-// Favour: pak i=15 by_favour 40 FOOD → i=18×20 RANDOM → i=19×20 RANDOM (helper + bind wipe).
-// pak CITY_STATUS subtype=1 Selima (FOREIGN_CITY_CONQUERED) ok→NEW_TRADE city=5=Kyrene.
+// Mission 9 — Abu (Elephantine), "The Nubian Border". Rank 6 (Royal Governor).
+//
+// Goals:     population 4000, culture 30, prosperity 30, kingdom 50, housing level 10.
+// Start:     funds 3750, rescue loan 3750, debt interest 20% (normal difficulty).
+// Gods:      Osiris, Ptah.
+// Monuments: none.
+// Trade:     can open — Abedju, Timna, Men-nefer (by sea), Behdet (by sea); display only — Selima Oasis,
+//            Byblos, Kyrene, Nubt.
+// Enemies:   no timed raids; Pharaoh's army (40 aimed at food, then 20 and 20 more) if the kingdom rating
+//            falls to 0.
+// Timeline:  y2m4 land trade problem; y4m7 request 13 granite; y6m4 Selima Oasis is conquered, then a new
+//            route to Kyrene is announced; y6m9 more demand for flax; y7m1 battle won at Nubt, then more
+//            demand for linen; y10m0 request 22 sandstone for construction (16 months); y13m7 contaminated
+//            water; y15m10 sea trade problem; more demand for gems every year in month 0 from y17.
 
 mission9 { // Abu — The Nubian Border
 	map_file : "data/maps/m_009_abu.map"
@@ -22,7 +33,6 @@ mission9 { // Abu — The Nubian Border
 	initial_funds [7500, 5000, 3750, 2500, 2000]
 	rescue_loans [7500, 5000, 3750, 2500, 2000]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	init_resources : {
 		grain : { type:RESOURCE_GRAIN, allow: true}
@@ -74,6 +84,54 @@ mission9 { // Abu — The Nubian Border
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=15
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 40 }
+			months_initial : 9
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7015
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_FOOD
+		}
+		{ // pak i=18
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 20 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7018
+			on_completed_action : 2
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=19
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 20 }
+			months_initial : 0
+			location_fields [ 1, -1, 1, 8 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7019
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	// Empire from original campaign scenario 9 (empire id=1) — full map objects.
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
@@ -97,8 +155,6 @@ mission9 { // Abu — The Nubian Border
 			cost_to_open : 1100
 			is_sea_trade : true
 			type : EMPIRE_CITY_PHARAOH_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_LETTUCE, RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -133,8 +189,6 @@ mission9 { // Abu — The Nubian Border
 			cost_to_open : 250
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_REEDS, RESOURCE_PAPYRUS, RESOURCE_GRANITE ]
 			buys [ RESOURCE_BRICKS, RESOURCE_LINEN, RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			route_limits [
@@ -162,8 +216,6 @@ mission9 { // Abu — The Nubian Border
 			cost_to_open : 1450
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_WEAPONS, RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_COPPER ]
 			buys [ RESOURCE_FISH, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -187,8 +239,6 @@ mission9 { // Abu — The Nubian Border
 			cost_to_open : 600
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_STONE ]
 			buys [ RESOURCE_GAMEMEAT, RESOURCE_CLAY, RESOURCE_BRICKS, RESOURCE_TIMBER, RESOURCE_PAPYRUS, RESOURCE_GRANITE, RESOURCE_SANDSTONE ]
 			route_limits [
@@ -339,11 +389,6 @@ mission9 { // Abu — The Nubian Border
 		selima_trade_unlock_done : false
 		contaminated_water_done : false
 		sea_trade_problem_done : false
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_enemies_seen : false
-		pharaoh_favour_chain_done : false
-		pharaoh_favour_wave_next : -1
-		pharaoh_favour_wave_seq : 0
 		start_message_shown : false
 	}
 }
@@ -462,7 +507,7 @@ function mission9_selima_secured_trade(ev) {
 	status.execute()
 }
 
-// pak: year=7 month=1 MESSAGE FOREIGN_CITY_CONQUERED city=Nubt → DEMAND linen amount=9
+// pak: year=7 month=1 MESSAGE BATTLE_WON city=Nubt → DEMAND linen amount=9
 [es=event_advance_month, mission=mission9]
 function mission9_nubt_conquered_linen_demand(ev) {
 	if (mission.nubt_conquered_msg_done) {
@@ -476,7 +521,7 @@ function mission9_nubt_conquered_linen_demand(ev) {
 	var msg = city.create_chain_event({
 		tag_id: 700,
 		type: EVENT_TYPE_MESSAGE,
-		subtype: 1, // EVENT_SUBTYPE_FOREIGN_CITY_CONQUERED
+		subtype: EVENT_SUBTYPE_MSG_BATTLE_WON,
 		city: "Nubt",
 		amount: 9,
 		trigger: EVENT_TRIGGER_ONCE
@@ -554,16 +599,4 @@ function mission9_gems_demand_increase(ev) {
 		amount: 7,
 		trigger: EVENT_TRIGGER_ONCE
 	}).execute()
-}
-
-// pak i=15/18/19: by_favour 40 FOOD → 20 RANDOM → 20 RANDOM (bind wipe advances waves).
-[es=event_advance_month, mission=mission9]
-function mission9_pharaoh_favour_invasion(ev) {
-	mission_pharaoh_favour_invasion_tick(mission, [40, 20, 20], {
-		targets: [
-			EVENT_ATTACK_TARGET_FOOD,
-			EVENT_ATTACK_TARGET_RANDOM,
-			EVENT_ATTACK_TARGET_RANDOM
-		]
-	})
 }

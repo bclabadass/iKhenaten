@@ -21,7 +21,7 @@ function t351_tap(p) {
 function t351_tap_info(id) {
     var pos = __test_info_ui_screen_pos(id)
     var size = __test_window_element_size('figure_transport_ship_info_window', id)
-    t351_tap({ x: pos.x + ((size.x / 2) | 0), y: pos.y + ((size.y / 2) | 0) })
+    t351_tap({ x: pos.x + ((Math.max(size.x, 24) / 2) | 0), y: pos.y + ((Math.max(size.y, 24) / 2) | 0) })
 }
 
 // A screen pixel over the tile (as tests 285/287 find one), or null when it isn't on screen.
@@ -120,8 +120,8 @@ function run_test() {
     __test_set_treasury(100000)
     var ship = t351_transport()
     __scenario_building_allow(BUILDING_FORT_GROUND, true)
-    var recruiter = t351_place(BUILDING_RECRUITER, 20, 30)
-    var archers = t351_place(BUILDING_FORT_ARCHERS, 30, 30)
+    var recruiter = t351_place(BUILDING_RECRUITER, 36, 40)
+    var archers = t351_place(BUILDING_FORT_ARCHERS, 44, 40)
     __test_fort_update_recruit_status(archers)
     for (var i = 0; i < 3; i++) {
         __test_recruiter_create_soldier(recruiter)
@@ -217,7 +217,7 @@ function run_test() {
     if (wsection == 'figure_warship_info_window') {
         var pos = __test_info_ui_screen_pos('seek_and_destroy')
         var size = __test_window_element_size('figure_warship_info_window', 'seek_and_destroy')
-        t351_tap({ x: pos.x + ((size.x / 2) | 0), y: pos.y + ((size.y / 2) | 0) })
+        t351_tap({ x: pos.x + ((Math.max(size.x, 24) / 2) | 0), y: pos.y + ((Math.max(size.y, 24) / 2) | 0) })
     }
     var worder = city.get_warship(warship).active_order
     __log_info_native('[test:351] warship Orders: panel ' + wsection + ', after Seek and destroy the order is ' + worder)

@@ -83,21 +83,6 @@ void building_impl::on_destroy() {
 }
 
 void building_impl::on_place_checks() {
-    switch (type()) {
-    case BUILDING_NONE:
-    case BUILDING_CLEAR_LAND:
-        return;
-    }
-
-    construction_warnings warnings;
-    if (building_type_hover_road_access(type())) {
-        warnings.add_if(!map_has_road_access(tile(), size()), "#needs_road_access");
-    }
-
-    if (base.max_workers > 0) {
-        warnings.add_if(g_city.labor.workers_needed >= 10, "#city_needs_more_workers");
-    }
-
     es(__func__);
 }
 
@@ -260,6 +245,10 @@ int building_impl::ready_production() const {
     if (!!game_features::gameplay_rebalance_workshop_output && !p.production_rate_dcy.value.empty()) {
         return p.production_rate_dcy.get();
     }
+    // OG spawn_industry: every finished cycle ships one 100-unit load, whatever the building.
+    if (!game_features::gameplay_change_industry_remake_rates) {
+        return 100;
+    }
     return p.production_rate;
 }
 
@@ -350,8 +339,13 @@ void building_impl::update_animation() {
     es(__func__);
 }
 
+// OG building_count_update: active while it has workers; an always_work building (the shrines) has none and is
+// active with a road on an axis tile within road_access_distance.
 void building_impl::update_count() const {
-    g_city.buildings.increase_count(base.type, base.num_workers > 0);
+    const auto& params = current_params();
+    const bool active
+      = params.always_work ? map_has_road_access_nearby(base.tile, params.road_access_distance) : base.num_workers > 0;
+    g_city.buildings.increase_count(base.type, active);
 }
 
 void building_impl::update_map_orientation(int orientation) {
@@ -603,6 +597,10 @@ water_access_tiles building_impl::get_water_output_tiles() const {
     return {};
 }
 
+tile2i building_impl::access_tile() const {
+    return base.road_access;
+}
+
 void building_impl::highlight_waypoints() { // highlight the 4 routing tiles for roams from this building
     map_clear_highlights();
     if (has_road_access()) {
@@ -646,6 +644,8 @@ void building_impl::highlight_waypoints() { // highlight the 4 routing tiles for
 }
 
 void building_impl::on_tick(bool refresh_only) {
+    tick_sprite_anims(refresh_only);
+
     if (base.anim.valid()) {
         base.anim.update(refresh_only);
     }

@@ -1,8 +1,5 @@
 log_info("akhenaten: missions started")
 
-// 0: no traders, less 1500: 1 trader, less 2500: 2 traders, less 4000: 3 traders, less 10000: 4 traders
-default_trade_limits = [0, 1500, 2500, 4000, 10000]
-
 default_marshland_grow {
 	random_max : 10
 	random_min : 5
@@ -181,6 +178,170 @@ function mission_recurring_request_may_fire(mission, resource, prefix, abs_month
     return true
 }
 
+// OG invasion.c invasion_land_point: invasion_points_land[location - 1] or the next point set after it,
+// else the map exit.
+function mission_raid_land_tile(config, location) {
+	var lands = config.invasion_points_land || []
+	for (var i = 0; i < 8; i++) {
+		var p = lands[(location - 1 + i) % 8]
+		if (p) {
+			return p
+		}
+	}
+	return config.exit_point || [-1, -1]
+}
+
+// Raids from mission JS for the invasions of the original's events[], vs OG scenario_events.c
+// scenario_event_process_invasion: from the event's date the OG warnings (the announcement, then the reminders at
+// 24 / 12 / 6 / 1 months left), and the attack months_initial months later. A raid (the OG event's fields):
+//   key, invader (EVENT_INVADER_*, picks the phrases), enemy (ENEMY_*), amount, months_initial,
+//   location [value, fixed, min, max] (OG location_fields, rolled when the raid is scheduled), warships,
+//   attack_target; what its on_completed chains as it attacks: chain_tag (an events[] tag), chain_event (the
+//   city.create_chain_event options of that event), on_attack(seq) (a longer chain), then [{ key, delay }]
+//   (raids, due `delay` months later: the child's time.year); year + month (a calendar event), recurring
+//   (OG EVENT_FLAG_RECURRING).
+// The state lives in the mission var `raids` (JSON): key -> { date, loc, seq, done }.
+function mission_raids_state(mission) {
+	var text = mission.raids
+	return text ? JSON.parse(text) : {}
+}
+
+function mission_months_since_start() {
+	return (game.simtime.year - scenario.start_year) * 12 + game.simtime.month
+}
+
+function mission_raid_roll_location(raid) {
+	var l = raid.location
+	return l.length ? __city_roll_event_value(l[0], l[1], l[2], l[3]) : l
+}
+
+function mission_raid_find(raids, key) {
+	for (var i = 0; i < raids.length; i++) {
+		if (raids[i].key == key) {
+			return raids[i]
+		}
+	}
+	return null
+}
+
+function mission_raid_arm(state, raid, date) {
+	state[raid.key] = { date: date, loc: mission_raid_roll_location(raid), seq: 0, done: false }
+	log_info("akhenaten: mission raid " + raid.key + " due m" + date + " location " + state[raid.key].loc)
+}
+
+// A chain or a cleared request sends raid `key`: its event date is `delay` months from now.
+function mission_raid_schedule(mission, raids, key, delay) {
+	var state = mission_raids_state(mission)
+	mission_raid_arm(state, mission_raid_find(raids, key), mission_months_since_start() + delay)
+	mission.raids = JSON.stringify(state)
+}
+
+function mission_raid_over(seq) {
+	if (!seq) {
+		return true
+	}
+	var n = city.invasion_history_count()
+	for (var i = 0; i < n; i++) {
+		var h = city.invasion_history_at(i)
+		if (h.seq == seq) {
+			return h.outcome != 0
+		}
+	}
+	return true
+}
+
+// The attack, vs OG invasion.c scenario_invasion_start: location 9 and up sails from sea point location - 9 with
+// `warships`, the Persians always land by the map entry, others at mission_raid_land_tile. Returns the sequence.
+function mission_start_raid(config, raid, location) {
+	var opts = {
+		invasion_id: raid.invasion_id,
+		invader: raid.invader,
+		enemy: raid.enemy,
+		size: raid.amount,
+		months_initial: raid.months_initial,
+		location: location,
+		invasion_attack_target: raid.attack_target
+	}
+	if (location >= 9) {
+		opts.via_sea = 1
+		opts.sea_point = location - 9
+		opts.warships = raid.warships || 0
+	} else if (raid.enemy != ENEMY_9_PERSIAN) {
+		var tile = mission_raid_land_tile(config, location)
+		opts.tilex = tile[0]
+		opts.tiley = tile[1]
+	}
+	var seq = city.start_foreign_army_invasion(opts)
+	log_info("akhenaten: mission raid " + raid.key + " id=" + raid.invasion_id + " enemy=" + raid.enemy
+		+ " size=" + raid.amount + " location=" + location + " warships=" + (opts.warships || 0) + " seq=" + seq)
+	return seq
+}
+
+// One raid's month: the warning due since its date, or the attack; returns the raids its on_completed chains.
+function mission_raid_month(config, raid, st, now) {
+	var since = now - st.date
+	if (since < 0) {
+		return []
+	}
+	if (since > raid.months_initial) {
+		// OG scenario_event_is_running: past its months the event never runs.
+		st.done = true
+		return []
+	}
+	if (since < raid.months_initial) {
+		__city_invasion_warning({ invasion_id: raid.invasion_id, invader: raid.invader, size: raid.amount,
+			months_initial: raid.months_initial, location: st.loc, months_since: since })
+		return []
+	}
+	st.seq = mission_start_raid(config, raid, st.loc)
+	st.done = true
+	if (raid.chain_event) {
+		city.create_chain_event(raid.chain_event)
+		__city_event_fire_chain(raid.chain_event.tag_id)
+	}
+	if (raid.chain_tag) {
+		__city_event_fire_chain(raid.chain_tag)
+	}
+	if (raid.on_attack) {
+		raid.on_attack(st.seq)
+	}
+	return raid.then || []
+}
+
+// Monthly: arms the calendar raids in their month, posts the warnings and starts the attacks that are due,
+// rearms a recurring raid once its army is gone (OG scenario_events_rearm: its year plus the years since start).
+function mission_raids_month(mission, config, ev, raids) {
+	var state = mission_raids_state(mission)
+	var now = ev.years_since_start * 12 + ev.month
+	var chained = []
+	for (var i = 0; i < raids.length; i++) {
+		var raid = raids[i]
+		var st = state[raid.key]
+		if (!st && raid.year !== undefined && now == raid.year * 12 + raid.month) {
+			mission_raid_arm(state, raid, now)
+			st = state[raid.key]
+		}
+		if (!st) {
+			continue
+		}
+		if (!st.done) {
+			chained = chained.concat(mission_raid_month(config, raid, st, now))
+		} else if (raid.recurring && mission_raid_over(st.seq)) {
+			mission_raid_arm(state, raid, (raid.year + ev.years_since_start) * 12 + raid.month)
+		}
+	}
+	// OG scenario_event_chain: a chained invasion is due `delay` months on; an undelayed one runs at once.
+	while (chained.length) {
+		var link = chained.shift()
+		var child = mission_raid_find(raids, link.key)
+		mission_raid_arm(state, child, now + link.delay)
+		if (link.delay == 0) {
+			chained = chained.concat(mission_raid_month(config, child, state[child.key], now))
+		}
+	}
+	mission.raids = JSON.stringify(state)
+}
+
 // Derive ok/late/refuse from factual event_request_cleared (no KR read).
 function mission_request_outcome(ev) {
 	if (!ev || !ev.fulfilled) {
@@ -192,7 +353,6 @@ function mission_request_outcome(ev) {
 	return "ok"
 }
 
-import mission.mission_favour_events
 import mission.m_000_nubt
 import mission.m_001_thinis
 import mission.m_002_perwadjyt

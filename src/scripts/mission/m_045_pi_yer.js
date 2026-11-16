@@ -1,19 +1,40 @@
 log_info("akhenaten: mission 45 pi-yer started")
 
-// Empire / events verified vs Cleop original campaign scenario 45 (2026-07-28 dump).
-// Empire id=1. Scenario enemy ENEMY_1_ASSYRIAN (briefing = Sea Peoples / Maraye — pak id wins).
-// Gods: Osiris(2), Seth(1). Subtitle: The Sea People Land. Start year -1235.
-// Funds Normal 10080 / loan 3000 / debt_interest 7. Rank 4 (pak; first AC mission).
-// Win: pop 2500 / culture 25 / prosperity 30 / monuments off / kingdom 45 / housing 5×level 8.
-// Survival disabled (0/7) — 7-year hold is Migdol (46), not Pi-Yer.
-// Trade: Enkomi Byblos Tyre Men-nefer Bahariya Siwi Farafra Kyrene Waset.
-// Triage: SKIP empty map_obj idx=9. Chain-only invasions → JS via event_request_cleared.
-// pak_allowed sparse (hut/road/clear only) — buildings from briefing (warships + copper/wood import).
+// Mission 45 — Pi-Yer, "The Sea People Land". Rank 4 (Royal Judge).
 //
-// Tag_id scheme:
-//   1000 + i               chain-only ONLY_VIA_EVENT leaves
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring roots (Sawu/Bubastis — avoid clash with 2000+i)
+// Goals:     population 2500, culture 25, prosperity 30, kingdom 45, 5 houses at housing level 8.
+// Start:     funds 10080, rescue loan 3000, debt interest 7% (normal difficulty).
+// Gods:      Osiris, Seth.
+// Monuments: none.
+// Trade:     can open — Enkomi, Byblos, Tyre, Men-nefer, Waset, Kyrene (by sea), Bahariya Oasis,
+//            Siwi Oasis, Farafra Oasis; events open Kyrene and close the Kyrene, Farafra and Jericho routes;
+//            display only — Djedu, Gaza, Jericho, Menat Khufu, On, Qadesh, Sauty, Sawu, Serabit Khadim,
+//            Timna, Buhen, Abu.
+// Enemies:   Assyrian raids (the briefing speaks of sea-borne tribes allied with the Libyans), two of them
+//            by sea with 3 warships each; one Egyptian raid if Pharaoh's second troop request is refused.
+// Timeline:  y1m2 Gaza asks 9 copper, then Kyrene 9 weapons, then Gaza 23 weapons — every path ends with
+//            the Farafra Oasis route lost and an Assyrian raid 17 by sea announced a month later, attacking
+//            8 months after that, and a month after that attack raid 13 by land is announced (attacks
+//            2 months later); y2m6 Pharaoh asks 11 troops for Men-nefer (won: kingdom +14 and a gift of
+//            11 weapons; late: kingdom +9 and 7 luxury goods; lost or refused: Jericho route lost); from
+//            y3m2 Farafra asks 6 chickpeas every year (delivered: gift of 6 weapons; refused: luxury goods
+//            cost more; late: gift of 3 timber); y3m7 battle lost at Farafra, Kyrene route lost; y7m10
+//            Farafra asks 8 bricks (delivered or late: Kyrene route opens; refused: Assyrian raid 27 by
+//            sea announced 11 months later, attacking 6 months after that); y8m3 Jericho asks 8 papyrus; y11m8 Gaza asks 11 grain (delivered: gift of 9 copper;
+//            refused: Kyrene route lost; late: gift of 7 timber); y13m0 Pharaoh asks 12 troops for Gaza
+//            (refused: kingdom −10 and Pharaoh's army 12 announced 4 months later, attacking a year after
+//            that); from y14m0 Men-nefer asks 6 papyrus every
+//            year (gifts of pottery); y15m4 wages rise; y21m2 Pharaoh asks 19 bricks; y24m10 Farafra
+//            asks 9 grain.
+//
+// Notes for developers:
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later; land raids come at the land point [21,27], the sea raids sail
+//   from sea point 0 (original location 9).
+// - The original allows almost no buildings; the list here follows the briefing (warships, copper and
+//   timber imports).
+// - tag_id: 1000 + i chain-only events, 2000 + i calendar events, 3000 + i*100 + year repeating requests
+//   (i = event index in the original scenario, quoted as "pak i=" below).
 
 mission45 { // Pi-Yer — The Sea People Land
 	map_file : "data/maps/m_045_pi_yer.map"
@@ -31,7 +52,6 @@ mission45 { // Pi-Yer — The Sea People Land
 	initial_funds [20160, 13400, 10080, 6750, 5340]
 	rescue_loans [6000, 4000, 3000, 2000, 1600]
 	debt_interest [4, 5, 7, 9, 11]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -113,8 +133,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 970
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_CHICKPEAS, RESOURCE_FIGS, RESOURCE_BEER ]
 			route_limits [
@@ -136,8 +154,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 880
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_FIGS ]
 			route_limits [
@@ -156,8 +172,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 810
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_GRAIN, RESOURCE_LINEN ]
 			route_limits [
@@ -176,8 +190,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 150
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_CHICKPEAS, RESOURCE_POTTERY ]
 			buys [ RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -199,8 +211,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 215
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_FIGS, RESOURCE_BRICKS ]
 			buys [ RESOURCE_FISH, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -220,8 +230,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 440
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FIGS, RESOURCE_BARLEY ]
 			buys [ RESOURCE_BRICKS, RESOURCE_COPPER ]
 			route_limits [
@@ -240,8 +248,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 475
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FIGS, RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_POTTERY, RESOURCE_TIMBER ]
 			route_limits [
@@ -260,8 +266,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 950
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CLAY, RESOURCE_BARLEY ]
 			buys [ RESOURCE_FIGS, RESOURCE_POTTERY ]
 			route_limits [
@@ -280,8 +284,6 @@ mission45 { // Pi-Yer — The Sea People Land
 			cost_to_open : 590
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_FISH, RESOURCE_CLAY, RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_CHICKPEAS, RESOURCE_STRAW, RESOURCE_COPPER ]
 			route_limits [
@@ -498,6 +500,7 @@ mission45 { // Pi-Yer — The Sea People Land
 	]
 
 	vars {
+		raids : ""
 		chain_leaves_wired : false
 
 		event0_chickpeas_last_year : -1
@@ -520,12 +523,6 @@ mission45 { // Pi-Yer — The Sea People Land
 		event36_grain_done : false
 		event37_bricks_done : false
 
-		inv_copper_wave1_done : false
-		inv_copper_wave1_seq : 0
-		inv_copper_wave1_abs : -1
-		inv_copper_wave2_done : false
-		inv_bricks_done : false
-		inv_troops_pharaoh_done : false
 
 		start_message_shown : false
 	}
@@ -654,58 +651,6 @@ function mission45_ensure_chain_leaves() {
 	mission45_make_leaf(1038, EVENT_TYPE_CITY_STATUS_CHANGE, undefined, 8, 12,
 		EVENT_SUBTYPE_NEW_TRADE_ROUTE, "Kyrene")
 
-	// Bind anchor for ×17 wipe (pak i=4 ok→9). EVENT_TYPE_INVASION is no-op when fired;
-	// tag exists so start_foreign_army_invasion creates a bind that writes history.outcome.
-	mission45_make_leaf(1009, EVENT_TYPE_INVASION, undefined, 13, 2)
-}
-
-function mission45_assyrian_raid(invasion_id, size, attack_target, on_completed_tag) {
-	log_info("akhenaten: mission 45 assyrian raid size=" + size + " id=" + invasion_id)
-	__image_request_pak(PACK_ENEMY_ASSYRIAN)
-	var opts = {
-		invasion_id: invasion_id,
-		enemy: ENEMY_1_ASSYRIAN,
-		size: size,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target
-	}
-	if (on_completed_tag) {
-		// Creates invasion bind so wipe/auto-resolve writes history.outcome for this seq.
-		opts.on_completed_tag = on_completed_tag
-	}
-	return city.start_foreign_army_invasion(opts)
-}
-
-function mission45_egypt_raid(invasion_id, size, attack_target) {
-	log_info("akhenaten: mission 45 egypt (pharaoh) raid size=" + size + " id=" + invasion_id)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: 0,
-		invasion_attack_target: attack_target
-	})
-}
-
-// History outcome for a spawn seq: 0=NONE, 1=COMPLETED, 2=REFUSED, 3=DEFEAT. -1 if not in ring.
-function mission45_invasion_outcome(seq) {
-	if (!seq) {
-		return -1
-	}
-	var n = city.invasion_history_count()
-	for (var i = 0; i < n; i++) {
-		var h = city.invasion_history_at(i)
-		if (h.seq == seq) {
-			return h.outcome
-		}
-	}
-	return -1
 }
 
 [es=event_mission_start, mission=mission45]
@@ -732,47 +677,6 @@ function mission45_recurring_idle_tick(ev) {
 	var abs = ev.years_since_start * 12 + ev.month
 	mission_recurring_request_update_idle(mission, RESOURCE_CHICKPEAS, "chickpeas_recurring", abs)
 	mission_recurring_request_update_idle(mission, RESOURCE_PAPYRUS, "papyrus_recurring", abs)
-}
-
-// Copper/weapons: ×17 (id=4) then ×13 (id=9) after wave1 COMPLETED in history (pak i=4 ok→9).
-// Bind via on_completed_tag 1009 so wipe updates outcome. Timeout if spawn failed / stuck NONE.
-[es=event_advance_month, mission=mission45]
-function mission45_copper_invasion_followup(ev) {
-	if (!mission.inv_copper_wave1_done || mission.inv_copper_wave2_done) {
-		return
-	}
-	var abs = ev.years_since_start * 12 + ev.month
-	if (mission.inv_copper_wave1_abs < 0) {
-		mission.inv_copper_wave1_abs = abs
-	}
-
-	var ready = false
-	if (mission.inv_copper_wave1_seq > 0) {
-		var outcome = mission45_invasion_outcome(mission.inv_copper_wave1_seq)
-		// 1=COMPLETED → wave2; 2=REFUSED / 3=DEFEAT → no follow-up (pak only ok→9).
-		if (outcome == 1) {
-			ready = true
-		} else if (outcome == 2 || outcome == 3) {
-			mission.inv_copper_wave2_done = true
-			log_info("akhenaten: mission 45 skip assyrian×13 after wave1 non-ok", {
-				seq: mission.inv_copper_wave1_seq, outcome: outcome
-			})
-			return
-		} else if (abs - mission.inv_copper_wave1_abs >= 3) {
-			ready = true
-		}
-	} else if (abs - mission.inv_copper_wave1_abs >= 3) {
-		ready = true
-	}
-	if (!ready) {
-		return
-	}
-
-	mission.inv_copper_wave2_done = true
-	log_info("akhenaten: mission 45 assyrian×13 after wave1", {
-		seq: mission.inv_copper_wave1_seq, abs: abs
-	})
-	mission45_assyrian_raid(9, 13, EVENT_ATTACK_TARGET_FOOD)
 }
 
 // pak i=0: chickpeas×6/10mo recurring y3m2+.
@@ -986,31 +890,40 @@ function mission45_event_i37_bricks(ev) {
 function mission45_on_request_cleared(ev) {
 	var outcome = mission_request_outcome(ev)
 
-	// pak: copper refuse / weapons×9 refuse|late / weapons×23 any → LOST Farafra (1011) → ×17 (i=4).
-	// EVENT_TYPE_INVASION no-op → raid here; on_completed_tag 1009 creates wipe bind for history.
-	if ((ev.tag_id == 2005 && outcome == "refuse"
+	// pak: copper refuse / weapons×9 refuse|late / weapons×23 any → LOST Farafra (1011) → raid i=4.
+	if (ev.tag_id == 2005 && outcome == "refuse"
 			|| ev.tag_id == 1006 && (outcome == "refuse" || outcome == "late")
-			|| ev.tag_id == 1007 && (outcome == "ok" || outcome == "refuse" || outcome == "late"))
-			&& !mission.inv_copper_wave1_done) {
-		mission.inv_copper_wave1_done = true
-		mission.inv_copper_wave1_abs = -1
-		mission.inv_copper_wave1_seq = mission45_assyrian_raid(4, 17, EVENT_ATTACK_TARGET_BEST_BUILDINGS, 1009)
-		log_info("akhenaten: mission 45 assyrian×17 after copper/weapons chain", {
-			ev:ev, outcome:outcome, seq:mission.inv_copper_wave1_seq
-		})
+			|| ev.tag_id == 1007 && (outcome == "ok" || outcome == "refuse" || outcome == "late")) {
+		mission_raid_schedule(mission, mission45_raid_list(), "i4", 1)
 		return
 	}
-
-	if (ev.tag_id == 2027 && outcome == "refuse" && !mission.inv_troops_pharaoh_done) {
-		mission.inv_troops_pharaoh_done = true
-		log_info("akhenaten: mission 45 egypt×12 after troops refuse", {ev:ev})
-		mission45_egypt_raid(29, 12, EVENT_ATTACK_TARGET_BEST_BUILDINGS)
+	// pak i=27 refused → i=28 kingdom −10 → i=29 Pharaoh's army.
+	if (ev.tag_id == 2027 && outcome == "refuse") {
+		mission_raid_schedule(mission, mission45_raid_list(), "i29", 4)
 		return
 	}
-
-	if (ev.tag_id == 2037 && outcome == "refuse" && !mission.inv_bricks_done) {
-		mission.inv_bricks_done = true
-		log_info("akhenaten: mission 45 assyrian×27 after bricks refuse", {ev:ev})
-		mission45_assyrian_raid(39, 27, EVENT_ATTACK_TARGET_RANDOM)
+	if (ev.tag_id == 2037 && outcome == "refuse") {
+		mission_raid_schedule(mission, mission45_raid_list(), "i39", 11)
 	}
+}
+
+// pak i=4 (chains i=9 as it attacks), i=29, i=39: the raids the request outcomes send; delays are their time.year.
+function mission45_raid_list() {
+	var A = ENEMY_1_ASSYRIAN
+	var E = EVENT_INVADER_ENEMY
+	return [
+		{ key: "i4", invasion_id: 4, invader: E, enemy: A, amount: 17, months_initial: 8, location: [9, 9, -1, -1],
+			warships: 3, attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS, then: [{ key: "i9", delay: 1 }] },
+		{ key: "i9", invasion_id: 9, invader: E, enemy: A, amount: 13, months_initial: 2, location: [1, 1, -1, -1],
+			attack_target: EVENT_ATTACK_TARGET_FOOD },
+		{ key: "i29", invasion_id: 29, invader: EVENT_INVADER_PHARAOH, enemy: ENEMY_3_EGYPTIAN, amount: 12,
+			months_initial: 12, location: [2, 2, -1, -1], attack_target: EVENT_ATTACK_TARGET_BEST_BUILDINGS },
+		{ key: "i39", invasion_id: 39, invader: E, enemy: A, amount: 27, months_initial: 6, location: [9, 9, -1, -1],
+			warships: 3, attack_target: EVENT_ATTACK_TARGET_RANDOM }
+	]
+}
+
+[es=event_advance_month, mission=mission45]
+function mission45_raids(ev) {
+	mission_raids_month(mission, mission45, ev, mission45_raid_list())
 }

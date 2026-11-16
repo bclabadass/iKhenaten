@@ -1,7 +1,8 @@
 // A workshop turns one load of raw material into one load of goods, and its cart leaves with that
 // load (Pharaoh: carts carry full loads of 100). A brickworks uses 100 clay and 25 straw per load. Production made 20 (pottery, bricks, lamps, paint)
 // or 50 (papyrus, beer) per 100 used, and carts left with those part loads, which then sat in storage
-// yard spaces as odd amounts. Chariots are left out: their quantities are counted singly.
+// yard spaces as odd amounts. Chariots are left out: their quantities are counted singly. The lamp and paint makers
+// run the original's production cycle (og_production_cycle, upstream) and are tested there.
 // Markers:
 //   [test-marker] workshop_<type>_load_per_cycle
 
@@ -11,8 +12,6 @@ var T319_WORKSHOPS = [
     { type: BUILDING_BREWERY_WORKSHOP, name: 'brewery', input: [RESOURCE_BARLEY], output: RESOURCE_BEER },
     { type: BUILDING_BRICKS_WORKSHOP, name: 'bricks', input: [RESOURCE_CLAY, RESOURCE_STRAW], used: [100, 25], output: RESOURCE_BRICKS },
     { type: BUILDING_BRICKS_WORKSHOP, name: 'bricks_25_straw', input: [RESOURCE_CLAY, RESOURCE_STRAW], stock: [100, 25], used: [100, 25], output: RESOURCE_BRICKS },
-    { type: BUILDING_LAMP_WORKSHOP, name: 'lamps', input: [RESOURCE_OIL, RESOURCE_POTTERY], output: RESOURCE_LAMPS },
-    { type: BUILDING_PAINT_WORKSHOP, name: 'paint', input: [RESOURCE_HENNA], output: RESOURCE_PAINT },
 ]
 
 function t319_cycle(w) {

@@ -1,5 +1,32 @@
 log_info("akhenaten: mission 31 bubastis started")
 
+// Mission 31 — Bubastis, "The City of Bast". Rank 10 (Pharaoh).
+//
+// Goals:     culture 85, prosperity 85, monuments 15, kingdom 65, housing: 4 houses of level 19
+//            (no population goal).
+// Start:     funds 10000, no rescue loan, debt interest 20% (normal difficulty).
+// Gods:      Osiris, Ptah, Bast.
+// Monuments: large obelisks (the goal of 15 takes two of them); no burial goods.
+// Trade:     nothing open at start; can open — Heh (by sea), Iken (by sea), Pwenet, Sawu, Waset;
+//            opened by events — Kerma (troops delivered), Gaza (two working warship wharves); display
+//            only — Byblos, Itjtawy, Kebet, Men-nefer, Menat Khufu, Toshka.
+// Enemies:   no raids; Egyptian army (50, 50, then 20) if the kingdom rating falls to 0.
+// Timeline:  y5m0 request 32 troops for Itjtawy (sent: Kerma route opens; refused: 48 troops; late or
+//            lost: 16 troops for Heh, then 8 troops — each fallback repeats the same outcomes until a
+//            request is sent; refusing the 48 troops brings news of a lost battle at Iken); yearly from
+//            y6m2 request 12 fish while none is open (sent: Heh buys more granite; refused: Kerma buys
+//            less granite; late: kingdom -3); yearly from y8m8 request 24 timber (sent: Kerma buys more
+//            beer; otherwise Kerma buys less beer); y10m7 request 8 weapons for Kebet (sent or refused:
+//            Kebet buys more luxury goods; late: Kerma buys less timber).
+//
+// Notes for developers:
+// - The original has no event that opens Gaza; opening it once two warship wharves work is a
+//   remake rule (temporary) so the briefing's sea trade is reachable.
+// - The original gives Gaza and Kerma no goods and Kerma no route; goods and route 7 are added so
+//   the unlocks are playable.
+// - tag_id: 1000 + i chained events and requests, 2000 + i calendar events, 3000 + i*100 + year yearly
+//   requests, 7000 + i Egyptian army (i = event index in the original scenario, "pak i=" below).
+
 mission31 { // Bubastis — The City of Bast
 	map_file : "data/maps/m_031_bubastis.map"
 	start_message : "message_mission_bubastis"
@@ -30,7 +57,6 @@ mission31 { // Bubastis — The City of Bast
 	initial_funds [20000, 13300, 10000, 6700, 5300]
 	rescue_loans [0, 0, 0, 0, 0]
 	debt_interest [10, 15, 20, 25, 30]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		// pak animals=0; enable so prey/herd update after create_herds (hunting lodge).
@@ -104,6 +130,54 @@ mission31 { // Bubastis — The City of Bast
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=17
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 50 }
+			months_initial : 5
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7017
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_FOOD
+		}
+		{ // pak i=18
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 50 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7018
+			on_completed_action : 2
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=19
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 20 }
+			months_initial : 0
+			location_fields [ 3, 3, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7019
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
 	cities [
@@ -125,8 +199,6 @@ mission31 { // Bubastis — The City of Bast
 			cost_to_open : 1750
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_WEAPONS, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_TIMBER, RESOURCE_PAPYRUS, RESOURCE_COPPER ]
 			route_limits [
@@ -148,8 +220,6 @@ mission31 { // Bubastis — The City of Bast
 			cost_to_open : 1750
 			is_sea_trade : true
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_BEER ]
 			buys [ RESOURCE_WEAPONS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			route_limits [
@@ -167,8 +237,6 @@ mission31 { // Bubastis — The City of Bast
 			cost_to_open : 1500
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS ]
 			route_limits [
 				{ resource: RESOURCE_LUXURY_GOODS, limit: 1500 }
@@ -183,8 +251,6 @@ mission31 { // Bubastis — The City of Bast
 			cost_to_open : 500
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_GRANITE, RESOURCE_COPPER ]
 			route_limits [
 				{ resource: RESOURCE_GRANITE, limit: 1500 }
@@ -200,8 +266,6 @@ mission31 { // Bubastis — The City of Bast
 			cost_to_open : 800
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_STONE, RESOURCE_LIMESTONE, RESOURCE_GRANITE, RESOURCE_COPPER ]
 			route_limits [
 				{ resource: RESOURCE_GRANITE, limit: 1500 }
@@ -228,8 +292,6 @@ mission31 { // Bubastis — The City of Bast
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_CLAY, RESOURCE_COPPER ]
 			buys [ RESOURCE_LINEN, RESOURCE_PAPYRUS, RESOURCE_TIMBER ]
 			route_limits [
@@ -267,8 +329,6 @@ mission31 { // Bubastis — The City of Bast
 			is_sea_trade : true
 			trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS ]
 			buys [ RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_BEER, RESOURCE_TIMBER, RESOURCE_GRANITE ]
 			route_limits [
@@ -431,13 +491,6 @@ mission31 { // Bubastis — The City of Bast
 		event9_weapons_done : false
 		event13_fish_armed : false
 		gaza_trade_done : false
-		pharaoh_favour_invasion_done : false
-		pharaoh_favour_wave2_done : false
-		pharaoh_favour_wave3_done : false
-		pharaoh_favour_enemies_seen : false
-		pharaoh_favour_enemies_seen2 : false
-		pharaoh_favour_wave1_abs : -1
-		pharaoh_favour_wave2_abs : -1
 		timber_recurring_was_busy : false
 		timber_recurring_idle_since_abs : -1
 		fish_recurring_was_busy : false
@@ -499,40 +552,6 @@ function mission31_fire_simple_event(tag, type, resource, amount, city_name, sub
 	var ev = city.create_chain_event(opts)
 	ev.event_is_active = true
 	return ev
-}
-
-// pak location_fields = 1-based land invasion index (MAX 8).
-// inv_land/sea empty; favour i=17/18/19 use loc 1/2/3 — distinct landfalls via
-// entry / disembark[2] / exit (Egyptian unset → map entry).
-function mission31_loc_tile(loc) {
-	if (loc == 1) {
-		return [129, 80] // entry_point (east)
-	}
-	if (loc == 2) {
-		return [51, 72] // disembark sparse i=2
-	}
-	if (loc == 3) {
-		return [81, 128] // exit_point
-	}
-	return [-1, -1]
-}
-
-function mission31_egypt_raid(invasion_id, size, attack_target, loc) {
-	var tile = mission31_loc_tile(loc === undefined ? 0 : loc)
-	log_info("akhenaten: mission 31 egypt raid id=" + invasion_id + " size=" + size
-		+ " loc=" + loc + " tile=" + tile[0] + "," + tile[1])
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		amount: size,
-		tilex: tile[0],
-		tiley: tile[1],
-		want_destroy_buildings: 0,
-		invasion_attack_target: attack_target === undefined ? EVENT_ATTACK_TARGET_RANDOM : attack_target
-	})
 }
 
 function mission31_ensure_shared_leaves() {
@@ -645,53 +664,10 @@ function mission31_requests_and_events(ev) {
 	}
 
 	// Heaven TEMP: ≥2 active warship wharves → NEW_TRADE Gaza (no distant_battle in pak)
-	if (!mission.gaza_trade_done && city.count_active_buildings(BUILDING_WARSHIP_WHARF) >= 2) {
+	if (!mission.gaza_trade_done && city.count_total_buildings(BUILDING_WARSHIP_WHARF) >= 2) {
 		mission.gaza_trade_done = true
 		log_info("akhenaten: mission 31 NEW_TRADE Gaza (warship wharves)")
 		mission31_fire_simple_event(2020, EVENT_TYPE_CITY_STATUS_CHANGE, undefined, 1, "Gaza",
 			EVENT_SUBTYPE_NEW_TRADE_ROUTE)
-	}
-
-	// pak i=17-19: favour egypt×50 → ×50 → ×20; loc 1 / 2 / 3 (KR < 30 like Heh)
-	// Timeout 3 months if spawn fails (enemies never seen) so chain does not stall.
-	if (!mission.pharaoh_favour_invasion_done && city.rating_kingdom < 30) {
-		mission.pharaoh_favour_invasion_done = true
-		mission.pharaoh_favour_wave1_abs = abs
-		log_info("akhenaten: mission 31 favour egypt x50")
-		mission31_egypt_raid(17, 50, EVENT_ATTACK_TARGET_RANDOM, 1)
-	}
-	if (mission.pharaoh_favour_invasion_done && !mission.pharaoh_favour_wave2_done) {
-		if (!mission.pharaoh_favour_enemies_seen) {
-			if (city.num_enemy_formations > 0) {
-				mission.pharaoh_favour_enemies_seen = true
-			} else if (mission.pharaoh_favour_wave1_abs >= 0
-					&& abs - mission.pharaoh_favour_wave1_abs >= 3) {
-				mission.pharaoh_favour_wave2_done = true
-				mission.pharaoh_favour_wave2_abs = abs
-				log_info("akhenaten: mission 31 favour egypt x50 wave2 (spawn timeout)")
-				mission31_egypt_raid(18, 50, EVENT_ATTACK_TARGET_FOOD, 2)
-			}
-		} else if (city.num_enemy_formations == 0) {
-			mission.pharaoh_favour_wave2_done = true
-			mission.pharaoh_favour_wave2_abs = abs
-			log_info("akhenaten: mission 31 favour egypt x50 wave2")
-			mission31_egypt_raid(18, 50, EVENT_ATTACK_TARGET_FOOD, 2)
-		}
-	}
-	if (mission.pharaoh_favour_wave2_done && !mission.pharaoh_favour_wave3_done) {
-		if (!mission.pharaoh_favour_enemies_seen2) {
-			if (city.num_enemy_formations > 0) {
-				mission.pharaoh_favour_enemies_seen2 = true
-			} else if (mission.pharaoh_favour_wave2_abs >= 0
-					&& abs - mission.pharaoh_favour_wave2_abs >= 3) {
-				mission.pharaoh_favour_wave3_done = true
-				log_info("akhenaten: mission 31 favour egypt x20 wave3 (spawn timeout)")
-				mission31_egypt_raid(19, 20, EVENT_ATTACK_TARGET_FOOD, 3)
-			}
-		} else if (city.num_enemy_formations == 0) {
-			mission.pharaoh_favour_wave3_done = true
-			log_info("akhenaten: mission 31 favour egypt x20 wave3")
-			mission31_egypt_raid(19, 20, EVENT_ATTACK_TARGET_FOOD, 3)
-		}
 	}
 }

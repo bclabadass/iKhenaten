@@ -16,6 +16,13 @@ bool building_overlay_anim::archive_load(archive arch) {
     return animation_t::archive_load(arch);
 }
 
+bool building_static_params::archive_load(archive arch) {
+    // Read apart from ANK_CONFIG_STRUCT so a missing key keeps the OG default instead of
+    // resetting to 0 (= TERRAIN_USAGE_ANY, which five monuments set explicitly).
+    guild_worker_terrain = (int8_t)arch.r_int("guild_worker_terrain", TERRAIN_USAGE_PREFER_ROADS);
+    return true;
+}
+
 void building_static_params::archive_unload() {
 }
 
@@ -34,10 +41,6 @@ void building_static_params::initialize() {
     if (max_storage_amount == 0) max_storage_amount = 200;
 
     city_labor_t::set_category(type, labor_category);
-
-    if (flags.is_temple_complex) {
-        g_city.buildings.register_temple_complex_type(type);
-    }
 }
 
 void add_building(building *b, int orientation, int variant) {

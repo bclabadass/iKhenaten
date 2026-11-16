@@ -1,43 +1,38 @@
 log_info("akhenaten: mission 27 itjtawy started")
 
-// Empire / events aligned with original campaign scenario 27 (2026-07-26 dump); see
-// tmp/mission27_clean.txt (triage) and tmp/mission27_key.txt (raw dump).
-// Empire id=1. Scenario enemy ENEMY_7_LIBIAN (briefing sprites only - every timed
-// invasion in the pak is invader=egypt(2) -> ENEMY_3_EGYPTIAN, incl. the by_favour pair).
-// Gods: Osirisx1, Ptahx1, Sethx1, Bastx2 - no JS override. Funds Normal 8000 / loan 3000 /
-// debt_interest 8 (low). Rank 10 (Pharaoh era, matches Iken/Heh).
-// Convergence: Kebet (25) and Menat Khufu (26) both funnel into this scenario. No
-// next_mission here - a choice[] host to Iken (28, already scripted) / Sawu (29, not yet;
-// its button stays hidden until that mission is scripted).
-// Win: pop 7500 / culture 60 / prosperity 60 / monuments 33 (Sphinx 1 + Medium mudbrick 8
-//   + Small mudbrick 4 → trunc(2.25·13+4.5)=33) / kingdom 85 / housing_count 6 +
-//   housing_level 17 (six BUILDING_HOUSE_STATELY_MANOR).
-// Burial: pak burial_count=5 - grainx10 potteryx25 beerx12 luxury_goodsx12 papyrusx15.
-// Trade: Buhen(7 sea) Byblos(2) Dakhla Oasis(9) Men-nefer(6) Menat Khufu(4).
-// Display: Kerma(5 sea) Kharga Oasis(11) Waset(1) Kebet(3). SKIP empty map_obj idx=8.
-// No pak river/inv_land/inv_sea points beyond the single disembark slot i=2 - omit
-// invasion_points_*; chain / favour invasions fall back to the map entry tile (-1,-1).
-// Events (pragmatic depth, Menat-style - KR leaves + key side effects, not every nested
-// grain/pomegranates/papyrus chain request):
-//   i=0  meatx9      y2m7  /8mo  Men-nefer  ok KR+6 / refuse KRx3 + chain egyptx8 (i=3) / late KRx3
-//   i=67 meatx2      y2m10 /6mo  Kerma      ok KR+1 / refuse KRx3 / late GIFTx168 (no-op deben)
-//   i=48 potteryx7   y2m2  /8mo  Kerma      ok NEW_TRADE Kerma / refuse KRx2 / late = refuse
-//   i=17 bricksx13   y5m4  /10mo Men-nefer  ok KR+5 / refuse KRx3 + chain egyptx9 (i=22) / late = refuse
-//   i=70 limestonex6 y6m4  /10mo Men-nefer  ok KR+7->GIFTx1514 / refuse KRx5 + chain egyptx6 (i=76) / late KRx3->GIFTx135
-//   Favour i=118->119: egyptx50->x50 when kingdom rating x 0 (Menat pattern, size 50 not 40).
-//   Recurring idle-gate (fire once/year from the pak start year, month match):
-//     i=43 linenx15 y14m2+ Menat Khufu (ok KR+3->GIFTx1385 / refuse KRx3 / late KRx3)
-//     i=78/79/80/82/83 LAND_TRADE_PROBLEM y8/28/45/63/90
-//     i=84/85/86/87 WAGE_INCREASE/DECREASE y7/13/22/35
-//     i=88/89/90 CONTAMINATED_WATER y4/30/85
-// SKIP: orphan KR/MSG chain_only i=5,31,41,92,95,101,103 (no inbound reference); i=81 clay
-//   pit flood (editor year=31073 junk, not a real landslide); NEW_TRADE i=14/i=37 and LOST
-//   i=23 (deep chain-only, unreachable from the wired roots at this depth); pak_allowed dump
-//   (editor artifact - only ROAD/CLEAR_LAND/CRUDE_HUT).
-// Tag_id scheme:
-//   1000 + i               chain-only leaves
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring calendar roots
+// Mission 27 — Itjtawy, "A New Capital is Founded". Rank 10 (Pharaoh).
+//
+// Goals:     population 7500, culture 60, prosperity 60, monuments 33, kingdom 85,
+//            housing: 6 houses of level 17.
+// Start:     funds 8000, rescue loan 3000, debt interest 8% (normal difficulty).
+// Gods:      Osiris, Ptah, Seth, Bast (patron).
+// Monuments: sphinx, medium mudbrick pyramid, small mudbrick pyramid (burial goods: 10 grain,
+//            25 pottery, 12 beer, 12 luxury goods, 15 papyrus).
+// Trade:     nothing open at start; can open — Buhen (by sea), Byblos, Dakhla Oasis, Men-nefer,
+//            Menat Khufu; opened by events — Kerma (7 pottery delivered); display only — Kharga Oasis,
+//            Waset, Kebet.
+// Enemies:   Egyptian raids only after a refused request; Egyptian army (50, then 50 more) if the
+//            kingdom rating falls to 0. The scenario enemy is set to Libyan, but no Libyan army is sent.
+// Timeline:  y2m2 request 7 pottery (delivered: Kerma route opens); y2m7 request 9 meat (refused:
+//            raid 8 announced 5 months later, attacking 5 months after that, kingdom -10 as it attacks);
+//            y2m10 request 2 meat; y5m4 request 13 bricks (refused: raid 9 announced 7 months later,
+//            attacking 8 months after that, Menat Khufu route lost as it attacks); y6m4 request
+//            6 limestone (delivered: gift from Pharaoh; refused: raid 6 announced 3 months later,
+//            attacking 6 months after that, kingdom -7 as it attacks).
+//            Yearly from the given year: contaminated water from y4m7, y30m7, y85m7; wage rise from
+//            y7m10 and y22m6, wage cut from y13m2 and y35m9; land trade problems from y8m3, y28m4,
+//            y45m3, y63m3, y90m3; request 15 linen from y14m2 (only while no linen request is open).
+//            Other requests only move the kingdom rating.
+//
+// Notes for developers:
+// - Next mission is a choice between Iken (28) and Sawu (29), so there is no next_mission.
+// - The map has no invasion points: raids and the Egyptian army enter at the map exit point. Raids follow
+//   the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month, the attack
+//   months_initial months later.
+// - The original gives Kerma no goods, so its unlock is cosmetic (same as Men-nefer/Khmun in Kebet).
+// - Deeper nested request chains of the original are reduced to their kingdom-rating outcomes.
+// - tag_id: 1000 + i chained events, 2000 + i one-time calendar events, 3000 + i*100 + year yearly
+//   events, 7000 + i Egyptian army (i = event index in the original scenario, "pak i=" below).
 
 mission27 { // Itjtawy - A New Capital is Founded
 	map_file : "data/maps/m_027_itjtawy.map"
@@ -71,7 +66,6 @@ mission27 { // Itjtawy - A New Capital is Founded
 	initial_funds [16000, 10600, 8000, 5400, 4200]
 	rescue_loans [6000, 4000, 3000, 2000, 1500]
 	debt_interest [4, 6, 8, 10, 12]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -111,7 +105,7 @@ mission27 { // Itjtawy - A New Capital is Founded
 		BUILDING_SCRIBAL_SCHOOL, BUILDING_LIBRARY,
 	]
 
-	// Monuments 33 = Sphinx(1) + Medium mudbrick(8) + Small mudbrick(4).
+	// Monuments 33 = Sphinx (10) + Medium mudbrick (12) + Small mudbrick (4) + burial pottery 25/16 (1).
 	win_criteria {
 		population    {enabled : true, goal : 7500 }
 		culture       {enabled : true, goal : 60 }
@@ -140,6 +134,39 @@ mission27 { // Itjtawy - A New Capital is Founded
 
 	enable_scenario_events : true
 
+	events [
+		{ // pak i=118
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 50 }
+			months_initial : 6
+			location_fields [ 1, 1, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7118
+			on_completed_action : 1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+		{ // pak i=119
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_EGYPT }
+			amount { value : 50 }
+			months_initial : 0
+			location_fields [ 2, 2, -1, -1 ]
+			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
+			tag_id : 7119
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
+
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
 	cities [
@@ -162,8 +189,6 @@ mission27 { // Itjtawy - A New Capital is Founded
 			cost_to_open : 850
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_BARLEY, RESOURCE_BEER ]
 			buys [ RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_COPPER ]
 			route_limits [
@@ -184,8 +209,6 @@ mission27 { // Itjtawy - A New Capital is Founded
 			cost_to_open : 900
 			is_sea_trade : false
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -205,8 +228,6 @@ mission27 { // Itjtawy - A New Capital is Founded
 			cost_to_open : 1250
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_BRICKS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_MEAT, RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_PAPYRUS, RESOURCE_GRANITE ]
 			route_limits [
@@ -229,8 +250,6 @@ mission27 { // Itjtawy - A New Capital is Founded
 			cost_to_open : 300
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POMEGRANATES, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_LETTUCE, RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 			route_limits [
@@ -253,8 +272,6 @@ mission27 { // Itjtawy - A New Capital is Founded
 			cost_to_open : 350
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_STONE ]
 			buys [ RESOURCE_BRICKS, RESOURCE_LIMESTONE, RESOURCE_GRANITE ]
 			route_limits [
@@ -451,6 +468,7 @@ mission27 { // Itjtawy - A New Capital is Founded
 	]
 
 	vars {
+		raids : ""
 		i0_leaves_wired : false
 		i17_leaves_wired : false
 		i48_leaves_wired : false
@@ -478,13 +496,7 @@ mission27 { // Itjtawy - A New Capital is Founded
 		event89_water_last_year : -1
 		event90_water_last_year : -1
 
-		b12_i0_done : false
-		b12_i17_done : false
-		b12_i70_done : false
 
-		egypt_favour_invasion_done : false
-		egypt_favour_wave2_done : false
-		egypt_favour_wave2_enemies_seen : false
 
 		start_message_shown : false
 	}
@@ -625,38 +637,6 @@ function mission27_ensure_all_leaves() {
 	mission27_ensure_i43_leaves()
 }
 
-// No pak inv_land/sea points - chain / favour Egyptian raids use the map entry fallback (-1,-1).
-function mission27_egypt_raid(invasion_id, size, attack_target) {
-	log_info("akhenaten: mission 27 itjtawy egypt raid id=" + invasion_id + " size=" + size)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		invasion_id: invasion_id,
-		enemy: ENEMY_3_EGYPTIAN,
-		size: size,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: size,
-		invasion_attack_target: attack_target
-	})
-}
-
-function mission27_favour_wave(size, invasion_id) {
-	log_info("akhenaten: mission 27 itjtawy favour wave size=" + size + " kr=" + city.rating_kingdom
-		+ " id=" + invasion_id)
-	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	city.start_foreign_army_invasion({
-		mode: ATTACK_TYPE_ENEMIES,
-		enemy: ENEMY_3_EGYPTIAN,
-		kind: INVASION_KIND_KINGDOME,
-		size: size,
-		invasion_id: invasion_id,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: 0,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	})
-}
-
 [es=event_mission_start, mission=mission27]
 function mission27_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_LIBIAN)
@@ -786,55 +766,40 @@ function mission27_requests_and_events(ev) {
 	}
 }
 
-// Chain invasions from JS after a request refuse (EVENT_TYPE_INVASION chain nodes are
-// no-ops in this engine). Only the three once-request roots have a pak invasion child.
+// pak i=3 / i=22 / i=76: the Egyptian raids of the refused meat / bricks / limestone requests (tags 2000 / 2017 /
+// 2070), due their time.year months on; as they attack, pak i=5 / i=23 / i=77.
+function mission27_raid_list() {
+	var G = ENEMY_3_EGYPTIAN
+	var E = EVENT_INVADER_EGYPT
+	return [
+		{ key: "i3", invasion_id: 3, invader: E, enemy: G, amount: 8, months_initial: 5, location: [2, -1, 1, 5],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM,
+			chain_event: { tag_id: 1005, type: EVENT_TYPE_REPUTATION_DECREASE, amount: 10 } },
+		{ key: "i22", invasion_id: 22, invader: E, enemy: G, amount: 9, months_initial: 8, location: [2, -1, 1, 5],
+			attack_target: EVENT_ATTACK_TARGET_RANDOM,
+			chain_event: { tag_id: 1023, type: EVENT_TYPE_CITY_STATUS_CHANGE, amount: 5,
+				subtype: EVENT_SUBTYPE_LOST_TRADE_ROUTE, city: "Menat Khufu" } },
+		{ key: "i76", invasion_id: 76, invader: E, enemy: G, amount: 6, months_initial: 6, location: [1, -1, 1, 5],
+			attack_target: EVENT_ATTACK_TARGET_FOOD,
+			chain_event: { tag_id: 1077, type: EVENT_TYPE_REPUTATION_DECREASE, amount: 7 } }
+	]
+}
+
+[es=event_advance_month, mission=mission27]
+function mission27_raids(ev) {
+	mission_raids_month(mission, mission27, ev, mission27_raid_list())
+}
+
 [es=event_request_cleared, mission=mission27]
 function mission27_on_request_cleared(ev) {
 	if (mission_request_outcome(ev) != "refuse") {
 		return
 	}
-	if (ev.tag_id == 2000 && !mission.b12_i0_done) {
-		mission.b12_i0_done = true
-		log_info("akhenaten: mission 27 egyptx8 after meat refuse (i=3)", {ev:ev})
-		mission27_egypt_raid(3, 8, EVENT_ATTACK_TARGET_RANDOM)
-		return
+	if (ev.tag_id == 2000) {
+		mission_raid_schedule(mission, mission27_raid_list(), "i3", 5)
+	} else if (ev.tag_id == 2017) {
+		mission_raid_schedule(mission, mission27_raid_list(), "i22", 7)
+	} else if (ev.tag_id == 2070) {
+		mission_raid_schedule(mission, mission27_raid_list(), "i76", 3)
 	}
-	if (ev.tag_id == 2017 && !mission.b12_i17_done) {
-		mission.b12_i17_done = true
-		log_info("akhenaten: mission 27 egyptx9 after bricks refuse (i=22)", {ev:ev})
-		mission27_egypt_raid(22, 9, EVENT_ATTACK_TARGET_RANDOM)
-		return
-	}
-	if (ev.tag_id == 2070 && !mission.b12_i70_done) {
-		mission.b12_i70_done = true
-		log_info("akhenaten: mission 27 egyptx6 after limestone refuse (i=76)", {ev:ev})
-		mission27_egypt_raid(76, 6, EVENT_ATTACK_TARGET_RANDOM)
-	}
-}
-
-// pak i=118->119: by_favour egyptx50 -> after wipe, chain egyptx50 (attack=4 RANDOM).
-[es=event_advance_month, mission=mission27]
-function mission27_egypt_favour_invasion(ev) {
-	if (mission.egypt_favour_invasion_done && !mission.egypt_favour_wave2_done) {
-		if (city.num_enemy_formations > 0) {
-			mission.egypt_favour_wave2_enemies_seen = true
-			return
-		}
-		if (!mission.egypt_favour_wave2_enemies_seen) {
-			return
-		}
-		mission.egypt_favour_wave2_done = true
-		mission27_favour_wave(50, 119)
-		return
-	}
-
-	if (mission.egypt_favour_invasion_done) {
-		return
-	}
-	if (city.rating_kingdom > 0) {
-		return
-	}
-	mission.egypt_favour_invasion_done = true
-	mission.egypt_favour_wave2_enemies_seen = false
-	mission27_favour_wave(50, 118)
 }

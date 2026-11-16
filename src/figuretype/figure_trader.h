@@ -22,5 +22,5 @@ public:
 };
 
 // A trader's city and trader slot as an original-game save stores them; 0 (no city / slot) when out of range.
-uint8_t original_trader_city(const figure_original_fields &og);
-uint8_t original_trader_id(const figure_original_fields &og);
+uint8_t original_trader_city(const figure_original_fields& og);
+uint8_t original_trader_id(const figure_original_fields& og);

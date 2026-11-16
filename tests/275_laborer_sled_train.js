@@ -1,5 +1,5 @@
-// Laborer brick delivery: spawn OG sled train (5 pullers + sled) linked via leading_figure_id;
-// train members stay in ACTION_8 and follow_closely while laborer pulls.
+// Laborer brick delivery: OG sled train (5 pullers + sled) linked via leading_figure_id, spawned once the
+// laborer has its load; train members stay in ACTION_8 and follow_closely while the laborer pulls.
 
 function run_test() {
     __log_info_native('[test:275] laborer sled train spawn + follow_closely')
@@ -13,6 +13,9 @@ function run_test() {
     }
     if (!__scenario_building_allowed(BUILDING_BRICKLAYERS_GUILD)) {
         __scenario_building_allow(BUILDING_BRICKLAYERS_GUILD, true)
+    }
+    if (!__scenario_building_allowed(BUILDING_STORAGE_YARD)) {
+        __scenario_building_allow(BUILDING_STORAGE_YARD, true)
     }
 
     __test_set_treasury(500000)
@@ -56,6 +59,17 @@ function run_test() {
         return
     }
 
+    // OG assign_pyramid: a block fetch needs a yard holding a full 400 load.
+    __scenario_building_allow(BUILDING_STORAGE_YARD, true)
+    var yard = __test_building_create(BUILDING_STORAGE_YARD, tile.x + 12, tile.y + 4)
+    if (!yard) {
+        __log_info_native('[test:275] failed to create storage yard')
+        __test_signal_ready()
+        return
+    }
+    city.get_building(yard).has_road_access = true
+    __test_storage_yard_add_resource(yard, RESOURCE_BRICKS, 400)
+
     var bl = __test_figure_create(FIGURE_BRICKLAYER, tile.x, tile.y + 3)
     __test_figure_set_home(bl, guild)
     city.get_building(bid).add_workers(bl)
@@ -69,15 +83,38 @@ function run_test() {
     // Literal 8 = ACTION_8_BRICKLAYER_WAIT_FOR_BLOCK.
     __test_figure_set_action(bl, 8)
 
-    var fid = __test_figure_create(FIGURE_LABORER, tile.x, tile.y + 3)
+    var sy = test_building_place(BUILDING_STORAGE_YARD, tile.x + 18, tile.y)
+    if (!sy) {
+        sy = test_building_place(BUILDING_STORAGE_YARD, -1, -1)
+    }
+    if (!sy || !__test_storage_yard_add_resource(sy, RESOURCE_BRICKS, 400)) {
+        __log_info_native('[test:275] failed to stock storage yard with bricks')
+        __log_marker('sled_train_spawn_fail:yard')
+        __test_signal_ready()
+        return
+    }
+
+    var ytile = __building_tile(yard)
+    var fid = __test_figure_create(FIGURE_LABORER, ytile.x, ytile.y)
     // figure_before_action poofs workers whose home building slot 0 lacks them.
     __test_figure_set_home_slot(fid, camp)
     city.get_building(bid).add_workers(fid)
     __worker_assign_brick_delivery(fid, bid, bl)
+    if (__test_figure_get_action(fid) != 15) {
+        __log_info_native('[test:275] assign_block_delivery did not enter TO_STORAGE_YARD')
+        __log_marker('sled_train_spawn_fail:assign')
+        __test_signal_ready()
+        return
+    }
 
-    var n = __pyramid_spawn_sled_train(fid, bid)
+    // OG at_storage_yard: the train appears only after the load is taken.
+    var n = 0
+    for (var s = 0; s < 400 && n < 6; s++) {
+        __test_figures_update()
+        n = __pyramid_count_sled_train_followers(fid)
+    }
     if (n < 6) {
-        __log_info_native('[test:275] spawn_sled_train expected 6 figures, got ' + n)
+        __log_info_native('[test:275] spawn_sled_train expected 6 figures, got ' + n + ' action=' + __test_figure_get_action(fid))
         __log_marker('sled_train_spawn_fail:' + n)
         __test_signal_ready()
         return

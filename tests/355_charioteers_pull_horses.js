@@ -12,7 +12,7 @@ function run_test() {
     var wrong = 0
     for (var dir = 0; dir < 8; dir += 2) {
         __test_figure_set_direction(fid, dir)
-        __test_figure_refresh_image(fid)
+        __test_figure_refresh_animation_and_image(fid)
         var cart = __test_figure_cart_image_id(fid)
         seen.push(cart > 0 ? cart - horses : 'none')
         if (cart < horses || cart >= horses + 96) {

@@ -1,24 +1,40 @@
 log_info("akhenaten: mission 21 dunqul started")
 
-// Empire / events aligned with original campaign scenario 21 (2026-07-26 dump).
-// Empire id=0. Enemy ENEMY_4_HITTITE (scenario); beduin raids (Libyan sprites); favour Pharaoh×66.
-// Gods: Ra, Ptah, Seth. Funds Normal 6000 / loan 1500 / debt 15. Rank 8.
-// Win: pop 3500 / culture 20 / prosperity 20 / monuments TEMP 9 (pak 6 small obelisk) / kingdom 80 / housing 14.
-// Burial empty. Climate desert.
-// Trade: Buhen(5) Byblos(4) Henen-nesw(10) Kerma(8) Men-nefer(7) On(2) Selima(6).
-// Display: Djedu(1) Iunet(3) Nekhen(9) Saqqara(11) Dakhla(14). Kharga stub route 13.
-// Triage: SKIP empty map_obj idx=10; SKIP orphan i=6 LOST_TRADE Djedu (chain_only, no inbound);
-// omit river/disembark/inv points (pak 0).
-// Events: gamemeat×12 + granite×12 KR via request_cleared (not shared ONLY_VIA — B14);
-// siege→weapons×60; beduin/enemy raids (unique wipe KR tags); NEW_TRADE; favour×66.
-// SKIP empty NEW_TRADE Djedu/Iunet (display, no sells/buys).
+// Mission 21 — Dunqul Oasis (Dunqul), "The Kushite Threat". Rank 8 (Chancellor).
 //
-// Tag_id scheme:
-//   1000 + i               chain-only leaves / chain requests (once structures)
-//   2000 + i               once calendar roots
-//   3000 + i*100 + year    recurring calendar roots
-//   4100 + year / 4200+y   invasion wipe KR (unique ONCE leaves)
-//   50000 + seq            fire_kr unique ONCE
+// Goals:     population 3500, culture 20, prosperity 20, monuments 6, kingdom 80, housing level 14.
+// Start:     funds 6000, rescue loan 1500, debt interest 15% (normal difficulty).
+// Gods:      Ra, Ptah, Seth.
+// Monuments: small obelisk.
+// Trade:     nothing open at start; can open — Buhen, Byblos, Henen-nesw, Kerma, Men-nefer, On, Selima
+//            Oasis; display only — Djedu, Iunet, Nekhen, Saqqara, Dakhla Oasis, Bahariya Oasis, Kharga
+//            Oasis.
+// Enemies:   Bedouin raids and Hittite raids by land; Pharaoh's army (66) if the kingdom rating falls
+//            to 0.
+// Timeline:  Bedouin raid 5 announced y1m0, attacks y1m6; y1m1 Henen-nesw loses its route, is besieged and asks for 60 weapons
+//            within 3 months — whatever the outcome, Djedu then falls; y1m9 Henen-nesw route opens
+//            again; every m8 from y2 a city asks for 12 game meat and every m10 from y2 Pharaoh asks for
+//            12 granite (each: delivered kingdom +5, refused -36, late -5; not while the last ask is
+//            open); y3m0 Iunet is conquered, then the Kerma route opens; Bedouin raid 12 announced y3m0,
+//            attacks y3m3 (kingdom +5), and again every time its army is gone; y3m9 more timber demand;
+//            Hittite raid 43 announced y4m4, attacks y5m4 (kingdom +8), also recurring; y10m11 Kerma route
+//            opens (if still closed).
+//
+// Notes for developers:
+// - The briefing speaks of Kushites, but the original scenario enemy is Hittite and the code keeps it.
+//   Bedouins use the Libyan army sprites.
+// - The map has no invasion, river or disembark points, so raids come in by the map exit.
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields; a recurring
+//   raid comes back its year plus the years since start later (OG scenario_events_rearm), its kingdom
+//   reward coming as it attacks (OG invasion_attack chains on_completed then).
+// - Repeating outcomes fire one-off kingdom events (mission21_fire_kr, 50000 + n) instead of shared
+//   chain leaves, which can only fire once.
+// - The original also opens routes to Iunet and Djedu, which have no goods; those events are left out.
+//   Its yearly Kerma route event fires only once here.
+// - tag_id: 1000 + i chained events, 2000 + i calendar events, 3000 + i*100 + year yearly requests,
+//   7000 + i Pharaoh's army (i = event index in the original scenario, also quoted as "pak i=" in
+//   comments below).
 
 mission21 { // Dunqul Oasis — The Kushite Threat
 	map_file : "data/maps/m_021_dunqul.map"
@@ -55,7 +71,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 	initial_funds [12000, 8000, 6000, 4000, 3000]
 	rescue_loans [3000, 2000, 1500, 1000, 800]
 	debt_interest [5, 10, 15, 20, 25]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -92,12 +107,12 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 		BUILDING_TEMPLE_COMPLEX_RA, BUILDING_TEMPLE_COMPLEX_PTAH, BUILDING_TEMPLE_COMPLEX_SETH,
 	]
 
-	// Monuments TEMP 9 (pak raw 6; one small obelisk → formula 9, same as Buhen).
+	// Monuments 6 = pak; one small obelisk, OG weight 1 → trunc(6.32·√1+0.5)=6.
 	win_criteria {
 		population    {enabled : true, goal : 3500 }
 		culture       {enabled : true, goal : 20 }
 		prosperity    {enabled : true, goal : 20 }
-		monuments     {enabled : true, goal : 9 }
+		monuments     {enabled : true, goal : 6 }
 		kingdom       {enabled : true, goal : 80 }
 		housing_level {enabled : true, goal : 14 }
 	}
@@ -106,6 +121,24 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 	exit_point [132, 121]
 
 	enable_scenario_events : true
+
+	events [
+		{ // pak i=19
+			type : EVENT_TYPE_INVASION
+			time { year : 0, month : 0 }
+			item { value : EVENT_INVADER_PHARAOH }
+			amount { value : 66, min : 60, max : 80 }
+			months_initial : 9
+			location_fields [ 3, -1, 1, 8 ]
+			event_trigger_type : EVENT_TRIGGER_BY_FAVOUR
+			tag_id : 7019
+			on_completed_action : -1
+			on_refusal_action : -1
+			on_too_late_action : -1
+			on_defeat_action : -1
+			invasion_attack_target : EVENT_ATTACK_TARGET_RANDOM
+		}
+	]
 
 	map_background : {pack:PACK_EMPIRE, id:1}
 	hide_pak_cities : true
@@ -129,8 +162,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 200
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_BARLEY, RESOURCE_BEER ]
 				buys [ RESOURCE_TIMBER, RESOURCE_GRANITE, RESOURCE_COPPER ]
 				route_limits [
@@ -151,8 +182,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 1500
 				is_sea_trade : false
 				type : EMPIRE_CITY_FOREIGN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_TIMBER, RESOURCE_COPPER ]
 				buys [ RESOURCE_GEMS, RESOURCE_LUXURY_GOODS ]
 				route_limits [
@@ -172,8 +201,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 805
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_FIGS, RESOURCE_CLAY, RESOURCE_BEER, RESOURCE_FLAX ]
 				route_limits [
 					{ resource: RESOURCE_FIGS, limit: 2500 }
@@ -192,8 +219,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 375
 				is_sea_trade : false
 				type : EMPIRE_CITY_FOREIGN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS ]
 				buys [ RESOURCE_LINEN ]
 				route_limits [
@@ -211,8 +236,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 870
 				is_sea_trade : false
 				type : EMPIRE_CITY_PHARAOH_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_CHICKPEAS, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 				buys [ RESOURCE_BRICKS, RESOURCE_BARLEY, RESOURCE_BEER, RESOURCE_LUXURY_GOODS ]
 				route_limits [
@@ -235,8 +258,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 960
 				is_sea_trade : false
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_CLAY, RESOURCE_REEDS, RESOURCE_LIMESTONE ]
 				buys [ RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_GEMS, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_GRANITE ]
 				route_limits [
@@ -261,8 +282,6 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 				cost_to_open : 375
 				is_sea_trade : false
 				type : EMPIRE_CITY_FOREIGN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 				buys [ RESOURCE_CLAY, RESOURCE_POTTERY, RESOURCE_BEER, RESOURCE_LINEN, RESOURCE_PAPYRUS, RESOURCE_COPPER ]
 				route_limits [
@@ -519,23 +538,20 @@ mission21 { // Dunqul Oasis — The Kushite Threat
 		]
 
 	vars {
+		raids : ""
 		weapons_leaves_wired : false
 		event7_siege_done : false
 		event10_troops_done : false
-		event11_beduin_done : false
 		event20_trade_done : false
 		event21_demand_done : false
 		event0_gamemeat_last_year : -1
 		event4_granite_last_year : -1
-		event12_beduin_last_year : -1
-		event14_enemy_last_year : -1
 		event18_trade_last_year : -1
 		kr_seq : 0
 		gamemeat_recurring_was_busy : false
 		gamemeat_recurring_idle_since_abs : -1
 		granite_recurring_was_busy : false
 		granite_recurring_idle_since_abs : -1
-		pharaoh_favour_invasion_done : false
 		start_message_shown : false
 	}
 }
@@ -639,38 +655,6 @@ function mission21_ensure_weapons_leaves() {
 	siege.set_completed_action_tag(1005)
 }
 
-function mission21_beduin_raid(invasion_id, size, on_completed_tag) {
-	var opts = {
-		invasion_id: invasion_id,
-		enemy: ENEMY_7_LIBIAN,
-		size: size,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: size,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	}
-	if (on_completed_tag) {
-		opts.on_completed_tag = on_completed_tag
-	}
-	city.start_foreign_army_invasion(opts)
-}
-
-function mission21_enemy_raid(invasion_id, size, on_completed_tag) {
-	var opts = {
-		invasion_id: invasion_id,
-		enemy: ENEMY_4_HITTITE,
-		size: size,
-		tilex: -1,
-		tiley: -1,
-		want_destroy_buildings: size,
-		invasion_attack_target: EVENT_ATTACK_TARGET_RANDOM
-	}
-	if (on_completed_tag) {
-		opts.on_completed_tag = on_completed_tag
-	}
-	city.start_foreign_army_invasion(opts)
-}
-
 [es=event_mission_start, mission=mission21]
 function mission21_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_HITTITE)
@@ -708,12 +692,6 @@ function mission21_requests_and_raids(ev) {
 		lost.set_param("months_initial", 2)
 		lost.set_completed_action_tag(1008)
 		lost.execute()
-	}
-
-	if (!mission.event11_beduin_done && ev.years_since_start == 1 && ev.month == 0) {
-		mission.event11_beduin_done = true
-		log_info("akhenaten: mission 21 beduin×5")
-		mission21_beduin_raid(11, 5)
 	}
 
 	if (!mission.event10_troops_done && ev.years_since_start == 3 && ev.month == 0) {
@@ -756,25 +734,6 @@ function mission21_requests_and_raids(ev) {
 		}
 	}
 
-	if (ev.years_since_start >= 3 && ev.month == 0
-			&& mission.event12_beduin_last_year != ev.years_since_start) {
-		mission.event12_beduin_last_year = ev.years_since_start
-		var beduin_kr = 4100 + ev.years_since_start
-		mission21_make_leaf(beduin_kr, EVENT_TYPE_REPUTATION_INCREASE, undefined, 5, 2)
-		log_info("akhenaten: mission 21 beduin×12 recurring")
-		mission21_beduin_raid(12, 12, beduin_kr)
-	}
-
-	if (ev.years_since_start > 4 || (ev.years_since_start == 4 && ev.month >= 4)) {
-		if (ev.month == 4 && mission.event14_enemy_last_year != ev.years_since_start) {
-			mission.event14_enemy_last_year = ev.years_since_start
-			var enemy_kr = 4200 + ev.years_since_start
-			mission21_make_leaf(enemy_kr, EVENT_TYPE_REPUTATION_INCREASE, undefined, 8, 2)
-			log_info("akhenaten: mission 21 enemy×43 recurring")
-			mission21_enemy_raid(14, 43, enemy_kr)
-		}
-	}
-
 	// SKIP pak i=16/17 NEW_TRADE Iunet/Djedu — display cities with no sells/buys (empty unlock).
 	if (!mission.event20_trade_done && ev.years_since_start == 1 && ev.month == 9) {
 		mission.event20_trade_done = true
@@ -807,8 +766,22 @@ function mission21_on_request_cleared(ev) {
 	}
 }
 
-[es=event_advance_month, mission=mission21]
-function mission21_pharaoh_favour_invasion(ev) {
-	mission_pharaoh_favour_invasion_tick(mission, 66)
+// pak i=11 and i=12 (recurring, kingdom +5 via pak i=1): Bedouins with Libyan soldiers; i=14 (recurring,
+// kingdom +8 via pak i=15): Hittites.
+function mission21_raid_list() {
+	return [
+		{ key: "i11", invasion_id: 11, year: 1, month: 0, invader: EVENT_INVADER_BEDUINS, enemy: ENEMY_7_LIBIAN, amount: 5,
+			months_initial: 6, location: [8, 8, -1, -1], attack_target: EVENT_ATTACK_TARGET_RANDOM },
+		{ key: "i12", invasion_id: 12, year: 3, month: 0, invader: EVENT_INVADER_BEDUINS, enemy: ENEMY_7_LIBIAN,
+			amount: 12, months_initial: 3, location: [4, -1, 1, 8], attack_target: EVENT_ATTACK_TARGET_RANDOM,
+			recurring: true, chain_event: { tag_id: 1001, type: EVENT_TYPE_REPUTATION_INCREASE, amount: 5 } },
+		{ key: "i14", invasion_id: 14, year: 4, month: 4, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_4_HITTITE,
+			amount: 43, months_initial: 12, location: [3, -1, 3, 6], attack_target: EVENT_ATTACK_TARGET_RANDOM,
+			recurring: true, chain_event: { tag_id: 1015, type: EVENT_TYPE_REPUTATION_INCREASE, amount: 8 } }
+	]
 }
 
+[es=event_advance_month, mission=mission21]
+function mission21_raids(ev) {
+	mission_raids_month(mission, mission21, ev, mission21_raid_list())
+}

@@ -66,13 +66,10 @@ var sound_check_sections = [
 // doesn't lose them.
 var sound_check_verdicts = {}
 
+// The file an effect plays, from the original's effect tables (sounds.js sound_effects / sound_figure_effects).
 function sound_check_effect_file(channel) {
-    for (var i = 0; i < sound_effects.length; i++) {
-        if (sound_effects[i].c == channel) {
-            return sound_effects[i].p
-        }
-    }
-    return ""
+    var file = __sound_effect_file(channel)
+    return file ? "" + file : ""
 }
 
 // Every row in order, numbered from 1, with its section and the file it plays.

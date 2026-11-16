@@ -35,6 +35,7 @@ public:
 
         vec2i init_tiles;
         vec2i enter_offset;
+        vec2i access_offset;
         hvector<stair_t, 48> stairs;
         hvector<pyramid_ramp_spec_t, 48> ramps;
 
@@ -57,6 +58,7 @@ public:
 
     virtual tile2i center_point() const override;
     virtual tile2i access_point() const override { return footprint_nw().shifted(footprint_params().enter_offset); }
+    virtual tile2i access_tile() const override { return base.main()->tile.shifted(pyramid_params().access_offset); }
     virtual grid_area get_area() const override;
 
     // OG pyramid block engine when pyramide_type != NONE.
@@ -72,6 +74,7 @@ protected:
     bool run_block_day();
     // Remake layer/part types + map tiles, then MONUMENT_FINISHED.
     virtual void finish_block_construction();
+    void post_completion_message();
 };
 
 class building_stepped_pyramid : public building_pyramid {
@@ -158,8 +161,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_small_stepped_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_small_stepped_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_small_stepped_pyramid_corner : public building_small_stepped_pyramid {
 public:
@@ -187,8 +191,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_medium_stepped_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_medium_stepped_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_medium_stepped_pyramid_corner : public building_medium_stepped_pyramid {
 public:
@@ -217,8 +222,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_large_stepped_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_large_stepped_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_large_stepped_pyramid_corner : public building_large_stepped_pyramid {
 public:
@@ -248,8 +254,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_stepped_pyramid_complex::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_stepped_pyramid_complex::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs,
+  pyramide_type);
 
 // Grand stepped — same on-land 20×20 as complex; separate TYPE for weight 44 + east-only causeway.
 class building_grand_stepped_pyramid_complex : public building_stepped_pyramid {
@@ -267,8 +274,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_grand_stepped_pyramid_complex::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_grand_stepped_pyramid_complex::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_small_bent_pyramid : public building_stepped_pyramid {
 public:
@@ -287,8 +295,8 @@ public:
     virtual const monument &config() const override;
 };
 ANK_CONFIG_STRUCT(building_small_bent_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
-  filler_type, enter_offset, stairs, ramps, part_count, block_total, casing_total, entry_points, part_pairs,
-  pyramide_type);
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 class building_small_bent_pyramid_corner : public building_small_bent_pyramid {
 public:
@@ -317,8 +325,8 @@ public:
     virtual const monument &config() const override;
 };
 ANK_CONFIG_STRUCT(building_medium_bent_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
-  filler_type, enter_offset, stairs, ramps, part_count, block_total, casing_total, entry_points, part_pairs,
-  pyramide_type);
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 class building_medium_bent_pyramid_corner : public building_medium_bent_pyramid {
 public:
@@ -352,8 +360,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_small_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_small_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type, filler_type,
+  enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_small_pyramid_corner : public building_small_pyramid {
 public:
@@ -390,8 +399,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_small_mudbrick_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_small_mudbrick_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 class building_small_mudbrick_pyramid_corner : public building_small_mudbrick_pyramid {
 public:
@@ -427,8 +437,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_medium_mudbrick_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_medium_mudbrick_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 class building_medium_mudbrick_pyramid_corner : public building_medium_mudbrick_pyramid {
 public:
@@ -467,8 +478,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_large_mudbrick_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_large_mudbrick_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 class building_large_mudbrick_pyramid_corner : public building_large_mudbrick_pyramid {
 public:
@@ -506,8 +518,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_mudbrick_pyramid_complex::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_mudbrick_pyramid_complex::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 // Grand mudbrick — same on-land 20×20 until annex; separate TYPE for weight 44.
 class building_grand_mudbrick_pyramid_complex : public building_large_mudbrick_pyramid {
@@ -528,8 +541,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_grand_mudbrick_pyramid_complex::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_grand_mudbrick_pyramid_complex::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 class building_medium_pyramid : public building_stepped_pyramid {
 public:
@@ -551,8 +565,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_medium_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_medium_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type, filler_type,
+  enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_medium_pyramid_corner : public building_medium_pyramid {
 public:
@@ -592,8 +607,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_large_pyramid::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_large_pyramid::static_params, init_tiles, corner_type, wall_type, cone_type, filler_type,
+  enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points, part_pairs,
+  pyramide_type);
 
 class building_large_pyramid_corner : public building_large_pyramid {
 public:
@@ -625,8 +641,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_pyramid_complex::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_pyramid_complex::static_params, init_tiles, corner_type, wall_type, cone_type, filler_type,
+  enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points, part_pairs,
+  pyramide_type);
 
 // Grand = same on-land footprint until causeway; separate TYPE for monument weight 44.
 class building_grand_pyramid_complex : public building_large_pyramid {
@@ -644,8 +661,9 @@ public:
 
     virtual const monument &config() const override;
 };
-ANK_CONFIG_STRUCT(building_grand_pyramid_complex::static_params,
-    init_tiles, corner_type, wall_type, cone_type, filler_type, enter_offset, stairs, ramps, part_count, block_total, entry_points, part_pairs, pyramide_type);
+ANK_CONFIG_STRUCT(building_grand_pyramid_complex::static_params, init_tiles, corner_type, wall_type, cone_type,
+  filler_type, enter_offset, access_offset, stairs, ramps, part_count, block_total, casing_total, entry_points,
+  part_pairs, pyramide_type);
 
 // OG complex annex (size_variant 3/4): mortuary temple → causeway → valley temple.
 // Placeholder art until pak sprites are wired; placement is along the causeway strip.

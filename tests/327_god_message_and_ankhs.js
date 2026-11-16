@@ -48,7 +48,10 @@ function run_test() {
     __display_options_set_scale(100)
     __test_pump_frames(5)
 
-    var art = get_image({ pack: PACK_GENERAL, id: 9 }).tid != get_image({ pack: PACK_GENERAL, id: 111 }).tid
+    // get_image is null for a missing picture (no game art).
+    var img9 = get_image({ pack: PACK_GENERAL, id: 9 })
+    var img111 = get_image({ pack: PACK_GENERAL, id: 111 })
+    var art = !!img9 && !!img111 && img9.tid != img111.tid
 
     // Osiris's major blessing is one of two messages, sized 30x20 and 30x28; the layout must not follow either.
     t327_bless(GOD_OSIRIS)

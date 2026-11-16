@@ -23,8 +23,11 @@ function advisor_military_forts_on_render_item(p) {
 
     ui.button({ text:"", pos:[x + 2, y + 1], size:[px(35) - 4, 40], font:FONT_NORMAL_BLACK_ON_DARK, border:false, body:false })
 
+    // get_image is null for a missing picture (no game art): skip the picture, keep the row's buttons.
     var battalion_image = get_image(PACK_GENERAL, 127, form.batalion_id)
-    ui.image(battalion_image, {x: x + 6, y: y + 6})
+    if (battalion_image) {
+        ui.image(battalion_image, {x: x + 6, y: y + 6})
+    }
     ui.label(__loc(138, form.batalion_id), vec2i(x + 46, y + 7), FONT_NORMAL_WHITE_ON_DARK)
 
     var num_figures_str = "" + form.num_figures + " " + get_figure_type_str(form.figure_type)
@@ -34,9 +37,11 @@ function advisor_military_forts_on_render_item(p) {
     ui.label_ex(morale_str, vec2i(x + 186, y + 15), FONT_NORMAL_BLACK_ON_DARK, UiFlags_AlignCentered, 0)
 
     var exp_image = get_image("pharaoh_general/paneling_00537")
-    exp_image.tid += fort_info_window_experience_level(form)
     ui.button({ text:"", pos:[x + 276, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
-    ui.image(exp_image, { x: x + 279, y: y + 10})
+    if (exp_image) {
+        exp_image.tid += fort_info_window_experience_level(form)
+        ui.image(exp_image, { x: x + 279, y: y + 10})
+    }
 
     var goto_legion_image = get_image("pharaoh_general/paneling_00531")
     var goto_clicked = ui.button({text:"", pos:[x + 356, y + 7], size:[30, 30]})
@@ -44,83 +49,28 @@ function advisor_military_forts_on_render_item(p) {
         city.camera_go_to(form.home)
         ui.window_city_show()
     }
-    ui.image(goto_legion_image, { x: x + 359, y: y + 10 })
+    if (goto_legion_image) {
+        ui.image(goto_legion_image, { x: x + 359, y: y + 10 })
+    }
 
     var fort_image = get_image("pharaoh_general/paneling_00532")
-    fort_image.tid += (form.is_at_fort ? 1 : 0)
     var back_to_fort_clicked = ui.button({text:"", pos:[x + 426, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
     if (back_to_fort_clicked == ui.button_clicked) {
         form.return_home()
     }
-    ui.image(fort_image, { x: x + 429, y: y + 10 })
+    if (fort_image) {
+        fort_image.tid += (form.is_at_fort ? 1 : 0)
+        ui.image(fort_image, { x: x + 429, y: y + 10 })
+    }
 
     var kingdom_service = get_image("pharaoh_general/paneling_00534")
-    kingdom_service.tid += (form.empire_service ? 1 : 0)
     var kingdom_service_clicked = ui.button({text:"", pos:[x + 506, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
     if (kingdom_service_clicked == ui.button_clicked) {
         form.set_empire_service(!form.empire_service)
     }
-    ui.image(kingdom_service, vec2i(x + 509, y + 10))
-}
-
-// Navy status (Pharaoh's Overseer of the Military: "the navy status report ... each warship crew's fatigue level and
-// the hull's strength ... 'Go to Warship' ... 'Return to Wharf'"), texts 51.19-25, ship texts group 184.
-var advisor_military_navy = false
-var advisor_military_ships = []
-
-function advisor_military_collect_ships() {
-    var ships = []
-    for (var f = 1; f < MAX_FIGURES; f++) {
-        if (!__figure_is_alive(f)) {
-            continue
-        }
-        var t = __figure_get_type(f)
-        if (t == FIGURE_WARSHIP || t == FIGURE_TRANSPORT_SHIP) {
-            ships.push(f)
-        }
-    }
-    return ships
-}
-
-function advisor_military_navy_on_render_item(p) {
-    var fid = advisor_military_ships[p.user_data]
-    if (!fid || !__figure_is_valid(fid)) {
-        return
-    }
-    var x = p.x
-    var y = p.y
-    var warship = __figure_get_type(fid) == FIGURE_WARSHIP
-    var ship = warship ? city.get_warship(fid) : city.get_transport_ship(fid)
-
-    ui.button({ text:"", pos:[x + 2, y + 1], size:[px(35) - 4, 40], font:FONT_NORMAL_BLACK_ON_DARK, border:false, body:false })
-    ui.label(__loc(184, warship ? 1 : 0), vec2i(x + 10, y + 15), FONT_NORMAL_WHITE_ON_DARK)
-
-    if (warship) {
-        ui.label_ex(__loc(184, figure_warship_crew_fatigue_text_id(ship)), vec2i(x + 150, y + 15), FONT_NORMAL_BLACK_ON_DARK, UiFlags_AlignCentered, 0)
-    }
-    ui.label_ex(__loc(184, figure_warship_hull_strength_text_id(ship)), vec2i(x + 258, y + 15), FONT_NORMAL_BLACK_ON_DARK, UiFlags_AlignCentered, 0)
-
-    var goto_image = get_image("pharaoh_general/paneling_00531")
-    var goto_clicked = ui.button({text:"", pos:[x + 356, y + 7], size:[30, 30]})
-    if (goto_clicked == ui.button_clicked) {
-        city.camera_go_to(__figure_get_tile(fid))
-        ui.window_city_show()
-    }
-    ui.image(goto_image, { x: x + 359, y: y + 10 })
-
-    var wharf_image = get_image("pharaoh_general/paneling_00532")
-    var return_clicked = ui.button({text:"", pos:[x + 426, y + 7], size:[30, 30], font:FONT_NORMAL_BLACK_ON_DARK})
-    if (return_clicked == ui.button_clicked) {
-        ship.set_order(warship ? WARSHIP_ORDER_GOTO_WHARF : TRANSPORT_ORDER_RETURN_TO_WHARF)
-    }
-    ui.image(wharf_image, { x: x + 429, y: y + 10 })
-}
-
-function advisor_military_on_render_item(p) {
-    if (advisor_military_navy) {
-        advisor_military_navy_on_render_item(p)
-    } else {
-        advisor_military_forts_on_render_item(p)
+    if (kingdom_service) {
+        kingdom_service.tid += (form.empire_service ? 1 : 0)
+        ui.image(kingdom_service, vec2i(x + 509, y + 10))
     }
 }
 
@@ -160,7 +110,7 @@ advisor_military_window {
                     text_padding_y: 0
                     draw_scrollbar_always: false
                     draw_paneling: false
-                    onrender_item: advisor_military_on_render_item
+                    onrender_item: advisor_military_forts_on_render_item
                 })
 
                 nothing_text : text({text:"", pos[42, 70 + px(16) / 2], size[px(36), -1], multiline:true, font:FONT_NORMAL_BLACK_ON_LIGHT })
@@ -177,30 +127,12 @@ advisor_military_window {
                                         }
                                     })
 
-                navy_toggle   : button({margin{right:-200, bottom:-46}, size[180, 25], text:"", onclick_event:"toggle_navy"})
+                navy_btn      : image_button({pos[532, 347], size[80, 48], pack:PACK_GENERAL, id:4, offset:1, tooltip:[68, 144], param1: ADVISOR_FLEET, onclick_event: "show_advisor" })
+
                 button_help   : help_button({})
             }
         })
     })
-}
-
-[es=(advisor_military_window, toggle_navy)]
-function advisor_military_window_on_toggle_navy(window) {
-    advisor_military_navy = !advisor_military_navy
-    advisor_military_window_init(window)
-}
-
-function advisor_military_set_headers(window, navy) {
-    window.title.text = __loc(51, navy ? 19 : 0)
-    window.h1_2.text = __loc(51, navy ? 20 : 2)
-    window.h2_2.text = __loc(51, navy ? 21 : 4)
-    window.h3_1.enabled = !navy
-    window.h3_2.enabled = !navy
-    window.h4_morale.text = navy ? __loc(51, 24) : __loc(138, 36)
-    window.h4_morale.pos = navy ? [196, 58] : [234, 58]
-    window.h5_1.text = __loc(51, navy ? 22 : 17)
-    window.h5_2.text = __loc(51, navy ? 23 : 18)
-    window.navy_toggle.text = __loc(51, navy ? 0 : 19)
 }
 
 [es=(advisor_military_window, init)]
@@ -222,18 +154,7 @@ function advisor_military_window_init(window) {
     window.forts_text.text = advisor_military_amount_str(soldiers, 46) + " " + __loc(51, 7) + " "
         + advisor_military_amount_str(batalions, 48)
 
-    advisor_military_set_headers(window, advisor_military_navy)
-    if (advisor_military_navy) {
-        advisor_military_ships = advisor_military_collect_ships()
-        var ships = window.forts_list
-        ships.clear()
-        window.nothing_text.enabled = advisor_military_ships.length == 0
-        window.nothing_text.text = __loc(51, 25)
-        window.forts_list.enabled = advisor_military_ships.length > 0
-        for (var s = 0; s < advisor_military_ships.length; s++) {
-            ships.add_item("ship", s)
-        }
-    } else if (city.num_forts > 0) {
+    if (city.num_forts > 0) {
         window.nothing_text.enabled = false
         window.forts_list.enabled = true
         var list = window.forts_list

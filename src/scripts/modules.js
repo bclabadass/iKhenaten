@@ -12,7 +12,6 @@ import hotkey_actions
 import scenario
 import discord_presence
 import math
-import rating_points
 import animal_herds
 import gods
 import city
@@ -60,4 +59,3 @@ import player
 import mods
 import empire_map
 import building_menu_ctrl
-import integral_test

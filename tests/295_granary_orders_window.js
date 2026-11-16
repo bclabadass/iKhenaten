@@ -36,8 +36,10 @@ function run_test() {
     if (growth == 0) {
         __log_marker('failing_textfn_keeps_stack')
     }
-    if (__test_find_inlog('JS textfn callback error: cannot convert null to object')
-        && !__test_find_inlog('JS textfn callback error: undefined')) {
+    // The message names the callback: "JS textfn callback error (<ref>): <message>".
+    if (__test_find_inlog('JS textfn callback error (')
+        && __test_find_inlog('): cannot convert null to object')
+        && !__test_find_inlog('): undefined')) {
         __log_marker('failing_textfn_reports_message')
     }
 

@@ -63,13 +63,13 @@ function run_test() {
     __test_pump_frames(3)
 
     var cases = [
-        { args: { enemy: ENEMY_6_KUSHITE, size: 4, tilex: -1, tiley: -1 },
+        { args: { enemy: ENEMY_6_KUSHITE, size: 4, tilex: 40, tiley: 40 },
           title: PHRASE_foreign_army_attacks_you_title, body: PHRASE_foreign_army_attacks_you_city_attacked_alert },
-        { args: { enemy: ENEMY_0_BARBARIAN, size: 4, tilex: -1, tiley: -1 },
+        { args: { enemy: ENEMY_0_BARBARIAN, size: 4, tilex: 40, tiley: 40 },
           title: PHRASE_bedouin_attacks_you_title, body: PHRASE_bedouin_attacks_you_city_attacked_alert },
-        { args: { enemy: ENEMY_3_EGYPTIAN, size: 4, tilex: -1, tiley: -1 },
+        { args: { enemy: ENEMY_3_EGYPTIAN, size: 4, tilex: 40, tiley: 40 },
           title: PHRASE_eg_city_attacks_you_title, body: PHRASE_eg_city_attacks_you_city_attacked_alert },
-        { args: { enemy: ENEMY_3_EGYPTIAN, size: 4, tilex: -1, tiley: -1, kind: INVASION_KIND_KINGDOME },
+        { args: { enemy: ENEMY_3_EGYPTIAN, size: 4, tilex: 40, tiley: 40, kind: INVASION_KIND_KINGDOME },
           title: PHRASE_pharaoh_attacks_you_title, body: PHRASE_pharaoh_attacks_you_city_attacked_alert },
     ]
     var results = []

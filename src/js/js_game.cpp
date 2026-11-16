@@ -568,6 +568,15 @@ void __game_speech_stop() { g_sound.speech_stop(); } ANK_FUNCTION(__game_speech_
 bool __game_file_exists(pcstr path) { return path && *path && vfs::file_exists(path); } ANK_FUNCTION_1(__game_file_exists)
 bool __game_gods_enabled() { return game_features::gameopt_gods_enabled.to_bool(); } ANK_FUNCTION(__game_gods_enabled)
 bool __game_is_integral_tests() { return g_args.is_integral_tests(); } ANK_FUNCTION(__game_is_integral_tests)
+
+void __log_marker(pcstr message) {
+    if (g_args.is_integral_tests()) {
+        logs::info("[test-marker] %s", message);
+    }
+
+    logs::info("%s", message);
+}
+ANK_FUNCTION_1(__log_marker);
 void __scenario_init() { g_scenario.init(); } ANK_FUNCTION(__scenario_init)
 void __debug_crash() {
     events::emit(event_city_warning{ "Trying to crash the game" });
@@ -587,6 +596,12 @@ void js_register_game_functions(js_State *J) {
     animation_t::global_hashtime = game.frame;
     for (config::FunctionIterator *s = config::FunctionIterator::tail; s; s = s->next) {
         s->func(J);
+    }
+
+    if (g_args.is_integral_tests()) {
+        for (config::TestFunctionIterator* s = config::TestFunctionIterator::tail; s; s = s->next) {
+            s->func(J);
+        }
     }
 }
 
@@ -675,7 +690,7 @@ bvariant js_call_function(xstring js_ref, int param1, int param2) {
         js_pushnumber(J, (double)param2);
         int result = J->pcall(2);
         if (result != 0) {
-            logs::error("JS textfn callback error: %s", js_error_message(J, -1));
+            logs::error("JS textfn callback error (%s): %s", js_ref.c_str(), js_error_message(J, -1));
             js_pop(J, 1);
             return bvariant();
         }

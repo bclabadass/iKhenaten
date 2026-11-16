@@ -131,8 +131,8 @@ struct city_message {
 
     int eventmsg_phrase_id;
     int req_city_past;
-    int unk_09;
-    uint8_t unk_10;
+    int delivered_amount;
+    uint8_t gift_buttons;
     bool hide_img;
 
     int req_amount_past;
@@ -144,8 +144,8 @@ struct city_message {
     pcstr src_location = nullptr;
 };
 
-#define MAX_MESSAGES 1000
-#define MAX_MESSAGES_QUEUE 20
+constexpr int MAX_MESSAGES = 1000;
+constexpr int MAX_MESSAGES_QUEUE = 20;
 
 struct messages {
     enum {
@@ -209,7 +209,14 @@ void city_message_apply_sound_interval(int category);
 void city_message_show_from_archive(int message_index);
 int city_message_find_index_by_sequence(int sequence);
 
-void city_message_post_full(bool use_popup, xstring template_id, const event_ph_t* event, int parent_event_id, int title_id, int body_id, int phrase_id, int param1, int param2, e_popup_message_category popup_cat = POPUP_MSG_NONE);
+// OG city_message phrases[EVENT_PHRASE_DELIVERED_AMOUNT] / [EVENT_PHRASE_BUTTONS] (gift replies).
+struct city_message_gift {
+    int delivered_amount = 0;
+    uint8_t buttons = 0;
+};
+void city_message_post_full(bool use_popup, xstring template_id, const event_ph_t* event, int parent_event_id,
+  int title_id, int body_id, int phrase_id, int param1, int param2, e_popup_message_category popup_cat = POPUP_MSG_NONE,
+  city_message_gift gift = {});
 // An invading army has arrived: Pharaoh's attack phrases, [a_foreign_army] from `enemy_type`, go-to the army.
 void city_message_post_invasion(int enemy_type, int title_id, int body_id, int invasion_seq, int grid_offset);
 

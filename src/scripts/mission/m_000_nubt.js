@@ -1,5 +1,23 @@
 log_info("akhenaten: mission 0 nubt started")
 
+// Mission 0 — Nubt (Naqada), "A Village is Born". Rank 0 (Village Elder). Tutorial.
+//
+// Goals:     housing count 6, housing level 2, plus the tutorial steps: granary unlocked and built, a firehouse
+//            built, 400 game meat stored.
+// Start:     funds 3750, rescue loan 3750 (normal difficulty).
+// Gods:      none (religion disabled).
+// Monuments: none.
+// Trade:     none (empire map off).
+// Enemies:   none.
+// Timeline:  only vacant lots, clear land and roads at start; population capped at 250. First fire —
+//            firehouse; first collapse — architect's post; population 150 — hunting lodge, granary, bazaar
+//            (the population advisor opens once a granary is built); 400 game meat in a granary — water
+//            supply.
+//
+// Notes for developers:
+// - Victory also waits a few days after the last tutorial step (victory_last_action_delay); the win
+//   screen is skipped (hide_won_screen).
+
 mission0 { // Nubt
 	map_file : "data/maps/m_000_nubt.map"
 
@@ -23,7 +41,6 @@ mission0 { // Nubt
 
 	initial_funds [7500, 5000, 3750, 2500, 2000]
 	rescue_loans [7500, 5000, 3750, 2500, 2000]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	buildings [
 		BUILDING_HOUSE_VACANT_LOT, BUILDING_CLEAR_LAND, BUILDING_ROAD
@@ -91,7 +108,7 @@ function mission0_on_build_firehouse(ev) {
         return
     }
 
-    var firehouse_count = city.count_active_buildings(BUILDING_FIREHOUSE)
+    var firehouse_count = city.count_total_buildings(BUILDING_FIREHOUSE)
     if (firehouse_count == 0) {
         return
     }
@@ -152,7 +169,7 @@ function mission0_on_build_granary(ev) {
         return
     }
 
-    var granaries_count = city.count_active_buildings(BUILDING_GRANARY)
+    var granaries_count = city.count_total_buildings(BUILDING_GRANARY)
     if (granaries_count == 0) {
         return
     }

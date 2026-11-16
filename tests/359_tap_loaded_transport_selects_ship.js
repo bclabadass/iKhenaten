@@ -120,8 +120,8 @@ function t359_company_radius() {
     test_reload_city_session('data/default.map')
     __test_set_treasury(100000)
     __scenario_building_allow(BUILDING_FORT_GROUND, true)
-    var recruiter = t359_place(BUILDING_RECRUITER, 20, 30)
-    var archers = t359_place(BUILDING_FORT_ARCHERS, 30, 30)
+    var recruiter = t359_place(BUILDING_RECRUITER, 36, 40)
+    var archers = t359_place(BUILDING_FORT_ARCHERS, 44, 40)
     __test_fort_update_recruit_status(archers)
     for (var i = 0; i < 3; i++) {
         __test_recruiter_create_soldier(recruiter)

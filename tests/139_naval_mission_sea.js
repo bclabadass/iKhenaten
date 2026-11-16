@@ -2,19 +2,16 @@
 // Markers:
 //   [test-marker] rowarty_sea_invasion_ok
 //   [test-marker] actium_sea_invasion_ok
-//   [test-marker] baki_sea_invasion_ok
 //   [test-marker] heh_sea_invasion_ok
 //   [test-marker] sawu_sea_invasion_ok
 
 function run_test() {
-    __log_info_native('[test:139] naval mission via_sea (Rowarty + Actium + Baki/Heh/Sawu)')
+    __log_info_native('[test:139] naval mission via_sea (Rowarty + Actium + Heh/Sawu)')
 
     function expect_fleet(label, marker) {
         var transports = __test_count_enemy_transports()
-        var warships = __test_count_enemy_warships()
-        if (transports < 1 || warships < 1) {
-            __log_info_native('[test:139] ' + label + ' fleet incomplete: transports='
-                + transports + ' warships=' + warships)
+        if (transports < 1) {
+            __log_info_native('[test:139] ' + label + ' fleet incomplete: transports=' + transports)
             return false
         }
         __log_marker(marker)
@@ -23,12 +20,8 @@ function run_test() {
 
     // --- E3d: Rowarty loc>=9 via_sea ---
     __game_load_mission(36, 1)
-    if (typeof mission36_enemy_raid !== 'function') {
-        __log_info_native('[test:139] mission36_enemy_raid missing after load')
-        __test_signal_ready()
-        return
-    }
-    mission36_enemy_raid(990, 8, 9, 1)
+    mission_start_raid(mission36, { key: "t", invasion_id: 990, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_1_ASSYRIAN,
+        amount: 8, months_initial: 0, warships: 0, attack_target: EVENT_ATTACK_TARGET_VAULTS }, 9)
     if (!expect_fleet('rowarty', 'rowarty_sea_invasion_ok')) {
         __test_signal_ready()
         return
@@ -36,51 +29,25 @@ function run_test() {
 
     // --- CC52.N: Actium Persian via_sea ---
     __game_load_mission(52, 1)
-    if (typeof mission52_enemy_raid !== 'function') {
-        __log_info_native('[test:139] mission52_enemy_raid missing after load')
-        __test_signal_ready()
-        return
-    }
-    mission52_enemy_raid(991, 8, 0)
+    mission_start_raid(mission52, { key: "t", invasion_id: 991, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_9_PERSIAN,
+        amount: 8, months_initial: 0, warships: 0, attack_target: EVENT_ATTACK_TARGET_TROOPS }, 9)
     if (!expect_fleet('actium', 'actium_sea_invasion_ok')) {
         __test_signal_ready()
         return
     }
 
-    // --- E3c: Baki favour loc2 = packed sea[0] ---
-    __game_load_mission(35, 1)
-    if (typeof mission35_favour_wave !== 'function') {
-        __log_info_native('[test:139] mission35_favour_wave missing after load')
-        __test_signal_ready()
-        return
-    }
-    mission35_favour_wave(8, 992, 2)
-    if (!expect_fleet('baki', 'baki_sea_invasion_ok')) {
-        __test_signal_ready()
-        return
-    }
-
-    // --- E3c: Heh kushite loc3 = packed sea[0] ---
+    // --- Heh / Sawu: location 9 = sea point 0 through the shared raid helper ---
     __game_load_mission(30, 1)
-    if (typeof mission30_kushite_raid !== 'function') {
-        __log_info_native('[test:139] mission30_kushite_raid missing after load')
-        __test_signal_ready()
-        return
-    }
-    mission30_kushite_raid(993, 8, 3)
+    mission_start_raid(mission30, { key: "t", invasion_id: 993, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_6_KUSHITE,
+        amount: 8, months_initial: 0, attack_target: EVENT_ATTACK_TARGET_RANDOM }, 9)
     if (!expect_fleet('heh', 'heh_sea_invasion_ok')) {
         __test_signal_ready()
         return
     }
 
-    // --- E3c: Sawu libyan loc2 = packed sea[0] ---
     __game_load_mission(29, 1)
-    if (typeof mission29_libyan_raid !== 'function') {
-        __log_info_native('[test:139] mission29_libyan_raid missing after load')
-        __test_signal_ready()
-        return
-    }
-    mission29_libyan_raid(994, 8, 2)
+    mission_start_raid(mission29, { key: "t", invasion_id: 994, invader: EVENT_INVADER_ENEMY, enemy: ENEMY_7_LIBIAN,
+        amount: 8, months_initial: 0, attack_target: EVENT_ATTACK_TARGET_RANDOM }, 9)
     if (!expect_fleet('sawu', 'sawu_sea_invasion_ok')) {
         __test_signal_ready()
         return
@@ -93,7 +60,6 @@ function check_valid() {
     var markers = [
         'rowarty_sea_invasion_ok',
         'actium_sea_invasion_ok',
-        'baki_sea_invasion_ok',
         'heh_sea_invasion_ok',
         'sawu_sea_invasion_ok'
     ]

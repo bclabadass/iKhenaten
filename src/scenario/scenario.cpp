@@ -13,8 +13,11 @@
 #include "game/game.h"
 #include "game/mission.h"
 #include "dev/debug.h"
+#include "core/log.h"
 
 #include "js/js_game.h"
+
+#include <cstring>
 
 scenario_data_t g_scenario;
 std::unordered_set<custom_mission_config> ANK_VARIABLE(custom_missions);
@@ -73,15 +76,6 @@ int scenario_data_t::rescue_loan() const {
     return difficulty.loan_money(finance.rescue_loan);
 }
 
-int scenario_data_t::house_tax_multiplier(int v) const {
-    const int multiplier = meta.house_tax_multipliers.get();
-    if (multiplier > 0) {
-        return calc_adjust_with_percentage<int>(v, multiplier);
-    }
-
-    return difficulty.house_tax_multiplier(v);
-}
-
 int scenario_data_t::debt_interest() const {
     const int rate = meta.debt_interest.get();
     if (rate > 0) {
@@ -93,9 +87,27 @@ int scenario_data_t::debt_interest() const {
     return 10;
 }
 
+// Percent of the taxed amount the city keeps: the mission's tax_percentage, else the system table.
+int scenario_data_t::city_tax_percentage() const {
+    if (!meta.tax_percentage.value.empty()) {
+        return meta.tax_percentage.get();
+    }
+    return finance_tax_rules.tax_percentage.get();
+}
+
 void scenario_data_t::load_metadata(const mission_id_t &missionid, bool is_new_mission) {
-    g_config_arch.r_section(missionid, [this, is_new_mission] (archive arch) {
+    g_config_arch.r_section(missionid, [this, is_new_mission](archive arch) {
+        meta.tax_percentage.value.clear();
+        meta.house_tax_multipliers.value.clear();
         arch.r(meta);
+        if (!meta.house_tax_multipliers.value.empty()) {
+            static bool warned = false;
+            if (!warned) {
+                warned = true;
+                logs::warn("[scenario] house_tax_multipliers is obsolete and ignored; use tax_percentage (percent the "
+                           "city keeps, OG 50)");
+            }
+        }
         arch.r("env", env);
 
         int rank = std::min(arch.r_int("player_rank", -1), 10);
@@ -124,6 +136,8 @@ void scenario_data_t::load_metadata(const mission_id_t &missionid, bool is_new_m
 
         arch.r("invasion_points_land", invasion_points_land);
         arch.r("invasion_points_sea", invasion_points_sea);
+        // The criteria come from the mission script only; start clean so a previous mission's goals do not linger.
+        win_criteria = {};
         arch.r("win_criteria", win_criteria);
         arch.r("sounds", sounds);
 
@@ -201,21 +215,36 @@ void scenario_data_t::bind_data(io_buffer *iob, size_t version, size_t size) {
     char data[2000] = { 0 };
     if (iob->is_read_access()) {
         iob->bind(BIND_SIGNATURE_RAW, &data, sizeof(data));
-        vars.load(data);
+        // A damaged save may leave the chunk without a terminator.
+        vars.load(std::string(data, strnlen(data, sizeof(data))));
     } else {
         std::string save_data = vars.save();
-        assert(save_data.size() < sizeof(data));
-        memcpy(data, save_data.data(), save_data.size() + 1);
+        if (save_data.size() >= sizeof(data)) {
+            // Keep whole "key=value\n" lines only, so the truncated text still loads.
+            const size_t last_newline = save_data.rfind('\n', sizeof(data) - 2);
+            const size_t keep = (last_newline == std::string::npos) ? 0 : last_newline + 1;
+            logs::error("scenario vars: %u bytes do not fit the %u-byte save chunk, saving the first %u",
+              (unsigned)save_data.size(), (unsigned)sizeof(data), (unsigned)keep);
+            save_data.resize(keep);
+        }
+        memcpy(data, save_data.data(), save_data.size());
         iob->bind(BIND_SIGNATURE_RAW, &data, sizeof(data));
     }
 }
 
 bool scenario_building_allowed(e_building_type building_type) {
+    if (building_type == BUILDING_DOCK_UP) {
+        return g_scenario.allowed_buildings[BUILDING_DOCK]
+            || g_scenario.allowed_buildings[BUILDING_DOCK_UP];
+    }
     return g_scenario.allowed_buildings[building_type];
 }
 
 void scenario_building_allow(e_building_type btype, bool allow) {
     g_scenario.allowed_buildings[btype] = allow;
+    if (btype == BUILDING_DOCK) {
+        g_scenario.allowed_buildings[BUILDING_DOCK_UP] = allow;
+    }
 }
 
 int16_t scenario_data_t::pak_editor_allow_flag(int slot) const {
@@ -277,11 +306,6 @@ bool scenario_data_t::is_scenario_id(xspan<int> missions) {
     }
 
     return false;
-}
-
-int scenario_data_t::is_before_mission(int mission) {
-    const bool is_custom_map = (mode() != e_scenario_normal);
-    return !is_custom_map && campaign_mission_rank < mission;
 }
 
 void scenario_set_name(pcstr name) {
@@ -398,7 +422,7 @@ io_buffer *iob_scenario_info = new io_buffer([] (io_buffer *iob, size_t version)
     iob->bind____skip(1); // used?
     iob->bind____skip(8);
 
-    int tmp;
+    int tmp = 0;
     iob->bind(BIND_SIGNATURE_UINT8, &tmp);
     iob->bind(BIND_SIGNATURE_UINT8, &g_scenario.player_faction);
 
@@ -452,6 +476,7 @@ io_buffer* iob_scenario_map_name = new io_buffer([](io_buffer* iob, size_t versi
 
 void scenario_data_t::update() {
     scenario_earthquake_process();
+    events.update_tick();
     //scenario_slave_revolt_process();
     scenario_kingdome_change_process();
 }

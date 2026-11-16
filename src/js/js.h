@@ -22,6 +22,10 @@ int js_vm_exec_function(pcstr funcname);
 void js_vm_reload_file(pcstr path);
 void js_vm_for_each_loaded_script(const std::function<void(const std::string&)>& visit);
 bool js_vm_exec_source(pcstr name, pcstr source);
+/** Rebuild the VM on the next js_vm_sync that is not nested in a JS call. */
+void js_vm_request_reset();
+/** Bumped on every VM rebuild: a js_State* or script globals from an older generation are gone. */
+uint32_t js_vm_generation();
 int js_vm_load_file_and_exec(pcstr path);
 
 void js_vm_add_scripts_folder(vfs::path folder);

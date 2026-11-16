@@ -11,7 +11,7 @@ public:
     } BUILDING_STATIC_DATA_T;
 
     virtual void update_animation() override;
-    virtual void start_production() override;
+    virtual short og_input_consumed(e_resource r) const override;
 
 private:
     int count_nearby_workshops() const;

@@ -1,17 +1,34 @@
 log_info("akhenaten: mission 50 maritis started")
 
-// Full empire redefine (CC50). Dump 2026-08-01 Cleop.
-// MM briefing: message_mission_maritis (444) — *Caesar and Cleopatra*.
-// Rank 1. Year -50. Enemy ENEMY_9_PERSIAN. Empire id 0, image_id 26.
-// Env: alt_predator=1 (central → lion vs crocodile); set in on_start.
-// Win: pop 1000 / culture 10 / prosperity 25 / monuments OFF /
-//      kingdom 35 / housing 15x lv4 / survival 7y (m 3/4/5).
-// Monuments: none (first=second=third=0). No Library/Pharos/Caesareum/Mausoleum.
-// Burial: none. Gods: Ra(1) Ptah(2).
-// Invasions x3 (egypt invader; inv land/sea points empty -> exit fallback).
-// already_fired gift seeds i=[0, 1, 2, 19] kept for index fidelity.
-// SKIP empty map_obj idx=2. Cities x7 / routes x6 / ornaments x5 / texts x16.
-// next_mission 51 (Alexandria3 — Notes §13.14).
+// Mission 50 — Maritis, "Caesar and Cleopatra". Rank 1 (Village Noble).
+//
+// Goals:     population 1000, culture 10, prosperity 25, kingdom 35, 15 houses at housing level 4,
+//            survive 7 years.
+// Start:     funds 11000, rescue loan 1500, debt interest 7% (normal difficulty).
+// Gods:      Ra, Ptah (patron).
+// Monuments: none.
+// Trade:     can open — Men-nefer, Meidum, Migdol, Tyre (by sea); display only — Gaza, Alexandria.
+// Enemies:   Egyptian raids, entering at the map exit. The scenario enemy is Persian, but no Persian army
+//            is sent.
+// Timeline:  raid 30 announced y2m7, attacks y3m1, and a month later raid 25 is announced (attacks y3m8,
+//            with Pharaoh's gift of 10 weapons); y3m4 request 11 reeds (delivered: gift of 11 pottery; late:
+//            gift of 5 pottery; refused: kingdom −7); y4m4 Pharaoh asks 16 troops (sent: kingdom +8; late:
+//            +4; refused: battle-lost message; refused or lost: raid 26 announced two months later, attacks
+//            6 months after that, and three trade routes are lost as it attacks); y5m5 Pharaoh
+//            asks 6 papyrus (delivered: gift of 7 pottery; refused: −7; late: +4); y6m1 request 8 fish
+//            (delivered: gift of 5 luxury goods; refused: Tyre route lost; late: gift of 3 luxury goods).
+//
+// Notes for developers:
+// - The Egyptian invasions of the original are raids from JS (mission50_raids): pak i=3, i=4 a month after
+//   i=3 attacks, i=13 two months after the pak i=9 troop request (tag 1009) is refused or lost
+//   (mission50_on_request_cleared). Their events[] slots stay as EVENT_TYPE_NONE so the other indexes
+//   keep; tags 1014 and 1017 let the raids fire the chained events.
+// - Raids follow the OG invasion cycle (missions.js mission_raids_month): warnings from the event's month,
+//   the attack months_initial months later, the point rolled from the event's location_fields.
+// - The gifts at indexes 0, 1, 2 and 19 are already fired in the original; they stay only to keep the
+//   indexes of the other events.
+// - The other events are declared in events[] and run by the engine; on_*_action values are indexes into
+//   that list.
 
 mission50 { // Maritis - Caesar and Cleopatra
 	map_file : "data/maps/m_050_maritis.map"
@@ -25,7 +42,6 @@ mission50 { // Maritis - Caesar and Cleopatra
 	initial_funds [22000, 14670, 11000, 7370, 5830]
 	rescue_loans [3000, 2000, 1500, 1005, 795]
 	debt_interest [4, 5, 7, 9, 11]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -144,39 +160,11 @@ mission50 { // Maritis - Caesar and Cleopatra
 			subtype : 0
 			city_id : 7
 		}
-		{ // pak i=3
-			type : EVENT_TYPE_INVASION
-			time { year : 2, month : 7 }
-			item { value : 2 }
-			amount { value : 30 }
-			months_initial : 6
-			location_fields [ 3, -1, 1, 5 ]
-			event_trigger_type : EVENT_TRIGGER_ONCE
-			on_completed_action : 4
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 8
-			invasion_attack_target : 3
+		{ // pak i=3: invasion, started from JS (mission50_raids)
+			type : EVENT_TYPE_NONE
 		}
-		{ // pak i=4
-			type : EVENT_TYPE_INVASION
-			time { year : 1, month : 0 }
-			item { value : 2 }
-			amount { value : 25 }
-			months_initial : 6
-			location_fields [ 3, -1, 1, 5 ]
-			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
-			on_completed_action : 17
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 5
-			invasion_attack_target : 3
+		{ // pak i=4: invasion, started from JS (mission50_raids)
+			type : EVENT_TYPE_NONE
 		}
 		{ // pak i=5
 			type : EVENT_TYPE_REQUEST
@@ -244,6 +232,7 @@ mission50 { // Maritis - Caesar and Cleopatra
 		}
 		{ // pak i=9
 			type : EVENT_TYPE_REQUEST
+			tag_id : 1009
 			time { year : 4, month : 4 }
 			item { value : RESOURCE_TROOPS }
 			amount { value : 16 }
@@ -306,25 +295,12 @@ mission50 { // Maritis - Caesar and Cleopatra
 			subtype : 0
 			city_id : 6
 		}
-		{ // pak i=13
-			type : EVENT_TYPE_INVASION
-			time { year : 2, month : 0 }
-			item { value : 2 }
-			amount { value : 26 }
-			months_initial : 6
-			location_fields [ 2, -1, 1, 5 ]
-			event_trigger_type : EVENT_TRIGGER_ONLY_VIA_EVENT
-			on_completed_action : 14
-			on_refusal_action : -1
-			on_too_late_action : -1
-			on_defeat_action : -1
-			sender_faction : 0
-			subtype : 0
-			city_id : 8
-			invasion_attack_target : 4
+		{ // pak i=13: invasion, started from JS (mission50_raids, armed by mission50_on_request_cleared)
+			type : EVENT_TYPE_NONE
 		}
 		{ // pak i=14
 			type : EVENT_TYPE_CITY_STATUS_CHANGE
+			tag_id : 1014
 			time { year : 4, month : 0 }
 			item { value : 1 }
 			amount { value : 8 }
@@ -373,6 +349,7 @@ mission50 { // Maritis - Caesar and Cleopatra
 		}
 		{ // pak i=17
 			type : EVENT_TYPE_GIFT_FROM_PHARAOH
+			tag_id : 1017
 			time { year : 2, month : 0 }
 			item { value : RESOURCE_WEAPONS }
 			amount { value : 10 }
@@ -524,8 +501,6 @@ mission50 { // Maritis - Caesar and Cleopatra
 			cost_to_open : 90
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			buys [ RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER ]
 			route_limits [
@@ -544,8 +519,6 @@ mission50 { // Maritis - Caesar and Cleopatra
 			cost_to_open : 780
 			is_sea_trade : true
 			type : EMPIRE_CITY_FOREIGN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_LINEN, RESOURCE_LUXURY_GOODS, RESOURCE_TIMBER, RESOURCE_COPPER ]
 			buys [ RESOURCE_GRAIN, RESOURCE_POTTERY, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -577,8 +550,6 @@ mission50 { // Maritis - Caesar and Cleopatra
 			cost_to_open : 185
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN ]
 			buys [ RESOURCE_TIMBER, RESOURCE_REEDS ]
 			route_limits [
@@ -596,8 +567,6 @@ mission50 { // Maritis - Caesar and Cleopatra
 			cost_to_open : 190
 			is_sea_trade : false
 			type : EMPIRE_CITY_EGYPTIAN_TRADING
-			max_traders : 1
-			trade_limits : default_trade_limits
 			sells [ RESOURCE_GRAIN, RESOURCE_MEAT, RESOURCE_WEAPONS, RESOURCE_TIMBER ]
 			buys [ RESOURCE_LINEN, RESOURCE_PAPYRUS ]
 			route_limits [
@@ -682,6 +651,7 @@ mission50 { // Maritis - Caesar and Cleopatra
 
 	vars {
 		start_message_shown : false
+		raids : ""
 	}
 }
 
@@ -701,5 +671,34 @@ function mission50_on_start(ev) {
 	city.set_scenario_enemy_id(ENEMY_9_PERSIAN)
 	for (var i = ADVISOR_NONE + 1; i <= ADVISOR_DIPLOMACY; i++) {
 		city.set_advisor_available(i, 1)
+	}
+}
+
+// pak i=3: the calendar Egyptian invasion; as it attacks it chains i=4, 25 more due a month later (its time.year),
+// which bring Pharaoh's gift of 10 weapons (pak i=17) as they attack. The map has no invasion points, so both come
+// in by the map exit. pak i=13: see mission50_on_request_cleared.
+function mission50_raid_list() {
+	return [
+		{ key: "i3", invasion_id: 3, year: 2, month: 7, invader: EVENT_INVADER_EGYPT, enemy: ENEMY_3_EGYPTIAN, amount: 30,
+			months_initial: 6, location: [3, -1, 1, 5], attack_target: EVENT_ATTACK_TARGET_TROOPS,
+			then: [{ key: "i4", delay: 1 }] },
+		{ key: "i4", invasion_id: 4, invader: EVENT_INVADER_EGYPT, enemy: ENEMY_3_EGYPTIAN, amount: 25, months_initial: 6,
+			location: [3, -1, 1, 5], attack_target: EVENT_ATTACK_TARGET_TROOPS, chain_tag: 1017 },
+		{ key: "i13", invasion_id: 13, invader: EVENT_INVADER_EGYPT, enemy: ENEMY_3_EGYPTIAN, amount: 26,
+			months_initial: 6, location: [2, -1, 1, 5], attack_target: EVENT_ATTACK_TARGET_RANDOM, chain_tag: 1014 }
+	]
+}
+
+[es=event_advance_month, mission=mission50]
+function mission50_raids(ev) {
+	mission_raids_month(mission, mission50, ev, mission50_raid_list())
+}
+
+// pak i=9 (Pharaoh asks 16 troops) refused or lost -> i=13 Egyptian invasion 26, due 2 months later (its
+// time.year); as it attacks the routes of pak i=14, 15, 16 are lost one after another.
+[es=event_request_cleared, mission=mission50]
+function mission50_on_request_cleared(ev) {
+	if (ev.tag_id == 1009 && mission_request_outcome(ev) == "refuse") {
+		mission_raid_schedule(mission, mission50_raid_list(), "i13", 2)
 	}
 }

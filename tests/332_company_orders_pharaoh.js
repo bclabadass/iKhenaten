@@ -52,7 +52,7 @@ function t332_tap_order(slot) {
     var id = 'formation_' + slot
     var pos = __test_info_ui_screen_pos(id)
     var size = __test_window_element_size('batalion_info_window', id)
-    t332_tap({ x: pos.x + ((size.x / 2) | 0), y: pos.y + ((size.y / 2) | 0) })
+    t332_tap({ x: pos.x + ((Math.max(size.x, 24) / 2) | 0), y: pos.y + ((Math.max(size.y, 24) / 2) | 0) })
 }
 
 // The four order buttons, then Return to Fort, as picture offsets; no fifth order button.
@@ -182,7 +182,8 @@ function run_test() {
         }
         var none = __test_info_ui_text('layout_desc')
         __log_info_native('[test:332] infantry with no soldiers: ' + JSON.stringify(none))
-        if (none == __loc(138, 10)) {
+        // 138.11: no soldiers and no working Recruiter (the test's recruiter has no workers); 138.10 with one.
+        if (none == __loc(138, 11)) {
             __log_marker('no_soldiers_text')
         }
     }

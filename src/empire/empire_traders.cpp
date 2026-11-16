@@ -16,6 +16,7 @@
 #include "city/city.h"
 #include "city/city_figures.h"
 #include "core/log.h"
+#include "core/random.h"
 #include "js/js_game.h"
 #include "scenario/empire.h"
 
@@ -161,8 +162,8 @@ void empire_traders_manager::create_trader(int trade_route_id, int destination_c
             traders_on_route++;
         }
     }
-    
-    if (traders_on_route >= 2) {
+
+    if (traders_on_route >= empire_trade_rules.max_traders_per_city) {
         return;
     }
 
@@ -198,7 +199,8 @@ void empire_traders_manager::create_trader(int trade_route_id, int destination_c
     }
     // guard against modulo-by-zero when the config/city delay range max is 0
     const int delay_max_bound = std::max(1, movement_delay_range.y);
-    trader->movement_delay_max = std::max<uint8_t>(movement_delay_range.x, rand() % delay_max_bound);
+    trader->movement_delay_max = std::max<uint8_t>(movement_delay_range.x,
+      random_hash(game.simtime.absolute_tick(), trader->id, RANDOM_SALT_EMPIRE_TRADER_DELAY) % delay_max_bound);
 
     if (route.in_use && route.num_points > 0) {
         const auto &point = route.points[0];
@@ -252,21 +254,25 @@ void empire_traders_manager::purge_dead() {
     }
 
     int freed_dock = 0;
-    for (building_id bid : g_city.buildings.track_buildings(BUILDING_DOCK)) {
-        building_dock* dock = building_get(bid)->dcast_dock();
-        if (!dock) {
-            continue;
+    auto free_stale_dock_ships = [&](e_building_type dock_type) {
+        for (building_id bid : g_city.buildings.track_buildings(dock_type)) {
+            building_dock* dock = building_get(bid)->dcast_dock();
+            if (!dock) {
+                continue;
+            }
+            auto& d = dock->runtime_data();
+            if (d.trade_ship == 0) {
+                continue;
+            }
+            figure* f = figure_get(d.trade_ship);
+            if (!f || f->state == FIGURE_STATE_NONE || f->type != FIGURE_TRADE_SHIP) {
+                d.trade_ship = 0;
+                ++freed_dock;
+            }
         }
-        auto& d = dock->runtime_data();
-        if (d.trade_ship == 0) {
-            continue;
-        }
-        figure* f = figure_get(d.trade_ship);
-        if (!f || f->state == FIGURE_STATE_NONE || f->type != FIGURE_TRADE_SHIP) {
-            d.trade_ship = 0;
-            ++freed_dock;
-        }
-    }
+    };
+    free_stale_dock_ships(BUILDING_DOCK);
+    free_stale_dock_ships(BUILDING_DOCK_UP);
 
     int freed_city = 0;
     for (auto& city : g_empire.get_cities()) {
@@ -297,7 +303,7 @@ empire_trader* empire_traders_manager::get_free_trader() {
         return nullptr;
     }
 
-    memset(&*it, 0, sizeof(empire_trader));
+    *it = empire_trader{};
     it->id = std::distance(traders.begin(), it);
     return &*it;
 }

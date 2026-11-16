@@ -1,5 +1,24 @@
 log_info("akhenaten: mission 39 valley tut started")
 
+// Mission 39 — Tut in the Valley, "Death of Tutankhamun". Rank 6 (Royal Governor).
+//
+// Goals:     population 1500, monuments 22, kingdom 45, housing level 14, within 8 years.
+// Start:     funds 8500, rescue loan 3000, debt interest 12% (normal difficulty).
+// Gods:      Osiris, Ra.
+// Monuments: medium royal tomb, with burial provisions: 3 weapons, 6 pottery, 2 linen, 6 luxury goods,
+//            1 chariot. The small royal tomb in the menu is carried over from mission 38.
+// Trade:     can open — Waset, Itjtawy, Abu (by sea), Sawu; display only — Kerma, Men-nefer, Menat Khufu,
+//            Pwenet, Tyre, Enkomi, Byblos.
+// Enemies:   none. The scenario enemy is set to Kushite, but no army is sent.
+// Timeline:  y0m10 perfect flood, then clay pits flood; from y1m1 request 4 lettuce, repeating (kingdom +3,
+//            refused −3); y2m1 request 4 pottery (delivered or late: Pharaoh's gift of 4 oil; refused:
+//            luxury goods cost more); y3m2 wages fall; y4m0 request 5 henna (delivered: pottery demand
+//            rises; refused: kingdom −3); y5m4 sea trade problem.
+//
+// Notes for developers:
+// - Every event is declared in events[] and run by the engine; on_*_action values are indexes into that
+//   list (the wage event's 54 points past its end).
+
 mission39 { // Tut in the Valley — Death of Tutankhamun
 	map_file : "data/maps/m_039_valley_tut.map"
 
@@ -17,7 +36,6 @@ mission39 { // Tut in the Valley — Death of Tutankhamun
 	initial_funds [17000, 11330, 8500, 5670, 4505]
 	rescue_loans [6000, 4000, 3000, 2000, 1590]
 	debt_interest [8, 10, 12, 14, 16]
-	house_tax_multipliers [300, 200, 150, 100, 75]
 
 	env {
 		has_animals : true
@@ -297,8 +315,6 @@ mission39 { // Tut in the Valley — Death of Tutankhamun
 				cost_to_open : 370
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [
 					RESOURCE_GRAIN,
 					RESOURCE_WEAPONS,
@@ -362,8 +378,6 @@ mission39 { // Tut in the Valley — Death of Tutankhamun
 				cost_to_open : 245
 				is_sea_trade : false
 				type : EMPIRE_CITY_FOREIGN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [
 					RESOURCE_LUXURY_GOODS,
 					RESOURCE_OIL
@@ -398,8 +412,6 @@ mission39 { // Tut in the Valley — Death of Tutankhamun
 				cost_to_open : 80
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [
 					RESOURCE_BARLEY,
 					RESOURCE_LINEN
@@ -453,8 +465,6 @@ mission39 { // Tut in the Valley — Death of Tutankhamun
 				cost_to_open : 335
 				is_sea_trade : true
 				type : EMPIRE_CITY_EGYPTIAN_TRADING
-				max_traders : 1
-				trade_limits : default_trade_limits
 				sells [ RESOURCE_LUXURY_GOODS ]
 				buys [
 					RESOURCE_BEER,

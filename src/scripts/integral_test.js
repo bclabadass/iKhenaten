@@ -85,6 +85,51 @@ function test_find_buildable_tile(type) {
     return best
 }
 
+// The monument rating counts the scenario's monument slots only (OG monument_register): gives the slots the
+// def ids of these building types, in order.
+function test_monument_slots(types) {
+    var defs = [0, 0, 0]
+    for (var i = 0; i < types.length && i < 3; i++) {
+        defs[i] = MONUMENT_DEF_IDS[types[i]][0]
+    }
+    __scenario_monuments.first = defs[0]
+    __scenario_monuments.second = defs[1]
+    __scenario_monuments.third = defs[2]
+}
+
+var TEST_WIN_CRITERIA_GOALS = ['population', 'culture', 'prosperity', 'monuments', 'kingdom', 'housing_count', 'housing_level']
+var TEST_WIN_CRITERIA_TIMES = ['time_limit', 'survival_time']
+
+function test_win_criteria_snapshot() {
+    var wc = __win_criteria
+    var snap = {}
+    for (var i = 0; i < TEST_WIN_CRITERIA_GOALS.length; i++) {
+        var g = TEST_WIN_CRITERIA_GOALS[i]
+        snap[g] = { enabled: wc[g].enabled, goal: wc[g].goal }
+    }
+    for (var j = 0; j < TEST_WIN_CRITERIA_TIMES.length; j++) {
+        var t = TEST_WIN_CRITERIA_TIMES[j]
+        snap[t] = { enabled: wc[t].enabled, years: wc[t].years }
+    }
+    return snap
+}
+
+// Restores a test_win_criteria_snapshot and the scenario end year it gives.
+function test_win_criteria_restore(snap) {
+    var wc = __win_criteria
+    for (var i = 0; i < TEST_WIN_CRITERIA_GOALS.length; i++) {
+        var g = TEST_WIN_CRITERIA_GOALS[i]
+        wc[g].enabled = snap[g].enabled
+        wc[g].goal = snap[g].goal
+    }
+    for (var j = 0; j < TEST_WIN_CRITERIA_TIMES.length; j++) {
+        var t = TEST_WIN_CRITERIA_TIMES[j]
+        wc[t].enabled = snap[t].enabled
+        wc[t].years = snap[t].years
+    }
+    __test_scenario_init_max_year()
+}
+
 function test_building_place(type, x, y) {
     var place = null
     if (x >= 0 && y >= 0) {
@@ -136,7 +181,10 @@ function test_prepare_shoreline_patch(cx, cy, water_width, water_height) {
             terrain.set_water({ x: x0 + dx, y: cy + dy })
         }
     }
-    __test_set_scenario_river_points(cx, cy, cx, cy + water_height - 1)
+    // Boat routing only starts from WATER_0_PASSABLE tiles (fully surrounded water).
+    // Use the patch interior — edge shoreline tiles are WATER_N1_BLOCKED.
+    var entry_y = cy + ((water_height / 2) | 0)
+    __test_set_scenario_river_points(cx, entry_y, cx, entry_y)
     __map_water_cache_river_tiles()
     __map_water_rebuild_shores()
     __test_map_routing_update_water()
@@ -577,6 +625,20 @@ function test_mudbrick_pyramid_og_complete(opts) {
         __log_marker(marker + '_finished_fail:' + ph)
     }
 
+    // OG monuments_check_completion: one completion popup per pyramid.
+    var congrats = 0
+    for (var mi = 0; mi < __city_message_count(); mi++) {
+        var key = __lang_get_message_id(__city_message_mm_text_id(mi))
+        if (key && key.indexOf('pyramid_congratulations') >= 0) {
+            congrats++
+        }
+    }
+    if (congrats == 1) {
+        __log_marker(marker + '_congrats_ok')
+    } else {
+        __log_marker(marker + '_congrats_fail:' + congrats)
+    }
+
     __test_signal_ready()
     return bid
 }
@@ -589,4 +651,5 @@ function test_mudbrick_pyramid_og_complete_valid(marker, total) {
         && (__test_find_inlog('[test-marker] ' + marker + '_ramps_screenshot_ok')
             || __test_find_inlog('[test-marker] ' + marker + '_ramps_screenshot_skipped:no_resource'))
         && __test_find_inlog('[test-marker] ' + marker + '_finished_ok')
+        && __test_find_inlog('[test-marker] ' + marker + '_congrats_ok')
 }

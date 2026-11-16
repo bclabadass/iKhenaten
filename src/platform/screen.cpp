@@ -151,11 +151,17 @@ int platform_screen_t::create(const xstring& title, const xstring& renderer, boo
         flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
 
-    platform_render_setup_options(renderer);
-    if (!renderer.empty() && renderer == "opengl") {
+    const xstring preferred = platform_render_preferred_backend(renderer);
+    platform_render_setup_options(preferred);
+    if (preferred == "opengl") {
         flags |= SDL_WINDOW_OPENGL;
     }
     window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wsize.x, wsize.y, flags);
+    if (!window && (flags & SDL_WINDOW_OPENGL)) {
+        logs::warn("Unable to create an OpenGL window: %s", SDL_GetError());
+        flags &= ~SDL_WINDOW_OPENGL;
+        window = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wsize.x, wsize.y, flags);
+    }
 
     if (!window) {
         logs::error("Unable to create window: %s", SDL_GetError());
@@ -228,7 +234,8 @@ bool platform_screen_t::resize(int pixel_width, int pixel_height, int save) {
 #if defined(GAME_PLATFORM_IOS)
     const vec2i actual = get_window_size();
     logs::info("platform::ios: resize to %dx%d, window is %dx%d, scale %d%%, canvas %dx%d, orientation %d", pixel_width,
-      pixel_height, actual.x, actual.y, scale_percentage, logical_width, logical_height, (int)SDL_GetDisplayOrientation(0));
+      pixel_height, actual.x, actual.y, scale_percentage, logical_width, logical_height,
+      (int)SDL_GetDisplayOrientation(0));
 #endif
 
     if (save) {
@@ -481,8 +488,9 @@ float ios_screen_tracker_t::city_zoom_for_load() {
 static xstring __test_ios_screen_window(int width, int height) {
     const int scale = g_ios_screen.on_window_size(width, height);
     char out[128];
-    const char *hint = SDL_GetHint(SDL_HINT_ORIENTATIONS);
-    snprintf(out, sizeof(out), "%d,%d,%d,%s", (int)g_ios_screen.current, scale, g_camera.sidebar_collapsed ? 1 : 0, hint ? hint : "");
+    const char* hint = SDL_GetHint(SDL_HINT_ORIENTATIONS);
+    snprintf(out, sizeof(out), "%d,%d,%d,%s", (int)g_ios_screen.current, scale, g_camera.sidebar_collapsed ? 1 : 0,
+      hint ? hint : "");
     return xstring(out);
 }
 ANK_FUNCTION_2(__test_ios_screen_window)

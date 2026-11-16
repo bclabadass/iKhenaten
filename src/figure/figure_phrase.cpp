@@ -16,6 +16,7 @@
 #if defined(__APPLE__)
 #include <TargetConditionals.h>
 #endif
+#include "graphics/elements/lang_text.h"
 
 ANK_SCRIPT_EVENT(event_synthesize_figure_phrase, id, path, text)
 

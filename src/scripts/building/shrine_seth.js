@@ -3,6 +3,8 @@ log_info("akhenaten: building_shrine_seth started")
 [es=building]
 building_shrine_seth {
     type: BUILDING_SHRINE_SETH
+    always_work: true
+    road_access_distance: 2
     animations : {
       preview : {pack:PACK_GENERAL, id:74, },
       base : {pack:PACK_GENERAL, id:74, offset:0 },
@@ -21,11 +23,4 @@ building_shrine_seth {
       is_religion: true
       no_road_access: true
     }
-}
-
-[es=(building_shrine_seth, on_place_checks)]
-function building_shrine_seth_on_place_checks(ev) {
-    var b = city.get_building(ev.bid)
-    var has_road = __map_road_within_radius(b.tile, b.size, 2)
-    city.warnings.show_if_not(has_road, "#shrines_near_road_required")
 }
