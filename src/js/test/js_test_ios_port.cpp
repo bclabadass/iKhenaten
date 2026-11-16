@@ -155,6 +155,10 @@
 #include "widget/widget_sidebar.h"
 #include "graphics/screen.h"
 #include <SDL.h>
+// SDL_main.h turns main into SDL_main on iOS, which would rename building::main().
+#ifdef main
+#undef main
+#endif
 #include <algorithm>
 #include <vector>
 #include <cstdio>
