@@ -60,11 +60,11 @@ function run_test() {
     }
     __log_info_native('[test-marker] transport_wharf_og_labor_seeker')
 
-    // Staffed open-water wharf without a boat requests a transport ship.
+    // Staffed open-water wharf without a boat requests a transport ship (recounted with the buildings each day).
     __test_transport_ships_requested_set(0)
     __test_building_set_open_water_access(bid, 1)
     __test_building_set_figure_slot(bid, BUILDING_SLOT_BOAT, 0)
-    __test_transport_wharf_update_month(bid)
+    __test_update_building_counters()
     if (__test_transport_ships_requested() < 1) {
         test261_fail('expected transport ship request, got '
             + __test_transport_ships_requested())

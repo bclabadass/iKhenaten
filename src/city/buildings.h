@@ -83,6 +83,7 @@ struct city_buildings_t {
     const tracked_building_ids &track_buildings(e_building_type type) const { return tracked_buildings().at(type); }
 
     void clear_fishing_boat_requests() { fishing_boats_requested = 0; }
+    void clear_transport_ship_requests() { transport_ships_requested = 0; }
     void request_fishing_boat() { ++fishing_boats_requested; }
     void request_warship_ship() { ++warships_requested; }
     void request_transport_ship() { ++transport_ships_requested; }

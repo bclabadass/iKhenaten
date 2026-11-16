@@ -1,6 +1,7 @@
 #include "building_transport_wharf.h"
 
 #include "city/city.h"
+#include "city/city_figures.h"
 #include "figure/figure.h"
 #include "grid/water.h"
 #include "js/js_game.h"
@@ -37,17 +38,39 @@ void building_transport_wharf::update_day() {
 
 void building_transport_wharf::update_month() {
     building_wharf::update_month();
-
-    // Remake shipwright polls request counters; OG shipwright_boat_needed counts
-    // staffed transport wharves without a live boat.
-    if (num_workers() > 0 && base.has_open_water_access) {
-        const figure *boat = get_figure(BUILDING_SLOT_BOAT);
-        if (!boat->is_valid()) {
-            g_city.buildings.request_transport_ship();
-        }
-    }
-
     map_water_update_docking_points(base, get_orientation(), 2);
+}
+
+// The ship gives up the wharf's slot whenever it is off the berth tile (update_dock): sailing, holding elsewhere,
+// or docked a tile off. It is still this wharf's ship.
+bool building_transport_wharf::has_own_ship() const {
+    if (get_figure(BUILDING_SLOT_BOAT)->is_valid()) {
+        return true;
+    }
+    bool found = false;
+    figure_valid_do([&](figure& f) {
+        if (f.type == FIGURE_TRANSPORT_SHIP && f.is_alive() && f.homeID() == id()) {
+            found = true;
+        }
+    });
+    return found;
+}
+
+// OG shipwright_boat_needed counts staffed transport wharves without a live boat, recounted each day; the
+// request used to be added every month and kept, so a wharf whose ship was away ordered ships for good.
+void building_transport_wharf::update_count() const {
+    building_wharf::update_count();
+    if (num_workers() > 0 && base.has_open_water_access && !has_own_ship()) {
+        g_city.buildings.request_transport_ship();
+    }
+}
+
+// The berth isn't saved; without it until the month's update a docked ship gave up the slot after every load.
+void building_transport_wharf::on_post_load() {
+    building_wharf::on_post_load();
+    if (base.has_open_water_access) {
+        set_water_access_tiles(map_water_get_access_points(base, get_orientation(), 2));
+    }
 }
 
 void building_transport_wharf::on_undo() {

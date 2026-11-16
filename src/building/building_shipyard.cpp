@@ -123,6 +123,19 @@ int fishing_boats_still_needed() {
     return needed;
 }
 
+int transport_ships_still_needed() {
+    int needed = 0;
+    buildings_valid_do(
+      [&](building& b) {
+          auto* wharf = b.dcast_transport_wharf();
+          if (wharf && wharf->num_workers() > 0 && b.has_open_water_access && !wharf->has_own_ship()) {
+              needed++;
+          }
+      },
+      BUILDING_TRANSPORT_WHARF);
+    return needed;
+}
+
 } // namespace
 
 void building_shipyard_repair_queues_clear() {
@@ -499,6 +512,14 @@ void building_shipyard::update_day() {
             d.repair_fid = 0;
             finish_ship_repair(f);
         }
+        return;
+    }
+
+    // Every transport wharf has its ship: stop now rather than spend more timber on a ship that would have no
+    // wharf and be wrecked as soon as it was launched.
+    if (d.process_type == FIGURE_TRANSPORT_SHIP && transport_ships_still_needed() <= 0) {
+        d.process_type = FIGURE_NONE;
+        base.progress = 0;
         return;
     }
 
