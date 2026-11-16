@@ -25,6 +25,8 @@ void building_wharf::update_map_orientation(int orientation) {
     int image_offset = g_camera.relative_orientation(base.orientation);
     int image_id = base_img() + image_offset;
     map_water_add_building(id(), tile(), size(), image_id);
+    // The animation is picked by the facing on the map: pick it again now, not at the next daily update.
+    update_graphic();
 }
 
 void building_wharf::on_tick(bool refresh_only) {

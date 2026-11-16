@@ -144,6 +144,8 @@ void building_fishing_wharf::update_map_orientation(int orientation) {
     int image_offset = g_camera.relative_orientation(base.orientation);
     int image_id = base_img() + image_offset;
     map_water_add_building(id(), tile(), size(), image_id);
+    // The animation is picked by the facing on the map: pick it again now, not at the next daily update.
+    update_graphic();
 }
 
 bool building_fishing_wharf::draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color color_mask) {

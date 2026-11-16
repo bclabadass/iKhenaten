@@ -7,7 +7,7 @@
 //   without walking. It now walks to the shore nearest the ship that it can reach, and the ship sails beside it
 //   (boats can't route along the bank, so up to two tiles out).
 // - A ship at rest reads as arrived until it next reaches a tile centre, so a move given then was dropped.
-// - The transport and warship wharves' dock worker (SprAmbient 47, one facing, 23 images) stepped four images a
+// - The transport and warship wharves' dock worker (SprAmbient 47, one facing, 24 images) stepped four images a
 //   frame, as the four-facing wharf groups do, and ran on into the hulls and cargo of the next groups.
 // Markers:
 //   [test-marker] troops_survive_aboard
@@ -139,8 +139,8 @@ function t360_wharf_animation() {
     }
     city.get_building(wharf).set_animation('work_n')
     var most = __test_wharf_anim_max_offset(wharf)
-    __log_info_native('[test:360] transport wharf work_n reaches image ' + most + ' of SprAmbient 47 (0-22)')
-    if (most >= 0 && most <= 22) {
+    __log_info_native('[test:360] transport wharf work_n reaches image ' + most + ' of SprAmbient 47 (0-23)')
+    if (most >= 0 && most <= 23) {
         __log_marker('wharf_worker_stays_in_group')
     }
 }
