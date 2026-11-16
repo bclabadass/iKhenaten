@@ -47,6 +47,12 @@ bool __figure_is_valid(int fid) {
 }
 ANK_FUNCTION_1(__figure_is_valid)
 
+bool __figure_is_alive(int fid) {
+    figure* f = fid ? figure_get(fid) : nullptr;
+    return f && f->is_valid() && f->is_alive();
+}
+ANK_FUNCTION_1(__figure_is_alive)
+
 bool __figure_is_scared(int fid) {
     figure *f = figure_get(fid);
     return f && f->is_valid() && f->is_scared();
