@@ -9,13 +9,14 @@ building_weaver = {
     work : { pos : [19, -39], pack:PACK_GENERAL, id:122, offset:1, max_frames:12, duration:4 },
   },
   overlay_anims {
+    // General 210: flax bundles, 2 frames (206 is reeds)
     flax {
       pos : [45, 3]
       pack:PACK_GENERAL
-      id:206
+      id:210
       resource: RESOURCE_FLAX
       stack: false
-      max_count: 2
+      max_count: 1
       default_active: true
     }
   }

@@ -9,10 +9,11 @@ building_mine_gems {
     work { pos [54, 15], pack:PACK_SPR_AMBIENT, id:48, max_frames: 16, duration:2, internal_offset:true },
   }
   overlay_anims {
+    // General 200: gem sacks (203 is copper)
     gems {
       pos : [93, 0]
       pack:PACK_GENERAL
-      id:203
+      id:200
       resource : RESOURCE_GEMS
       default_active : true
     }

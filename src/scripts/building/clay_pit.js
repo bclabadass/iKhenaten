@@ -8,10 +8,11 @@ building_clay_pit {
     flooded { pack:PACK_GENERAL, id:40 }
   }
   overlay_anims {
+    // General 207: clay (208 is barley)
     clay {
       pos : [65, 3]
       pack:PACK_GENERAL
-      id:208
+      id:207
       resource : RESOURCE_CLAY
       default_active : true
     }

@@ -9,20 +9,22 @@ building_chariots_workshop = {
     work : { pack:PACK_GENERAL, id:124 },
   },
   overlay_anims {
+    // General 202: timber planks (206 is reeds)
     timber {
       pos:[51, 18]
       pack:PACK_GENERAL
-      id:206
+      id:202
       resource: RESOURCE_TIMBER
       stack: true
       step: [5, -5]
       max_count: 8
       default_active: true
     }
+    // General 201: weapons, cowhide shields (207 is clay)
     weapon {
       pos:[46, 25]
       pack:PACK_GENERAL
-      id:207
+      id:201
       resource: RESOURCE_WEAPONS
       stack: true
       step: [5, -5]

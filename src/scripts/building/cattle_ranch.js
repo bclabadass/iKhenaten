@@ -10,10 +10,11 @@ building_cattle_ranch {
     minimap { pack:PACK_GENERAL, id:149, offset:160 },
   }
   overlay_anims {
+    // General 204: straw bundles (206 is reeds)
     straw {
       pos:[70, 40]
       pack:PACK_GENERAL
-      id:206
+      id:204
       resource: RESOURCE_STRAW
       stack: true
       step: [5, -5]

@@ -7,13 +7,14 @@ building_brewery {
     work { pos: [7, -10], pack:PACK_GENERAL, id:116, offset: 1, max_frames: 10, duration: 4 }
   }
   overlay_anims {
-    beer {
+    // General 208: barley, the input (a brewery never holds its beer)
+    barley {
       pos: [28, -35]
       pack: PACK_GENERAL
       id: 208
-      resource: RESOURCE_BEER
+      resource: RESOURCE_BARLEY
       stack: false
-      max_count: 2
+      max_count: 1
       default_active: true
     }
   }

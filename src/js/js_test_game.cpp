@@ -551,6 +551,25 @@ static int __test_image_from_desc(int pack, int id, int offset) {
 }
 ANK_FUNCTION_3(__test_image_from_desc);
 
+// The picture the building's stock overlay for `resource` draws now ("image,copies"), "" if it has none.
+static xstring __test_building_overlay_image(int bid, int resource) {
+    building* b = building_get(bid);
+    if (!b || !b->is_valid()) {
+        return xstring("");
+    }
+    for (const auto& ov : b->overlay_anims) {
+        if (ov.resource == (e_resource)resource) {
+            int copies = 0;
+            const int image_id = b->dcast()->overlay_anim_image(ov, copies);
+            bstring64 out;
+            out.printf("%d,%d", image_id, copies);
+            return xstring(out.c_str());
+        }
+    }
+    return xstring("");
+}
+ANK_FUNCTION_2(__test_building_overlay_image);
+
 // The path a data file opens from, or "" when there is no such file.
 static xstring __test_resolve_path(pcstr rel) {
     const vfs::path resolved = vfs::path(rel).resolve();

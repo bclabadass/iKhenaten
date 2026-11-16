@@ -310,51 +310,49 @@ void building_impl::seed_default_overlays() {
     }
 }
 
-void building_impl::draw_overlay_anims(painter &ctx, vec2i point, color color_mask) const {
-    for (const auto &ov : base.overlay_anims) {
-        const int img = ov.first_img();
-        if (img <= 0) {
-            continue;
-        }
+int building_impl::overlay_anim_image(const building_overlay_anim& ov, int& copies) const {
+    copies = 0;
+    const int img = ov.first_img();
+    if (img <= 0) {
+        return 0;
+    }
 
-        int amount = 0;
-        if (ov.resource != RESOURCE_NONE) {
-            const int units = (int)ceil((float)stored_amount(ov.resource) / 100.0f);
-            if (ov.stack) {
-                amount = units;
-                if (amount <= 0) {
-                    continue;
-                }
-            } else {
-                amount = units - 1;
-                if (amount < 0) {
-                    continue;
-                }
-            }
-        } else if (ov.stack) {
-            amount = 1;
+    int amount = 0;
+    if (ov.resource != RESOURCE_NONE) {
+        const int units = (int)ceil((float)stored_amount(ov.resource) / 100.0f);
+        amount = ov.stack ? units : units - 1;
+        if (ov.stack ? amount <= 0 : amount < 0) {
+            return 0;
         }
+    } else if (ov.stack) {
+        amount = 1;
+    }
 
-        if (ov.stack) {
-            const int stacks = std::min(amount, (int)ov.max_count);
-            vec2i pos = ov.pos;
-            for (int i = 0; i < stacks; ++i) {
-                auto &command = ImageDraw::create_subcommand(ctx, render_command_t::ert_generic);
-                command.image_id = img;
-                command.pixel = point + pos;
-                command.mask = color_mask;
-                pos += ov.step;
-            }
-        } else {
-            int frame = amount;
-            if (ov.max_frames > 0) {
-                frame = std::min(frame, (int)ov.max_frames - 1);
-            }
-            frame = std::min(frame, (int)ov.max_count);
+    if (ov.stack) {
+        copies = std::min(amount, (int)ov.max_count);
+        return img;
+    }
+
+    int frame = amount;
+    if (ov.max_frames > 0) {
+        frame = std::min(frame, (int)ov.max_frames - 1);
+    }
+    frame = std::min(frame, (int)ov.max_count);
+    copies = 1;
+    return img + frame;
+}
+
+void building_impl::draw_overlay_anims(painter& ctx, vec2i point, color color_mask) const {
+    for (const auto& ov : base.overlay_anims) {
+        int copies = 0;
+        const int image_id = overlay_anim_image(ov, copies);
+        vec2i pos = ov.pos;
+        for (int i = 0; i < copies; ++i) {
             auto &command = ImageDraw::create_subcommand(ctx, render_command_t::ert_generic);
-            command.image_id = img + frame;
-            command.pixel = point + ov.pos;
+            command.image_id = image_id;
+            command.pixel = point + pos;
             command.mask = color_mask;
+            pos += ov.step;
         }
     }
 }

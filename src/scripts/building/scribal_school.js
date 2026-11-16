@@ -9,10 +9,11 @@ building_scribal_school {
     work : { pos:[2, -25], pack:PACK_GENERAL, id:42, offset:1, max_frames:11, duration:4, can_reverse:true },
   }
   overlay_anims {
+    // General 206 frames 5-7: papyrus scrolls (0-4 are reeds; 207 is clay)
     papyrus {
       pos : [61, 14]
       pack:PACK_GENERAL
-      id:207
+      id:206, offset:5
       resource : RESOURCE_PAPYRUS
       stack : true
       step : [5, -5]

@@ -157,6 +157,8 @@ public:
     bool has_overlay(const xstring &name) const;
     void seed_default_overlays();
     void draw_overlay_anims(painter &ctx, vec2i point, color color_mask) const;
+    // The picture a stock overlay draws now and how many copies (0: nothing to draw).
+    int overlay_anim_image(const building_overlay_anim& ov, int& copies) const;
 
     static void acquire(e_building_type e, building &b);
 

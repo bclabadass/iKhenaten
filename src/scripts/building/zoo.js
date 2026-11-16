@@ -20,10 +20,11 @@ building_zoo {
       max_count: 8
       default_active: true
     }
+    // General 204: straw bundles (206 is reeds)
     straw {
       pos:[100, 78]
       pack:PACK_GENERAL
-      id:206
+      id:204
       resource: RESOURCE_STRAW
       stack: true
       step: [5, -5]
