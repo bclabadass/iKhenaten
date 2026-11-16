@@ -120,3 +120,6 @@ ANK_CONFIG_STRUCT(figure_transport_ship::static_params,
     dock_wait_ticks, face_enemy_wait, face_enemy_range,
     legion_drowns_tick, evade_ticks, evade_range, hull_auto_repair_percent,
     escape_distance)
+
+// Whether a transport other than except_ship_id carries the company.
+bool transport_formation_already_embarked(int formation_id, int except_ship_id);

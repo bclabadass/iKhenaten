@@ -316,6 +316,7 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_company_rotate_button_pos()` | `{x,y}` | Centre of the Rotate button beside it (turns the selected company) |
 | `__test_company_move_to(formation_id, x, y)` | undefined | Send a company to a tile, as a tap on the map does (it is then away from its fort) |
 | `__test_construction_rotate_button_top()` | int | Top edge (y) of the touch Rotate button shown while placing a rotatable building |
+| `__test_figure_set_formation_id(fid, formation_id)` | void | Put a figure in a company (e.g. a standard bearer for a test company) |
 | `__test_construction_rotate_button_pos()` | `{x,y}` | Centre of that Rotate button |
 | `__test_construction_rotate_button_width()` | int | Its width (widens to fit its label) |
 | `__test_construction_rotate_button_text()` | string | Its label (the company Rotate button's, `#company_rotate_button`) |

@@ -58,19 +58,6 @@ bool transport_is_enemy_ship(figure *f) {
         && (f->allow_move_type == EMOVE_WATER || f->allow_move_type == EMOVE_DEEPWATER);
 }
 
-bool transport_formation_already_embarked(int formation_id, int except_ship_id) {
-    for (int i = 1; i < MAX_FIGURES; i++) {
-        figure *f = figure_get(i);
-        if (!f || !f->is_alive() || f->id == except_ship_id) {
-            continue;
-        }
-        figure_transport_ship *ship = smart_cast<figure_transport_ship>(f);
-        if (ship && ship->has_troops() && ship->transported_formation() == formation_id) {
-            return true;
-        }
-    }
-    return false;
-}
 
 // Walk from `from` toward `to`; keep the farthest open water tile on that line.
 int transport_farthest_water_on_line(tile2i from, tile2i to, tile2i &out) {
@@ -108,6 +95,20 @@ int transport_farthest_water_on_line(tile2i from, tile2i to, tile2i &out) {
 }
 
 } // namespace
+
+bool transport_formation_already_embarked(int formation_id, int except_ship_id) {
+    for (int i = 1; i < MAX_FIGURES; i++) {
+        figure* f = figure_get(i);
+        if (!f || !f->is_alive() || f->id == except_ship_id) {
+            continue;
+        }
+        figure_transport_ship* ship = smart_cast<figure_transport_ship>(f);
+        if (ship && ship->has_troops() && ship->transported_formation() == formation_id) {
+            return true;
+        }
+    }
+    return false;
+}
 
 water_dest map_water_get_wharf_for_new_transport_ship(figure &boat) {
     building_transport_wharf *wharf = building_first_ex<building_transport_wharf>([&boat](building_transport_wharf *w) {

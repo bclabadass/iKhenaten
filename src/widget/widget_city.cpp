@@ -1140,32 +1140,42 @@ bool screen_city_t::allow_building_info(tile2i tile) {
     return allow;
 }
 
-// The company on or near a tapped tile: its soldiers and standard, a tile or two away (a finger covers more than one
-// tile), or its fort.
-// Nearest ring first, so a tap between two companies takes the closer one.
-static int formation_near_tile(tile2i tile) {
+// The company on or near a tapped tile: its soldiers and standard, within `radius` tiles (nearest ring first, so a
+// tap between two companies takes the closer one), or its fort. A company on a transport is left out: its standard
+// stands on the ship, and a tap there is for the ship.
+static int formation_near_tile(tile2i tile, int radius) {
+    auto selectable = [](int fid) { return fid > 0 && !transport_formation_already_embarked(fid, 0); };
     int formation_id = formation_batalion_at(tile);
-    for (int r = 1; r <= 2 && formation_id <= 0; r++) {
+    if (!selectable(formation_id)) {
+        formation_id = 0;
+    }
+    for (int r = 1; r <= radius && formation_id <= 0; r++) {
         for (int dy = -r; dy <= r && formation_id <= 0; dy++) {
             for (int dx = -r; dx <= r && formation_id <= 0; dx++) {
                 if (std::max(std::abs(dx), std::abs(dy)) == r) {
-                    formation_id = formation_batalion_at(tile.shifted(dx, dy));
+                    const int fid = formation_batalion_at(tile.shifted(dx, dy));
+                    formation_id = selectable(fid) ? fid : 0;
                 }
             }
         }
     }
     if (formation_id <= 0) {
-        formation_id = formation_batalion_at_building(tile.grid_offset());
+        const int fid = formation_batalion_at_building(tile.grid_offset());
+        formation_id = selectable(fid) ? fid : 0;
     }
     return formation_id;
 }
+
+// Selecting a company takes a tap on it or a tile off; picking one to board (a target already in mind) allows two.
+static const int company_select_radius = 1;
+static const int company_embark_pick_radius = 2;
 
 bool screen_city_t::handle_legion_click(tile2i tile) {
     if (!tile.valid()) {
         return false;
     }
 
-    int formation_id = formation_near_tile(tile);
+    int formation_id = formation_near_tile(tile, company_select_radius);
     if (formation_id > 0 && !formation_get(formation_id)->in_distant_battle) {
         window_city_military_show(formation_id);
         return true;
@@ -1305,7 +1315,7 @@ void screen_city_t::handle_first_touch(tile2i tile) {
             return;
         }
 
-        if (handle_legion_click(tile) || handle_warship_click(tile) || handle_transport_click(tile)) {
+        if (handle_warship_click(tile) || handle_transport_click(tile) || handle_legion_click(tile)) {
             return;
         }
 
@@ -1695,7 +1705,7 @@ void screen_city_t::transport_map_click(int transport_figure_id, int pick_mode, 
 
     switch (pick_mode) {
     case TRANSPORT_PICK_FORMATION: {
-        int formation_id = formation_near_tile(tile);
+        int formation_id = formation_near_tile(tile, company_embark_pick_radius);
         if (formation_id > 0) {
             formation *fm = formation_get(formation_id);
             if (fm && fm->in_use && fm->own_batalion && !fm->in_distant_battle) {
@@ -1787,7 +1797,7 @@ void screen_city_t::handle_input_transport(const mouse *m, const hotkeys *h, int
     if (pick_mode == TRANSPORT_PICK_FORMATION) {
         highlighted_formation = 0;
         if (current_tile.valid()) {
-            int fid = formation_near_tile(current_tile);
+            int fid = formation_near_tile(current_tile, company_embark_pick_radius);
             if (fid > 0) {
                 formation *fm = formation_get(fid);
                 if (fm && fm->in_use && fm->own_batalion && !fm->in_distant_battle) {
@@ -1884,7 +1894,8 @@ void screen_city_t::handle_mouse(const mouse* m) {
 
     g_city_planner.draw_as_constructing = false;
     if (m->left.went_down) {
-        if (handle_legion_click(current_tile) || handle_warship_click(current_tile) || handle_transport_click(current_tile)) {
+        if (handle_warship_click(current_tile) || handle_transport_click(current_tile)
+            || handle_legion_click(current_tile)) {
             return;
         }
 

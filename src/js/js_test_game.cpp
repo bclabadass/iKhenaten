@@ -2188,6 +2188,14 @@ static int __test_figure_get_formation_id(int fid) {
 }
 ANK_FUNCTION_1(__test_figure_get_formation_id);
 
+static void __test_figure_set_formation_id(int fid, int formation_id) {
+    figure* f = figure_get(fid);
+    if (f && f->id) {
+        f->formation_id = (short)formation_id;
+    }
+}
+ANK_FUNCTION_2(__test_figure_set_formation_id);
+
 static int __test_formation_get_experience(int formation_id) {
     formation *m = formation_get(formation_id);
     return m ? m->experience : -1;
