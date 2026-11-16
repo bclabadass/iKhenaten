@@ -499,7 +499,9 @@ void formations_t::calculate_figures() {
         if (f->state != FIGURE_STATE_ALIVE)
             continue;
 
-        if (f->type == FIGURE_RIOTER)
+        // The company's standard bearer carries its formation id but isn't one of its soldiers: counted, a full
+        // company of 16 was 15 soldiers and the flag, and the recruiter stopped there.
+        if (f->type == FIGURE_RIOTER || f->type == FIGURE_STANDARD_BEARER)
             continue;
 
         //const bool soldier = !!::smart_cast<figure_soldier>(f);

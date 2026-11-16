@@ -94,11 +94,17 @@ function t332_setup() {
     for (var i = 0; i < 3; i++) {
         __test_recruiter_create_soldier(recruiter)
     }
+    // Charioteers need chariots at the recruiter, and the archers (nearer, still short of 16) are held back so
+    // these recruits go to the charioteers.
     var chariots = t332_place(BUILDING_FORT_CHARIOTEERS)
     __test_fort_update_recruit_status(chariots)
+    var archer_company = city.get_building(archers).formation_id
+    __test_formation_set_in_distant_battle(archer_company, 1)
+    city.get_building(recruiter).consume_resource(RESOURCE_CHARIOTS, -300)
     for (var i = 0; i < 3; i++) {
         __test_recruiter_create_soldier(recruiter)
     }
+    __test_formation_set_in_distant_battle(archer_company, 0)
     var infantry = t332_place(BUILDING_FORT_INFANTRY)
     __test_pump_frames(3)
     return { recruiter: recruiter, archers: archers, chariots: chariots, infantry: infantry }
