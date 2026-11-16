@@ -1232,6 +1232,10 @@ void build_planner::construction_finalize() { // confirm final placement
     formation_move_herds_away(end);
     events::emit(event_finance_request{efinance_request_construction, total_cost });
     game_undo_finish_build(total_cost);
+    if (last_created_building && last_created_building->is_monument()) {
+        // Undo removes a monument's parts but leaves their tiles marked as building: keep it unavailable.
+        game_undo_disable();
+    }
     map_tiles_update_region_empty_land(false, start.shifted(-3, -3), end.shifted(size.x + 3, size.y + 3));
     map_routing_update_land();
     map_routing_update_walls();
@@ -1563,6 +1567,7 @@ bool build_planner::place() {
     const auto &params = building_static_params::get(build_type);
     const auto &preview = building_planer_renderer::get(build_type);
     int placement_cost = params.get_cost();
+    bool placed_free = false; // something placed at no cost (monuments are free to lay out, as in the original)
 
     switch (build_type) {
     case BUILDING_CLEAR_LAND: {
@@ -1619,6 +1624,7 @@ bool build_planner::place() {
             }
 
             placement_cost *= construction_placed;
+            placed_free = (placement_cost == 0);
         }
         break;
     }
@@ -1629,7 +1635,7 @@ bool build_planner::place() {
     }
 
     total_cost = placement_cost;
-    if (total_cost == 0) {
+    if (total_cost == 0 && !placed_free) {
         return false;
     }
 

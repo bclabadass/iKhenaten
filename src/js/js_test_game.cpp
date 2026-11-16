@@ -552,6 +552,12 @@ static int __test_image_from_desc(int pack, int id, int offset) {
 }
 ANK_FUNCTION_3(__test_image_from_desc);
 
+// The tile's value in the citizens' land routing grid, as last computed (4 clear land, 2 passable, 0 road, -1 blocked).
+static int __test_routing_citizen_value(int x, int y) {
+    return map_routing_citizen_value(tile2i(x, y).grid_offset());
+}
+ANK_FUNCTION_2(__test_routing_citizen_value);
+
 // Set a game feature back to its built-in default (ignoring akhenaten.conf); false if there is no such feature.
 static bool __test_game_feature_reset(xstring name) {
     game_features::game_feature* feature = game_features::find(name);
