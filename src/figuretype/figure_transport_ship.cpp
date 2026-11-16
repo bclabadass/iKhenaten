@@ -139,7 +139,7 @@ void figure_transport_ship::on_create() {
     d.landing_y = -1;
     d.disembark_x = -1;
     d.disembark_y = -1;
-    d.embark_ticks = 0;
+    d.given_order = order_none;
     d.request_event_id = -1;
     base.damage = 0;
 }
@@ -630,19 +630,49 @@ void figure_transport_ship::check_auto_repair() {
 
 void figure_transport_ship::set_evade_order() {
     runtime_data().evade_mode = evade_waiting;
+    runtime_data().given_order = order_evade;
     base.wait_ticks = 0;
     advance_action(ACTION_215_TRANSPORT_SHIP_EVADING);
 }
 
 void figure_transport_ship::set_hold_order() {
     runtime_data().evade_mode = evade_waiting;
+    runtime_data().given_order = order_hold;
     base.destination_tile = base.tile;
     advance_action(ACTION_213_TRANSPORT_SHIP_DOCKED);
     base.wait_ticks = 0;
 }
 
 void figure_transport_ship::set_repair_order() {
+    runtime_data().given_order = order_repair;
     go_to_best_shipwright();
+}
+
+void figure_transport_ship::return_to_wharf() {
+    building* b = home();
+    building_transport_wharf* wharf = (b && b->id) ? b->dcast_transport_wharf() : nullptr;
+    if (!wharf) {
+        return;
+    }
+    runtime_data().given_order = order_return_to_wharf;
+    move_to_wharf(b->id, home_berth_tile());
+}
+
+figure_transport_ship::e_order figure_transport_ship::current_order() const {
+    switch (action_state()) {
+    case ACTION_216_TRANSPORT_SHIP_GOING_TO_SHIPWRIGHT:
+    case ACTION_217_TRANSPORT_SHIP_QUEUED_AT_SHIPWRIGHT:
+        return order_repair;
+    case ACTION_212_TRANSPORT_SHIP_GOING_TO_WHARF:
+        return order_return_to_wharf;
+    case ACTION_213_TRANSPORT_SHIP_DOCKED:
+        if (runtime_data().given_order == order_hold) {
+            return order_hold;
+        }
+        return is_docked() ? order_return_to_wharf : order_hold;
+    default:
+        return order_evade;
+    }
 }
 
 void figure_transport_ship::begin_kingdom_request() {

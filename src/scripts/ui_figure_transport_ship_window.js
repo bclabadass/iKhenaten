@@ -21,14 +21,51 @@ function figure_transport_ship_onboard_text(ship) {
     return __loc(184, company_id) + " " + __loc(184, 34)
 }
 
-function figure_transport_ship_action_text(ship) {
-    if (!ship.has_troops) {
-        return { header: __loc(184, 23), text: __loc(184, 24) }
+var TRANSPORT_ORDER_HOLD = 1
+var TRANSPORT_ORDER_EVADE = 2
+var TRANSPORT_ORDER_REPAIR = 3
+var TRANSPORT_ORDER_RETURN_TO_WHARF = 4
+
+// Pharaoh's transport orders (Transport Ship help): Hold Position, Evade Enemies, Embark/Disembark, Repair, Return
+// to Wharf. Pictures are Pharaoh_Unloaded group 38, texts group 184.
+var figure_transport_order_buttons = [
+    { id: "hold_position", order: TRANSPORT_ORDER_HOLD, header: 19, text: 20 },
+    { id: "evade", order: TRANSPORT_ORDER_EVADE, header: 21, text: 22 },
+    { id: "embark", order: 0, header: 23, text: 24 },
+    { id: "disembark", order: 0, header: 25, text: 26 },
+    { id: "repair", order: TRANSPORT_ORDER_REPAIR, header: 15, text: 16 },
+    { id: "return_to_wharf", order: TRANSPORT_ORDER_RETURN_TO_WHARF, header: 17, text: 18 },
+]
+
+function figure_transport_order_entry(id) {
+    for (var i = 0; i < figure_transport_order_buttons.length; i++) {
+        if (figure_transport_order_buttons[i].id == id) {
+            return figure_transport_order_buttons[i]
+        }
     }
-    if (ship.phase == 1) {
-        return { header: __loc(184, 23), text: __loc(184, 24) }
+    return null
+}
+
+function figure_transport_ship_action_text(window, ship) {
+    var shown = null
+    for (var i = 0; i < figure_transport_order_buttons.length; i++) {
+        var entry = figure_transport_order_buttons[i]
+        var btn = window[entry.id]
+        if (btn && btn.hovered && btn.enabled) {
+            shown = entry
+        }
     }
-    return { header: __loc(184, 25), text: __loc(184, 26) }
+    if (!shown) {
+        for (var j = 0; j < figure_transport_order_buttons.length; j++) {
+            if (figure_transport_order_buttons[j].order && figure_transport_order_buttons[j].order == ship.order) {
+                shown = figure_transport_order_buttons[j]
+            }
+        }
+    }
+    if (!shown) {
+        shown = figure_transport_order_entry(ship.has_troops ? "disembark" : "embark")
+    }
+    return { header: __loc(184, shown.header), text: __loc(184, shown.text) }
 }
 
 [es=figure_info_window]
@@ -38,10 +75,16 @@ figure_transport_ship_info_window {
     ui {
         background       : outer_panel({size: [29, 23]}),
         name             : text_center({pos: [16, 16], size: [px(27), 20], text:"${figure.class_name}", font : FONT_LARGE_BLACK_ON_DARK }),
-        onboard          : text({pos: [102, 58], text:"", font : FONT_NORMAL_BLACK_ON_DARK }),
+        hullstrength_lb  : text({pos: [102, 58], text:"${184.2}" }),
+        hullstrength_val : text({pos: [232, 58], text:"" }),
+        onboard          : text({pos: [102, 88], text:"", font : FONT_NORMAL_BLACK_ON_DARK }),
 
-        embark           : button({pos:[48, 134], size:[160, 25], text:"${184.23}", onclick_event: "embark" }),
-        disembark        : button({pos:[248, 134], size:[160, 25], text:"${184.25}", onclick_event: "disembark" }),
+        hold_position    : image_button({param1:1, pos:[87 * 0 + 16, 134], pack:PACK_UNLOADED, id:38, offset:0, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        evade            : image_button({param1:2, pos:[87 * 1 + 16, 134], pack:PACK_UNLOADED, id:38, offset:1, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        embark           : image_button({pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:38, offset:2, offset_pressed:0, offset_focused:0, border:true, onclick_event:"embark" }),
+        disembark        : image_button({pos:[87 * 2 + 16, 134], pack:PACK_UNLOADED, id:38, offset:3, offset_pressed:0, offset_focused:0, border:true, onclick_event:"disembark" }),
+        repair           : image_button({param1:3, pos:[87 * 3 + 16, 134], pack:PACK_UNLOADED, id:38, offset:4, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
+        return_to_wharf  : image_button({param1:4, pos:[87 * 4 + 16, 134], pack:PACK_UNLOADED, id:38, offset:5, offset_pressed:0, offset_focused:0, border:true, onclick_event:"set_order" }),
 
         inner_panel      : inner_panel({pos : [16, 220], size: [27, 6],
             ui : {
@@ -61,6 +104,16 @@ function figure_transport_ship_info_window_init(window) {
     var fid = __object_info_figure_id()
     __figure_info_set_help(fid)
     window.name.text = city.get_figure(fid).class_name
+}
+
+[es=(figure_transport_ship_info_window, set_order)]
+function figure_transport_ship_info_window_on_set_order(ev) {
+    var ship = city.get_transport_ship(__object_info_figure_id())
+    if (!ship.valid) {
+        return
+    }
+    ship.set_order(ev.param1)
+    ui.window_city_show()
 }
 
 [es=(figure_transport_ship_info_window, embark)]
@@ -92,11 +145,24 @@ function figure_transport_ship_info_window_window_info_background(window) {
     var ship = city.get_transport_ship(f.id)
 
     window.name.text = f.class_name
-    window.embark.darkened = ship.can_embark ? 0 : UiFlags_Grayscale
-    window.disembark.darkened = ship.has_troops ? 0 : UiFlags_Grayscale
+    window.hullstrength_val.text = __loc(184, figure_warship_hull_strength_text_id(ship))
     window.onboard.text = figure_transport_ship_onboard_text(ship)
 
-    var action = figure_transport_ship_action_text(ship)
+    // Embark and Disembark share a place: the one that fits whether soldiers are on board.
+    window.embark.enabled = !ship.has_troops
+    window.disembark.enabled = ship.has_troops
+    window.embark.darkened = ship.can_embark ? 0 : UiFlags_Grayscale
+    window.repair.darkened = ship.damage == 0 ? UiFlags_Grayscale : 0
+    var at_wharf = ship.order == TRANSPORT_ORDER_RETURN_TO_WHARF && f.action_state == ACTION_213_TRANSPORT_SHIP_DOCKED
+    window.return_to_wharf.darkened = at_wharf ? UiFlags_Grayscale : 0
+
+    var order = ship.order
+    for (var i = 0; i < figure_transport_order_buttons.length; i++) {
+        var entry = figure_transport_order_buttons[i]
+        window[entry.id].selected = entry.order != 0 && order == entry.order
+    }
+
+    var action = figure_transport_ship_action_text(window, ship)
     window.action_header.text = action.header
     window.action_text.text = action.text
 

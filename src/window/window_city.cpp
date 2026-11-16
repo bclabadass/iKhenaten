@@ -425,6 +425,39 @@ bool window_city_handle_company_buttons(const mouse* m, int formation_id) {
     return rotate != COMPANY_BUTTON_MISSED || orders != COMPANY_BUTTON_MISSED;
 }
 
+// A selected warship or transport gets the same Orders button: its orders panel (Pharaoh's right-click) has the
+// ship's orders and, for a transport, Embark/Disembark.
+static bool ship_orders_button_pressed = false;
+
+void window_city_draw_ship_orders_button() {
+    if (!company_buttons_visible()) {
+        return;
+    }
+    draw_company_text_button(company_orders_button_rect(), company_orders_button_text(), ship_orders_button_pressed);
+}
+
+bool window_city_handle_ship_orders_button(const mouse* m, int figure_id) {
+    const touch_t* t = (m->is_touch || touch_only_platform()) ? get_earliest_touch_raw() : nullptr;
+    if (!t || !t->in_use) {
+        ship_orders_button_pressed = false;
+        return false;
+    }
+
+    const e_company_button_touch orders
+      = handle_company_text_button(t, company_orders_button_rect(), ship_orders_button_pressed);
+    if (orders == COMPANY_BUTTON_RELEASED) {
+        window_city_open_ship_orders(figure_id);
+    }
+    return orders != COMPANY_BUTTON_MISSED;
+}
+
+void window_city_open_ship_orders(int figure_id) {
+    figure* f = figure_get(figure_id);
+    if (f && f->is_valid() && f->is_alive()) {
+        events::emit(event_show_tile_info{f->tile, false, SOURCE_LOCATION, false, figure_id});
+    }
+}
+
 bool window_city_draw_construction_cost_and_size() {
     if (!g_city_planner.in_progress) {
         return false;

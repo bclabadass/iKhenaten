@@ -363,6 +363,8 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_shipyard_set_order(bid, figure_type, progress)` | — | Put a shipwright on an order (`FIGURE_FISHING_BOAT`, `FIGURE_TRANSPORT_SHIP`, …) with this much progress |
 | `__test_wharf_water_access(bid)` | int | The wharf's water access point, where its boats dock, packed `x * 1000 + y`; -1 none |
 | `__test_figure_set_destination_tile(fid, x, y)` | — | Set a figure's destination tile |
+| `__test_figure_place(fid, x, y)` | — | Put a figure on a tile (e.g. soldiers on parade) without walking it there |
+| `__window_city_warship_show(fid)` | — | Select a warship to move, as a tap on it does |
 | `__test_js_hotreload_handlers_stack_ok(n)` | boolean | Re-run `js_register_game_handlers` `n` times; true if MuJS stack depth unchanged (HR1) |
 | `__test_js_hotreload_file_stack_ok(path, n)` | boolean | `js_vm_reload_file` + `js_vm_sync` `n` times; true if stack depth unchanged (HR1) |
 | `__test_trader_capacity(fid)` | int | Caravan runtime / ship effective max capacity (TC*) |

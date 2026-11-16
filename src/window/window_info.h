@@ -13,6 +13,7 @@ struct event_show_tile_info {
     bool avoid_mouse;
     pcstr source_location;
     bool company_orders = false;
+    int figure_id = 0; // open this figure's panel (a ship's orders), not the nearest figure's
 };
 struct event_update_tile_info { bool avoid_mouse; };
 

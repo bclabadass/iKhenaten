@@ -70,6 +70,45 @@ static void figure_transport_ship_proto_sail_to(js_State *J) {
     }
 }
 
+static void figure_transport_ship_proto___order(js_State* J) {
+    figure_transport_ship* ship = figure_transport_ship_this(J);
+    js_pushnumber(J, (double)(ship ? ship->current_order() : 0));
+}
+
+static void figure_transport_ship_proto___damage(js_State* J) {
+    figure_transport_ship* ship = figure_transport_ship_this(J);
+    js_pushnumber(J, (double)(ship ? ship->base.damage : 0));
+}
+
+static void figure_transport_ship_proto___max_damage(js_State* J) {
+    figure_transport_ship* ship = figure_transport_ship_this(J);
+    js_pushnumber(J, (double)(ship ? ship->base.max_damage() : 0));
+}
+
+// Pharaoh's transport orders: 1 hold position, 2 evade enemies, 3 repair, 4 return to wharf.
+static void figure_transport_ship_proto_set_order(js_State* J) {
+    figure_transport_ship* ship = figure_transport_ship_this(J);
+    if (!ship) {
+        return;
+    }
+    switch (J->to<int>(1)) {
+    case figure_transport_ship::order_hold:
+        ship->set_hold_order();
+        break;
+    case figure_transport_ship::order_evade:
+        ship->set_evade_order();
+        break;
+    case figure_transport_ship::order_repair:
+        ship->set_repair_order();
+        break;
+    case figure_transport_ship::order_return_to_wharf:
+        ship->return_to_wharf();
+        break;
+    default:
+        break;
+    }
+}
+
 static void figure_transport_ship_proto_toString(js_State *J) {
     char buf[64];
     snprintf(buf, sizeof buf, "FigureTransportShip(%d)", figure_transport_ship_this_fid(J));
@@ -98,6 +137,10 @@ void js_register_figure_transport_ship_proto(js_State *J) {
     jsB_propf(J, js_intern("FigureTransportShip.prototype.__phase"), figure_transport_ship_proto___phase, 0);
     jsB_propf(J, js_intern("FigureTransportShip.prototype.embark"), figure_transport_ship_proto_embark, 1);
     jsB_propf(J, js_intern("FigureTransportShip.prototype.sail_to"), figure_transport_ship_proto_sail_to, 2);
+    jsB_propf(J, js_intern("FigureTransportShip.prototype.__order"), figure_transport_ship_proto___order, 0);
+    jsB_propf(J, js_intern("FigureTransportShip.prototype.__damage"), figure_transport_ship_proto___damage, 0);
+    jsB_propf(J, js_intern("FigureTransportShip.prototype.__max_damage"), figure_transport_ship_proto___max_damage, 0);
+    jsB_propf(J, js_intern("FigureTransportShip.prototype.set_order"), figure_transport_ship_proto_set_order, 1);
     jsB_propf(J, js_intern("FigureTransportShip.prototype.toString"), figure_transport_ship_proto_toString, 0);
 
     J->newcconstructor(jsB_new_FigureTransportShip, jsB_new_FigureTransportShip, js_intern("FigureTransportShip"), 1);

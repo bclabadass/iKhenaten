@@ -20,6 +20,9 @@ static void draw_foreground_transport(int) {
     widget_sidebar_city_draw_foreground();
     g_window_city.draw_paused_panel();
     window_city_draw_time_left_panel();
+    if (selected_transport_pick_mode == TRANSPORT_PICK_MOVE) {
+        window_city_draw_ship_orders_button();
+    }
 }
 
 void window_city_transport_show(int transport_figure_id, e_transport_pick_mode mode) {
@@ -32,6 +35,10 @@ void window_city_transport_show(int transport_figure_id, e_transport_pick_mode m
         draw_foreground_transport,
         [] (auto m, auto h) {
           window_city_handle_hotkeys(h);
+          if (selected_transport_pick_mode == TRANSPORT_PICK_MOVE
+              && window_city_handle_ship_orders_button(m, selected_transport_figure_id)) {
+              return;
+          }
           g_screen_city.handle_input_transport(m, h, selected_transport_figure_id, selected_transport_pick_mode);
         },
         [] (auto c) { g_screen_city.draw_tooltip(c); }

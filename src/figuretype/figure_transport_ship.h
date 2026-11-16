@@ -60,7 +60,7 @@ public:
         int16_t landing_y;
         int16_t disembark_x;     // cached shore for land (optional)
         int16_t disembark_y;
-        int16_t embark_ticks;    // unused by OG timing; kept for save layout
+        int16_t given_order;      // e_order last given from the panel (was the unused embark_ticks; same save slot)
         int16_t request_event_id; // OG figure.request_event_id (−1 = none)
     } FIGURE_RUNTIME_DATA_T;
 
@@ -83,6 +83,11 @@ public:
     void set_evade_order();
     void set_hold_order();
     void set_repair_order();
+    void return_to_wharf();
+
+    // The order the ship's panel shows as given (Pharaoh's transport orders).
+    enum e_order { order_none = 0, order_hold, order_evade, order_repair, order_return_to_wharf };
+    e_order current_order() const;
     void begin_kingdom_request();
     void return_from_kingdom_request(tile2i landing);
 

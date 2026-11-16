@@ -108,7 +108,7 @@ function figure_warship_info_window_init(window) {
 }
 
 [es=(figure_warship_info_window, set_order)]
-function figure_warship_info_window_on_set_order(window, ev) {
+function figure_warship_info_window_on_set_order(ev) {
     var ship = city.get_warship(__object_info_figure_id())
     if (!ship.valid) {
         return

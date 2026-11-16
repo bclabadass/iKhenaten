@@ -40,6 +40,9 @@ FigureTransportShip.property.has_troops = { get: function() { return this.__has_
 FigureTransportShip.property.can_embark = { get: function() { return this.__can_embark() } }
 FigureTransportShip.property.transported_formation = { get: function() { return this.__transported_formation() } }
 FigureTransportShip.property.phase = { get: function() { return this.__phase() } }
+FigureTransportShip.property.order = { get: function() { return this.__order() } }
+FigureTransportShip.property.damage = { get: function() { return this.__damage() } }
+FigureTransportShip.property.max_damage = { get: function() { return this.__max_damage() } }
 
 FigureWarship.property.valid = { get: function() { return this.__valid() } }
 FigureWarship.property.active_order = { get: function() { return this.__active_order() } }

@@ -1140,30 +1140,27 @@ bool screen_city_t::allow_building_info(tile2i tile) {
     return allow;
 }
 
+// The company on or near a tapped tile: its soldiers and standard, a tile or two away (a finger covers more than one
+// tile), or its fort.
+static int formation_near_tile(tile2i tile) {
+    int formation_id = formation_batalion_at(tile);
+    for (int dy = -2; dy <= 2 && formation_id <= 0; dy++) {
+        for (int dx = -2; dx <= 2 && formation_id <= 0; dx++) {
+            formation_id = formation_batalion_at(tile.shifted(dx, dy));
+        }
+    }
+    if (formation_id <= 0) {
+        formation_id = formation_batalion_at_building(tile.grid_offset());
+    }
+    return formation_id;
+}
+
 bool screen_city_t::handle_legion_click(tile2i tile) {
     if (!tile.valid()) {
         return false;
     }
 
-    int formation_id = formation_batalion_at(tile);
-    if (formation_id <= 0) {
-        // Search surrounding tiles (2-tile radius) where standard bearer / flag stands
-        for (int dy = -2; dy <= 2; dy++) {
-            for (int dx = -2; dx <= 2; dx++) {
-                int fid = formation_batalion_at(tile.shifted(dx, dy));
-                if (fid > 0) {
-                    formation_id = fid;
-                    break;
-                }
-            }
-            if (formation_id > 0) break;
-        }
-    }
-
-    if (formation_id <= 0) {
-        formation_id = formation_batalion_at_building(tile.grid_offset());
-    }
-
+    int formation_id = formation_near_tile(tile);
     if (formation_id > 0 && !formation_get(formation_id)->in_distant_battle) {
         window_city_military_show(formation_id);
         return true;
@@ -1654,10 +1651,7 @@ void screen_city_t::transport_map_click(int transport_figure_id, int pick_mode, 
 
     switch (pick_mode) {
     case TRANSPORT_PICK_FORMATION: {
-        int formation_id = formation_batalion_at(tile);
-        if (formation_id <= 0) {
-            formation_id = formation_batalion_at_building(tile.grid_offset());
-        }
+        int formation_id = formation_near_tile(tile);
         if (formation_id > 0) {
             formation *fm = formation_get(formation_id);
             if (fm && fm->in_use && fm->own_batalion && !fm->in_distant_battle) {
@@ -1797,10 +1791,7 @@ void screen_city_t::handle_input_transport(const mouse *m, const hotkeys *h, int
     if (pick_mode == TRANSPORT_PICK_FORMATION) {
         highlighted_formation = 0;
         if (current_tile.valid()) {
-            int fid = formation_batalion_at(current_tile);
-            if (fid <= 0) {
-                fid = formation_batalion_at_building(current_tile.grid_offset());
-            }
+            int fid = formation_near_tile(current_tile);
             if (fid > 0) {
                 formation *fm = formation_get(fid);
                 if (fm && fm->in_use && fm->own_batalion && !fm->in_distant_battle) {

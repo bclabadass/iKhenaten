@@ -3234,6 +3234,20 @@ static void __test_figure_set_destination_tile(int fid, int x, int y) {
 }
 ANK_FUNCTION_3(__test_figure_set_destination_tile);
 
+// Put a figure on a tile (e.g. soldiers on parade, without walking them there).
+static void __test_figure_place(int fid, int x, int y) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_valid()) {
+        return;
+    }
+    f->map_figure_remove();
+    f->tile = tile2i(x, y);
+    f->previous_tile = f->tile;
+    f->cc_coords = {15 * x, 15 * y};
+    f->map_figure_add();
+}
+ANK_FUNCTION_3(__test_figure_place);
+
 static void __test_warship_wharf_spawn_figure(int bid) {
     building *b = building_get(bid);
     auto *wharf = (b && b->is_valid()) ? b->dcast_warship_wharf() : nullptr;
