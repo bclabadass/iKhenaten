@@ -241,7 +241,8 @@ void figure_transport_ship::board_legion(int formation_id) {
         f->tile = base.tile;
         f->formation_at_rest = 0;
         f->allow_move_type = EMOVE_TERRAIN;
-        f->set_flag(e_figure_flag_invisible, false);
+        // Soldiers aboard aren't drawn over the ship; the company's standard stays (it isn't one of these figures).
+        f->set_flag(e_figure_flag_invisible, true);
         loaded++;
     }
 
@@ -655,7 +656,7 @@ void figure_transport_ship::sync_embarked_troops() {
         f->tile = base.tile;
         f->formation_at_rest = 0;
         f->allow_move_type = EMOVE_TERRAIN;
-        f->set_flag(e_figure_flag_invisible, false);
+        f->set_flag(e_figure_flag_invisible, true);
     }
 
     // Only the standard follows the ship: a company's tile is its fort, where Return to Fort takes it.
