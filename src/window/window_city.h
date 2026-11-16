@@ -36,6 +36,9 @@ vec2i window_city_company_orders_button_center();
 vec2i window_city_company_rotate_button_center();
 int window_city_company_orders_button_top();
 int window_city_construction_rotate_button_top();
+vec2i window_city_construction_rotate_button_center();
+int window_city_construction_rotate_button_width();
+pcstr window_city_construction_rotate_button_text();
 
 void window_city_draw_all();
 void window_city_draw_panels();

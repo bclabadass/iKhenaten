@@ -316,6 +316,9 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_company_rotate_button_pos()` | `{x,y}` | Centre of the Rotate button beside it (turns the selected company) |
 | `__test_company_move_to(formation_id, x, y)` | undefined | Send a company to a tile, as a tap on the map does (it is then away from its fort) |
 | `__test_construction_rotate_button_top()` | int | Top edge (y) of the touch Rotate button shown while placing a rotatable building |
+| `__test_construction_rotate_button_pos()` | `{x,y}` | Centre of that Rotate button |
+| `__test_construction_rotate_button_width()` | int | Its width (widens to fit its label) |
+| `__test_construction_rotate_button_text()` | string | Its label (the company Rotate button's, `#company_rotate_button`) |
 | `__test_info_window_section()` | string | Section of the open info panel (`info_window_fort`, `batalion_info_window`, …), or `""` |
 | `__test_info_ui_text(element_id)` | string | Text of a named element on the current building/terrain info window (e.g. `workers_text`) |
 | `__test_info_ui_image_offset(element_id)` | int | Picture offset in its image group of an element on the current info window (e.g. an order button), −1 if absent |

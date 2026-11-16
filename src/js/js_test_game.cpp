@@ -4059,6 +4059,22 @@ static int __test_construction_rotate_button_top() {
 }
 ANK_FUNCTION(__test_construction_rotate_button_top);
 
+// The Rotate button shown while placing a building that turns (statues, monuments), on touch screens.
+static vec2i __test_construction_rotate_button_pos() {
+    return window_city_construction_rotate_button_center();
+}
+ANK_FUNCTION(__test_construction_rotate_button_pos);
+
+static int __test_construction_rotate_button_width() {
+    return window_city_construction_rotate_button_width();
+}
+ANK_FUNCTION(__test_construction_rotate_button_width);
+
+static pcstr __test_construction_rotate_button_text() {
+    return window_city_construction_rotate_button_text();
+}
+ANK_FUNCTION(__test_construction_rotate_button_text);
+
 pcstr __test_info_ui_text(pcstr element_id) {
     static bstring512 buf;
     buf = "";

@@ -109,9 +109,21 @@ static bool construction_rotate_visible() {
     return g_city_planner.can_rotate() && !g_city_planner.in_progress;
 }
 
+static const int rotate_button_min_width = 64;
+static const int rotate_button_right = 44;
+
+static pcstr rotate_button_text() {
+    return lang_text_from_key("#company_rotate_button");
+}
+
+// Widens leftwards to fit its label, keeping the right edge in line with the placement buttons.
 static void update_construction_rotate_button() {
-    construction_buttons[2].enabled = construction_rotate_visible();
-    construction_buttons[2].y = -4 + 36 * construction_buttons_count();
+    image_button& rotate = construction_buttons[2];
+    rotate.enabled = construction_rotate_visible();
+    rotate.y = -4 + 36 * construction_buttons_count();
+    rotate.width
+      = std::max<int>(rotate_button_min_width, text_get_width(rotate_button_text(), FONT_LARGE_BLACK_ON_LIGHT) + 20);
+    rotate.x = rotate_button_right - rotate.width;
 }
 
 // Padded touch areas overlap between buttons, so a tap goes to the nearest one.
@@ -130,6 +142,9 @@ static int construction_button_at(vec2i pt) {
         const int y1 = base.y + btn.y + btn.height + padding;
         if (pt.x < x0 || pt.x >= x1 || pt.y < y0 || pt.y >= y1)
             continue;
+        // On the button itself wins: the wide Rotate button's centre sits far from its top corner.
+        if (pt.x >= x0 + padding && pt.x < x1 - padding && pt.y >= y0 + padding && pt.y < y1 - padding)
+            return i;
         const int dx = pt.x - (base.x + btn.x + btn.width / 2);
         const int dy = pt.y - (base.y + btn.y + btn.height / 2);
         const int distance = dx * dx + dy * dy;
@@ -213,8 +228,8 @@ static void draw_construction_buttons() {
         const vec2i pos = base + vec2i{rotate.x, rotate.y};
         outer_panel_draw_exact(pos, {rotate.width, rotate.height});
         const int pressed_offset = rotate.pressed ? 1 : 0;
-        text_draw_centered((const uint8_t*)"R", pos.x + pressed_offset, pos.y + 11 + pressed_offset, rotate.width,
-          FONT_LARGE_BLACK_ON_LIGHT, COLOR_MASK_NONE);
+        text_draw_centered((const uint8_t*)rotate_button_text(), pos.x + pressed_offset, pos.y + 11 + pressed_offset,
+          rotate.width, FONT_LARGE_BLACK_ON_LIGHT, COLOR_MASK_NONE);
     }
 }
 
@@ -315,27 +330,22 @@ static pcstr company_orders_button_text() {
     return lang_text_from_key("#company_orders_button");
 }
 
-static pcstr company_rotate_button_text() {
-    return lang_text_from_key("#company_rotate_button");
-}
-
 static rect company_text_button_rect(pcstr text, int right) {
     const vec2i base = construction_buttons_base_pos();
     const image_button& rotate = construction_buttons[2];
-    const int width = std::max<int>(rotate.width, text_get_width(text, FONT_LARGE_BLACK_ON_LIGHT) + 20);
+    const int width = std::max<int>(rotate_button_min_width, text_get_width(text, FONT_LARGE_BLACK_ON_LIGHT) + 20);
     return {vec2i{right - width, base.y - 4}, vec2i{right, base.y - 4 + rotate.height}};
 }
 
 static rect company_orders_button_rect() {
     const vec2i base = construction_buttons_base_pos();
-    const image_button& rotate = construction_buttons[2];
-    return company_text_button_rect(company_orders_button_text(), base.x + rotate.x + rotate.width);
+    return company_text_button_rect(company_orders_button_text(), base.x + rotate_button_right);
 }
 
 // Far enough left that the two buttons' touch padding doesn't overlap.
 static rect company_rotate_button_rect() {
     const int right = company_orders_button_rect().mn.x - 2 * company_button_padding;
-    return company_text_button_rect(company_rotate_button_text(), right);
+    return company_text_button_rect(rotate_button_text(), right);
 }
 
 static vec2i rect_center(const rect& r) {
@@ -359,6 +369,21 @@ int window_city_construction_rotate_button_top() {
     return construction_buttons_base_pos().y + construction_buttons[2].y;
 }
 
+vec2i window_city_construction_rotate_button_center() {
+    update_construction_rotate_button();
+    const image_button& rotate = construction_buttons[2];
+    return construction_buttons_base_pos() + vec2i{rotate.x + rotate.width / 2, rotate.y + rotate.height / 2};
+}
+
+int window_city_construction_rotate_button_width() {
+    update_construction_rotate_button();
+    return construction_buttons[2].width;
+}
+
+pcstr window_city_construction_rotate_button_text() {
+    return rotate_button_text();
+}
+
 static void draw_company_text_button(const rect& r, pcstr text, bool pressed) {
     const vec2i size{r.w(), r.h()};
     outer_panel_draw_exact(r.mn, size);
@@ -372,7 +397,7 @@ void window_city_draw_company_buttons() {
         return;
     }
 
-    draw_company_text_button(company_rotate_button_rect(), company_rotate_button_text(), company_rotate_button_pressed);
+    draw_company_text_button(company_rotate_button_rect(), rotate_button_text(), company_rotate_button_pressed);
     draw_company_text_button(company_orders_button_rect(), company_orders_button_text(), company_orders_button_pressed);
 }
 
