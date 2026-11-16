@@ -88,6 +88,21 @@ tile2i city_fishing_points_t::closest_fishing_point(tile2i pos, bool free_only, 
     return (min_dist < 10000) ? result : tile2i::invalid;
 }
 
+// The jumping fish wanders up to 4 tiles from its point (FISHPOINT_OFFSETS), and boats fishing there take free
+// water beside it. Next to the shore the fish swam onto land and boats picked shore tiles they can't reach.
+static bool fishing_point_in_open_water(tile2i point) {
+    constexpr int fish_wander = 4;
+    for (int dy = -fish_wander; dy <= fish_wander; dy++) {
+        for (int dx = -fish_wander; dx <= fish_wander; dx++) {
+            tile2i t = point.shifted(dx, dy);
+            if (!t.valid() || !map_terrain_is(t, TERRAIN_WATER) || map_terrain_is(t, TERRAIN_FLOODPLAIN)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 void city_fishing_points_t::reset() {
     tile_cache &river = river_tiles();
     int num_points = std::max<int>(1, (int)river.size() / 500);
@@ -122,10 +137,17 @@ void city_fishing_points_t::update_month(int points_num) {
 
     tile_cache &river = river_tiles();
     std::vector<int> deep_water;
+    std::vector<int> open_water;
     for (const auto &tile : river) {
         if (map_terrain_is(tile, TERRAIN_DEEPWATER) && !map_terrain_is(tile, TERRAIN_FLOODPLAIN)) {
             deep_water.push_back(tile);
+            if (fishing_point_in_open_water(tile2i(tile))) {
+                open_water.push_back(tile);
+            }
         }
+    }
+    if (!open_water.empty()) {
+        deep_water.swap(open_water);
     }
 
     srand (time(nullptr));

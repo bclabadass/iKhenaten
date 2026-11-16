@@ -285,7 +285,10 @@ bool map_water_find_alternative_fishing_boat_tile(figure &boat, tile2i &tile) {
         for (int yy = area.tmin_y, endy = area.tmax_y; yy <= endy; yy++) {
             for (int xx = area.tmin_x, endx = area.tmax_x; xx <= endx; xx++) {
                 int grid_offset = MAP_OFFSET(xx, yy);
-                if (!map_has_figure_at(grid_offset) && map_terrain_is(grid_offset, TERRAIN_WATER)) {
+                // Only water a boat can sail to: shore tiles are blocked for boats, and a boat sent there can't
+                // reach it, takes damage and tries again until it sinks.
+                if (!map_has_figure_at(grid_offset) && map_terrain_is(grid_offset, TERRAIN_WATER)
+                    && map_water_grid(grid_offset) == 0) {
                     map_point_store_result(tile2i(xx, yy), tile);
                     return true;
                 }

@@ -3018,6 +3018,50 @@ static void __test_fishing_points_clear() {
 }
 ANK_FUNCTION(__test_fishing_points_clear);
 
+// Scenario fishing point `index` packed as x * 1000 + y; -1 when unset.
+static int __test_scenario_fishing_point(int index) {
+    if (index < 0 || index >= (int)g_scenario.fishing_points.size()) {
+        return -1;
+    }
+    tile2i p = g_scenario.fishing_points[index];
+    return p.valid() && p.x() > 0 ? p.x() * 1000 + p.y() : -1;
+}
+ANK_FUNCTION_1(__test_scenario_fishing_point);
+
+// Boat routing distance over water from (x1,y1) to (x2,y2); 0 or less when a boat can't get there.
+static int __test_boat_water_distance(int x1, int y1, int x2, int y2) {
+    map_routing_calculate_distances_water_boat(tile2i(x1, y1));
+    return map_routing_distance(tile2i(x2, y2));
+}
+ANK_FUNCTION_4(__test_boat_water_distance);
+
+// Where a fishing boat at its fishing point would move when the point's tile is taken, packed x * 1000 + y; -1 none.
+static int __test_fishing_boat_alternative_tile(int fid) {
+    figure* f = figure_get(fid);
+    tile2i alt;
+    if (!f || !map_water_find_alternative_fishing_boat_tile(*f, alt)) {
+        return -1;
+    }
+    return alt.x() * 1000 + alt.y();
+}
+ANK_FUNCTION_1(__test_fishing_boat_alternative_tile);
+
+// Boat routing value of a tile: 0 open water a boat can sail, negative blocked (shore, edge, bridge).
+static int __test_boat_routing_value(int x, int y) {
+    return map_water_grid(tile2i(x, y).grid_offset());
+}
+ANK_FUNCTION_2(__test_boat_routing_value);
+
+static void __test_fishing_points_reset() {
+    g_city.fishing_points.reset();
+}
+ANK_FUNCTION(__test_fishing_points_reset);
+
+static void __test_water_cache_river_tiles() {
+    map_water_cache_river_tiles();
+}
+ANK_FUNCTION(__test_water_cache_river_tiles);
+
 // Pack (x << 16) | y for a land tile where is_herd_spawn_accessible(ftype) holds; -1 if none.
 static int __test_find_accessible_herd_tile(int ftype) {
     if (ftype <= FIGURE_NONE || ftype >= FIGURE_MAX) {
