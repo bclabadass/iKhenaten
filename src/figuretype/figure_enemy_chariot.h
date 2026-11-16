@@ -12,6 +12,7 @@ public:
 
     virtual void on_create() override;
     virtual void update_animation() override;
+    virtual void cart_image_update() override { update_chariot_cart(); }
     void update_chariot_cart();
 };
 
