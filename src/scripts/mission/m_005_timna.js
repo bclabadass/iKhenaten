@@ -9,7 +9,7 @@ mission5 { // Timna
 	// Map points from data/maps/m_005_timna.map.
 	herd_points_prey [ [82, 96] ]
 
-	start_message : "message_history_military"
+	start_message : "message_soldiers_and_forts"
 	selection_title : "Timna"
 	env {
 		has_animals : true
@@ -376,7 +376,7 @@ function mission5_libyan_raid(invasion_id, size) {
 [es=event_mission_start, mission=mission5]
 function mission5_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_LIBIAN)
-	mission_show_start_message(mission, "message_history_military")
+	mission_show_start_message(mission, "message_soldiers_and_forts")
 	empire.set_id(1)
 	empire.set_expanded(false)
 	city.set_empire_available(1)

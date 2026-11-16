@@ -17,7 +17,7 @@ mission10 { // Saqqara â€” The First Pyramid
 		{ tile: [154, 77], type: FIGURE_OSTRICH, count: 5, radius: 16 }
 	]
 
-	start_message : "message_history_saqqara"
+	start_message : "message_innovations"
 	selection_title : "Saqqara"
 	player_rank : 1
 
@@ -440,7 +440,7 @@ function mission10_on_start(ev) {
 	__image_request_pak(PACK_STEPPED_PYRAMID)
 	__image_request_pak(PACK_TEMPLE_SETH)
 	__image_request_pak(PACK_ENEMY_EGYPTIAN)
-	mission_show_start_message(mission, "message_history_saqqara")
+	mission_show_start_message(mission, "message_innovations")
 	empire.set_id(1)
 	empire.set_expanded(false)
 	city.set_empire_available(1)

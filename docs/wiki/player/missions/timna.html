@@ -273,7 +273,7 @@
       </div>
 
       <h2 id="briefing">Briefing</h2>
-      <p>On load the script shows the military history panel (<code>message_history_military</code>). The Timna campaign text lives in <code>message_history_timna</code> / <code>message_mission_timna</code>:</p>
+      <p>On load the script shows <code>message_soldiers_and_forts</code> (“Soldiers and Forts”, the original's mission 5 first tutorial). The Timna campaign text lives in <code>message_history_timna</code> / <code>message_mission_timna</code>:</p>
       <div class="game-quote">
         <p>A new Pharaoh, Den, has taken the throne of Egypt. Pharaoh is deeply concerned, as enemies have begun to threaten our borders, and our nation lacks adequate supplies of valuable copper needed to create weapons with which to equip our troops. Pharaoh Den has ordered a mining expedition into the unforgiving land of Sinai, beyond our borders and deep within Bedouin territory. The area known as Timna is rich in gold and copper ore, as well as precious turquoise gemstones, but it is otherwise barren. Conditions there will be harsh, and you'll need to import many amenities, perhaps even additional food and fine linen, from Egypt. Pharaoh will demand frequent shipments from Sinai and will ask you for money, copper, gemstones and weapons. You can use any surplus of these items to help support the expedition. Be always on your guard, for the Bedouin of the Sinai desert are formidable adversaries, and they will not willingly allow foreigners to occupy their land, let alone plunder their mineral wealth.</p>
         <p>To lighten the burden that such living conditions impose on your city's people, build a Pavilion at some busy intersection. Citizens can relax at the Pavilion's juggling and music stages, and, if you also build a Dance School, this new type of performance will provide great entertainment.</p>
@@ -392,7 +392,7 @@
             <p><span class="file-ref">src/scripts/mission/m_005_timna.js</span> imported from <span class="file-ref">src/scripts/missions.js</span>.</p>
             <pre><code><span class="cmt">// m_005_timna.js — mission5 config (excerpt)</span>
 <span class="kw">mission5</span> {
-  <span class="kw">start_message</span> : <span class="str">"message_history_military"</span>
+  <span class="kw">start_message</span> : <span class="str">"message_soldiers_and_forts"</span>
   <span class="kw">player_rank</span> : <span class="num">2</span>
   <span class="kw">env</span> { <span class="kw">hide_nilometer</span> : <span class="num">true</span> }
 
@@ -457,10 +457,10 @@
               <thead><tr><th>Key</th><th>ID</th><th>Line</th><th>When shown</th></tr></thead>
               <tbody>
                 <tr>
-                  <td><code>message_history_military</code></td>
-                  <td>184</td>
-                  <td>2125</td>
-                  <td><code>start_message</code> / <code>mission5_on_start</code> — military history panel</td>
+                  <td><code>message_soldiers_and_forts</code></td>
+                  <td>245</td>
+                  <td>3137</td>
+                  <td><code>start_message</code> / <code>mission5_on_start</code> — “Soldiers and Forts”: forts, recruiter, weapons</td>
                 </tr>
                 <tr>
                   <td><code>message_history_timna</code></td>

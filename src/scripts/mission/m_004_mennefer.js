@@ -4,7 +4,7 @@ log_info("akhenaten: mission 4 started")
 
 mission4 {
 	map_file : "data/maps/m_004_mennefer.map"
-	start_message : "message_trade_on_the_water"
+	start_message : "message_getting_started"
 	selection_title : "Mennefer"
 	env {
 		has_animals : true
@@ -250,7 +250,7 @@ function mission4_fire_request(tag, resource, amount, months, ok_tag, fail_tag, 
 
 [es=event_mission_start, mission=mission4]
 function mission4_on_start(ev) {
-	mission_show_start_message(mission, "message_trade_on_the_water")
+	mission_show_start_message(mission, "message_getting_started")
 	city.set_empire_available(-1)
 	empire.set_id(1)
 	empire.set_expanded(false)

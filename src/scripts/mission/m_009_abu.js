@@ -10,7 +10,7 @@ mission9 { // Abu — The Nubian Border
 	// Map points from data/maps/m_009_abu.map.
 	herd_points_predator [ [96, 104], [50, 90], [38, 50] ]
 
-	start_message : "message_history_abu"
+	start_message : "message_the_finer_things"
 	selection_title : "Abu"
 	env {
 		has_animals : true
@@ -369,7 +369,7 @@ function mission9_fire_request(tag, resource, amount, months, ok_tag, fail_tag, 
 function mission9_on_start(ev) {
 	__image_request_pak(PACK_ENEMY_EGYPTIAN)
 	__image_request_pak(PACK_ENEMY_HYKSOS)
-	mission_show_start_message(mission, "message_history_abu")
+	mission_show_start_message(mission, "message_the_finer_things")
 	empire.set_id(1)
 	empire.set_expanded(false)
 	city.set_empire_available(1)
