@@ -66,5 +66,8 @@ public:
     FIGURE_METAINFO(FIGURE_FCHARIOTEER, figure_soldier_charioteer)
     figure_soldier_charioteer(figure *f) : figure_soldier(f) {}
 
+    virtual void on_create() override;
+    virtual void on_post_load() override;
+    virtual void cart_image_update() override;
     virtual void update_image(const formation *m, int &dir) override;
 };

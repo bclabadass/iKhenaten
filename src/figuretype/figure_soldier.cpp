@@ -646,6 +646,41 @@ void figure_soldier_infantry::update_image(const formation *m, int &dir) {
     image_set_animation(animkey);
 }
 
+extern std::array<vec2i, 8> enemy_chariot_cart_offsets;
+
+// A chariot is drawn as the chariot and its riders (SprMain 67 walk, 69 fight) pulled by its horses, a separate
+// picture drawn like a cart (SprMain 113, 12 frames by 8 facings, as for enemy chariots). Without it our chariots
+// showed only their empty yoke poles.
+void figure_soldier_charioteer::on_create() {
+    figure_soldier::on_create();
+    base.use_cart = true;
+}
+
+void figure_soldier_charioteer::on_post_load() {
+    figure_soldier::on_post_load();
+    base.use_cart = true;
+}
+
+void figure_soldier_charioteer::cart_image_update() {
+    if (action_state() == FIGURE_ACTION_149_CORPSE) {
+        base.cart_image_id = 0;
+        return;
+    }
+    int dir = base.figure_image_normalize_direction(base.direction < 8 ? base.direction : base.previous_tile_direction);
+    if (base.in_attack()) {
+        dir = base.figure_image_normalize_direction(base.attack_direction);
+    }
+    const int horses = image_id_from_group(GROUP_FIGURE_CHARIOT_CART);
+    if (horses < 0) {
+        base.cart_image_id = 0;
+        return;
+    }
+    base.cart_image_id = (uint16_t)(horses + (base.animctx.frame % 12) * 8 + dir);
+    if (dir >= 0 && dir < (int)enemy_chariot_cart_offsets.size()) {
+        base.cart_offset = enemy_chariot_cart_offsets[dir];
+    }
+}
+
 void figure_soldier_charioteer::update_image(const formation *m, int &dir) {
     figure_soldier::update_image(m, dir);
 
