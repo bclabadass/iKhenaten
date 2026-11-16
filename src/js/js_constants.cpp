@@ -180,6 +180,8 @@ void js_register_game_constants(js_State* J) {
     _R(ACTION_212_TRANSPORT_SHIP_GOING_TO_WHARF)
     _R(ACTION_213_TRANSPORT_SHIP_DOCKED)
     _R(ACTION_214_TRANSPORT_SHIP_SAILING)
+    _R(ACTION_215_TRANSPORT_SHIP_EVADING)
+    _R(ACTION_219_TRANSPORT_SHIP_GOING_TO_LANDING)
 
     _R(FLOOD_STATE_IMMINENT)
     _R(FLOOD_STATE_FLOODING)
@@ -223,6 +225,7 @@ void js_register_game_constants(js_State* J) {
     _R(WELL_UNNECESSARY_NO_HOUSES)
 
     _R(MAX_BUILDINGS)
+    _R(MAX_FIGURES)
     _R(BUILDING_MAX)
 
     _R(e_figure_draw_none)

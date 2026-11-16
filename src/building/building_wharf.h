@@ -21,6 +21,8 @@ public:
     virtual void update_map_orientation(int orientation) override;
     virtual void on_tick(bool refresh_only) override;
     virtual bool draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color color_mask) override;
+
+    int anim_frame_offset(int docker_frame) const;
 };
 
 ANK_CONFIG_PROPERTY(building_wharf::runtime_data_t, reserved)

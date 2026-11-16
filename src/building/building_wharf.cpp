@@ -36,11 +36,20 @@ void building_wharf::on_tick(bool refresh_only) {
     }
 }
 
+// Wharf groups mostly interleave four facings, one image each per frame (SprAmbient 46, 55), so frames step by four;
+// a single-facing group (47, the transport and warship wharves' dock worker) sets frame_step 1, or the animation
+// runs on into the next groups (the hulls and cargo after 47).
+int building_wharf::anim_frame_offset(int docker_frame) const {
+    const auto& a = base.anim;
+    const int step = a.frame_step > 0 ? a.frame_step : 4;
+    return (docker_frame / std::max<int>(1, a.frame_duration)) * step;
+}
+
 bool building_wharf::draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color color_mask) {
     auto &anim_wharf = base.anim;
     auto &d = runtime_data();
     if (anim_wharf.valid()) {
-        int img_id = anim_wharf.start_frame() + (d.docker_anim_frame / anim_wharf.frame_duration) * 4;
+        int img_id = anim_wharf.start_frame() + anim_frame_offset(d.docker_anim_frame);
         const image_t *img = image_get(img_id);
         auto& command = ImageDraw::create_subcommand(ctx, render_command_t::ert_generic);
         command.image_id = img_id;

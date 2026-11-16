@@ -70,7 +70,7 @@ var advisor_military_ships = []
 
 function advisor_military_collect_ships() {
     var ships = []
-    for (var f = 1; f < 5000; f++) {
+    for (var f = 1; f < MAX_FIGURES; f++) {
         if (!__figure_is_alive(f)) {
             continue
         }

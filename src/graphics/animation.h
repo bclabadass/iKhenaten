@@ -23,6 +23,7 @@ struct animation_t {
     int8_t max_frames;
     int8_t duration;
     int8_t start_frame;
+    int8_t frame_step = 0; // images between frames, for drawers that step over interleaved facings (0 = their default)
     bool can_reverse;
     bool loop = true;
     bool reverse = false;
@@ -34,9 +35,8 @@ struct animation_t {
     image_desc to_desc() const { return { pack, id, offset }; }
     int first_img() const;
 };
-ANK_CONFIG_STRUCT(animation_t, 
-    pos, pack, id, offset, path,
-    max_frames, duration, start_frame, can_reverse, reverse)
+ANK_CONFIG_STRUCT(animation_t, pos, pack, id, offset, path, max_frames, duration, start_frame, frame_step, can_reverse,
+  reverse)
 
 struct animation_context {
     xstring key;
@@ -46,6 +46,7 @@ struct animation_context {
     vec2i pos;
     uint8_t frame_duration = 1;
     uint16_t max_frames;
+    uint8_t frame_step = 0;
     uint16_t sframe;
     uint16_t frame;
     uint32_t flags;

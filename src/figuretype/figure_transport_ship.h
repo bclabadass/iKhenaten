@@ -78,6 +78,9 @@ public:
     bool embark_formation(int formation_id);
     void sail_to_landing(tile2i water_tile, tile2i land_order = tile2i::invalid);
     void move_to_tile(tile2i water_tile);
+    void restart_sailing();
+    // Where troops land for a tap: the shore tile nearest it (within four tiles) and water by it the ship can reach.
+    bool find_landing(tile2i tap, tile2i& water, tile2i& land);
     void move_to_wharf(int wharf_building_id, tile2i dock_tile);
     void disembark_troops();
     void set_evade_order();

@@ -552,6 +552,18 @@ static int __test_image_from_desc(int pack, int id, int offset) {
 }
 ANK_FUNCTION_3(__test_image_from_desc);
 
+// An image's source bitmap name, size and animation length: "name wxh sprites" ("" for no image).
+static pcstr __test_image_info(int image_id) {
+    static bstring256 buf;
+    const image_t* img = image_get(image_id);
+    if (!img || image_id <= 0) {
+        return "";
+    }
+    buf.printf("%s %dx%d %d", img->bmp.name.c_str(), img->width, img->height, img->animation.num_sprites);
+    return buf.c_str();
+}
+ANK_FUNCTION_1(__test_image_info);
+
 // The tile's value in the citizens' land routing grid, as last computed (4 clear land, 2 passable, 0 road, -1 blocked).
 static int __test_routing_citizen_value(int x, int y) {
     return map_routing_citizen_value(tile2i(x, y).grid_offset());
@@ -2195,6 +2207,22 @@ static void __test_figure_set_formation_id(int fid, int formation_id) {
     }
 }
 ANK_FUNCTION_2(__test_figure_set_formation_id);
+
+// The largest image offset a wharf's current animation reaches over one cycle (from its first image).
+static int __test_wharf_anim_max_offset(int bid) {
+    building* b = building_get(bid);
+    auto* wharf = (b && b->is_valid()) ? b->dcast_wharf() : nullptr;
+    if (!wharf) {
+        return -1;
+    }
+    int most = 0;
+    const int cycle = b->anim.max_frames * std::max<int>(1, b->anim.frame_duration);
+    for (int frame = 0; frame < cycle; frame++) {
+        most = std::max(most, wharf->anim_frame_offset(frame));
+    }
+    return most;
+}
+ANK_FUNCTION_1(__test_wharf_anim_max_offset);
 
 static int __test_formation_get_experience(int formation_id) {
     formation *m = formation_get(formation_id);

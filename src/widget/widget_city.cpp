@@ -1643,45 +1643,6 @@ bool screen_city_t::handle_transport_click(tile2i tile) {
     return false;
 }
 
-// Where troops land for a tap: the shore tile nearest it, on land or water, within a few tiles, and the water
-// beside it the ship sails to. The original takes a click on the exact shore tile; a finger rarely hits it, and a
-// tap on the water or a little inland did nothing.
-static bool transport_landing_near(tile2i tap, tile2i& water_out, tile2i& land_out) {
-    static const vec2i dirs[] = {{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}};
-    auto is_nav_water = [](tile2i t) {
-        return t.valid() && map_terrain_is(t, TERRAIN_WATER | TERRAIN_DEEPWATER)
-               && !map_terrain_is(t, TERRAIN_BUILDING);
-    };
-    auto land_ok = [](tile2i t) {
-        return t.valid() && !map_terrain_is(t, TERRAIN_WATER | TERRAIN_DEEPWATER)
-               && !map_terrain_is(t, TERRAIN_BUILDING | TERRAIN_WALL | TERRAIN_ROCK | TERRAIN_ELEVATION);
-    };
-    if (!tap.valid()) {
-        return false;
-    }
-    const int radius = 4;
-    int best = INT_MAX;
-    for (int dy = -radius; dy <= radius; dy++) {
-        for (int dx = -radius; dx <= radius; dx++) {
-            const int dist = dx * dx + dy * dy;
-            tile2i land = tap.shifted(dx, dy);
-            if (dist >= best || !land_ok(land)) {
-                continue;
-            }
-            for (const vec2i& d : dirs) {
-                tile2i water = land.shifted(d);
-                if (is_nav_water(water)) {
-                    best = dist;
-                    land_out = land;
-                    water_out = water;
-                    break;
-                }
-            }
-        }
-    }
-    return best != INT_MAX;
-}
-
 void screen_city_t::transport_map_click(int transport_figure_id, int pick_mode, tile2i tile) {
     if (!tile.valid()) {
         highlighted_formation = 0;
@@ -1717,8 +1678,9 @@ void screen_city_t::transport_map_click(int transport_figure_id, int pick_mode, 
         return;
     }
     case TRANSPORT_PICK_LANDING: {
+        // The original takes a click on the exact shore tile; a finger rarely hits it.
         tile2i water, land;
-        if (transport_landing_near(tile, water, land)) {
+        if (ship->find_landing(tile, water, land)) {
             ship->sail_to_landing(water, land);
         }
         highlighted_formation = 0;

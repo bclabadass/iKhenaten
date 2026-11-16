@@ -316,6 +316,8 @@ After each test script loads, the driver calls `js_vm_sync({})` so any top-level
 | `__test_company_rotate_button_pos()` | `{x,y}` | Centre of the Rotate button beside it (turns the selected company) |
 | `__test_company_move_to(formation_id, x, y)` | undefined | Send a company to a tile, as a tap on the map does (it is then away from its fort) |
 | `__test_construction_rotate_button_top()` | int | Top edge (y) of the touch Rotate button shown while placing a rotatable building |
+| `__test_wharf_anim_max_offset(bid)` | int | Largest image offset a wharf's current animation reaches over one cycle (-1 not a wharf) |
+| `__test_image_info(image_id)` | string | An image's source bitmap name, size and animation length (`"name wxh sprites"`) |
 | `__test_figure_set_formation_id(fid, formation_id)` | void | Put a figure in a company (e.g. a standard bearer for a test company) |
 | `__test_construction_rotate_button_pos()` | `{x,y}` | Centre of that Rotate button |
 | `__test_construction_rotate_button_width()` | int | Its width (widens to fit its label) |

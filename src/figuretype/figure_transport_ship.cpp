@@ -14,6 +14,7 @@
 #include "figuretype/figure_enemy_warship.h"
 #include "figuretype/figure_shipwreck.h"
 #include "figuretype/figure_soldier.h"
+#include "grid/routing/routing.h"
 #include "grid/terrain.h"
 #include "grid/water.h"
 #include "graphics/window.h"
@@ -23,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <climits>
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_transport_ship);
 
@@ -188,6 +190,10 @@ tile2i figure_transport_ship::find_shore_tile(tile2i water_tile) const {
     return tile2i::invalid;
 }
 
+// How far from the hull a soldier can be and still step aboard: the company lines up on the shore beside the ship,
+// up to half a line (eight soldiers) to either side.
+static const int boarding_reach = 6;
+
 bool figure_transport_ship::legion_ready_to_board(int formation_id) const {
     const formation *m = formation_get(formation_id);
     if (!m || !m->in_use || m->num_figures <= 0) {
@@ -203,9 +209,11 @@ bool figure_transport_ship::legion_ready_to_board(int formation_id) const {
         }
         count++;
         // OG: direction == DIRECTION_AT_DESTINATION. Remake also accepts at-standard
-        // next to the hull (soldiers already staged on the embark shore).
-        if (soldier->direction == DIR_FIGURE_NONE
-            || soldier->action_state == ACTION_4_SOLDIER_AT_STANDARD) {
+        // next to the hull (soldiers already staged on the embark shore). Standing still isn't enough: a company at
+        // rest in its fort stands still, and boarded from across the map.
+        const bool by_ship = calc_maximum_distance(soldier->tile, base.tile) <= boarding_reach;
+        if (
+          by_ship && (soldier->direction == DIR_FIGURE_NONE || soldier->action_state == ACTION_4_SOLDIER_AT_STANDARD)) {
             ready++;
         }
     }
@@ -255,6 +263,71 @@ void figure_transport_ship::board_legion(int formation_id) {
     m->standard_tile = base.tile;
 }
 
+// The shore tile nearest `center` (within `reach`) and water by it that the ship at `ship_tile` can sail to. Boats
+// can't route through the water right along the bank (wharf berths are two tiles out), so the water may be up to two
+// tiles from the shore. With `walker` valid the shore must also be one a company standing there can walk to.
+static bool transport_shore_and_water(tile2i ship_tile, tile2i center, int reach, tile2i walker, tile2i& shore,
+  tile2i& water) {
+    constexpr int max_reach = 10;
+    constexpr int gap = 2;
+    constexpr int margin = max_reach + gap;
+    constexpr int side = 2 * margin + 1;
+    static bool boat_ok[side][side];
+    reach = std::min(reach, max_reach);
+    map_routing_calculate_distances_water_boat(ship_tile);
+    for (int dy = -margin; dy <= margin; dy++) {
+        for (int dx = -margin; dx <= margin; dx++) {
+            tile2i w = center.shifted(dx, dy);
+            // The ship's own tile counts even when a wharf's berth marks it as building.
+            boat_ok[dy + margin][dx + margin] = (w == ship_tile && map_terrain_is(w, TERRAIN_WATER | TERRAIN_DEEPWATER))
+                                                || (transport_is_navigable_water(w) && map_routing_distance(w) > 0);
+        }
+    }
+
+    if (walker.valid()) {
+        map_routing_calculate_distances(walker);
+    }
+    for (int r = 0; r <= reach; r++) {
+        int best = INT_MAX;
+        tile2i best_water = tile2i::invalid;
+        for (int dy = -r; dy <= r; dy++) {
+            for (int dx = -r; dx <= r; dx++) {
+                const int dist = dx * dx + dy * dy;
+                tile2i land = center.shifted(dx, dy);
+                if (std::max(std::abs(dx), std::abs(dy)) != r || dist >= best || !transport_land_ok(land)) {
+                    continue;
+                }
+                if (walker.valid() && land != walker && map_routing_distance(land) <= 0) {
+                    continue;
+                }
+                int nearest = INT_MAX;
+                for (int wy = -gap; wy <= gap; wy++) {
+                    for (int wx = -gap; wx <= gap; wx++) {
+                        const int wd = wx * wx + wy * wy;
+                        if (wd < nearest && boat_ok[dy + wy + margin][dx + wx + margin]) {
+                            nearest = wd;
+                            best_water = land.shifted(wx, wy);
+                        }
+                    }
+                }
+                if (nearest != INT_MAX) {
+                    best = dist;
+                    shore = land;
+                    water = best_water;
+                }
+            }
+        }
+        if (best != INT_MAX) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool figure_transport_ship::find_landing(tile2i tap, tile2i& water, tile2i& land) {
+    return tap.valid() && transport_shore_and_water(base.tile, tap, 4, tile2i::invalid, land, water);
+}
+
 bool figure_transport_ship::embark_formation(int formation_id) {
     // OG embark_legion_under_mouse: assign company, order it ashore near the ship,
     // sail to water by the company — board happens in GOING_TO_LEGION on arrival.
@@ -270,42 +343,25 @@ bool figure_transport_ship::embark_formation(int formation_id) {
         return false;
     }
 
-    // Prefer the hull tile when it is already water (wharf access may also set
-    // TERRAIN_BUILDING there — still a valid embark berth for this ship).
-    tile2i water = base.tile;
-    const bool hull_on_water = water.valid()
-        && map_terrain_is(water, TERRAIN_WATER | TERRAIN_DEEPWATER);
-    if (!hull_on_water) {
-        // Prefer water next to the company's tile.
-        static const vec2i dirs[] = {
-            {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}
-        };
-        water = tile2i::invalid;
-        for (const vec2i &dir : dirs) {
-            tile2i cand = m->tile.shifted(dir);
-            if (transport_is_navigable_water(cand)) {
-                water = cand;
+    // A company already lined up by the hull boards where the ship is. Otherwise it walks to the shore nearest the
+    // ship that it can reach, and the ship sails to the water beside it (OG: the company goes ashore by the ship).
+    tile2i water = tile2i::invalid;
+    if (map_terrain_is(base.tile, TERRAIN_WATER | TERRAIN_DEEPWATER) && legion_ready_to_board(formation_id)) {
+        water = base.tile;
+    } else {
+        tile2i shore = tile2i::invalid;
+        // Walking distances from where a soldier stands; the company's own tile may be its fort.
+        tile2i walker = m->tile;
+        for (int i = 0; i < formation::max_figures_count && m->figures[i]; i++) {
+            figure* soldier = figure_get(m->figures[i]);
+            if (soldier && soldier->is_alive()) {
+                walker = soldier->tile;
                 break;
             }
         }
-        if (!water.valid()) {
+        if (!transport_shore_and_water(base.tile, base.tile, 10, walker, shore, water)) {
             return false;
         }
-    }
-
-    // Prefer the company's current tile when it already borders embark water.
-    // Skip formation_batalion_move_to when the legion is already staged ready —
-    // re-pathing leaves AT_STANDARD and boarding would wait on soldier ticks.
-    tile2i shore = tile2i::invalid;
-    if (calc_maximum_distance(m->tile, water) == 1 && transport_land_ok(m->tile)) {
-        shore = m->tile;
-    } else {
-        shore = find_shore_tile(water);
-        if (!shore.valid()) {
-            shore = m->tile;
-        }
-    }
-    if (transport_land_ok(shore) && !legion_ready_to_board(formation_id)) {
         formation_batalion_move_to(m, shore);
     }
 
@@ -327,13 +383,16 @@ bool figure_transport_ship::embark_formation(int formation_id) {
     // Already on embark water: mark arrived so the next action can board.
     if (base.tile == water) {
         base.direction = DIR_FIGURE_NONE;
+    } else {
+        restart_sailing();
     }
     base.wait_ticks = 0;
     return true;
 }
 
 void figure_transport_ship::sail_to_landing(tile2i water_tile, tile2i land_order) {
-    if (!has_troops() || !transport_is_navigable_water(water_tile)) {
+    const bool own_tile = water_tile == base.tile && map_terrain_is(water_tile, TERRAIN_WATER | TERRAIN_DEEPWATER);
+    if (!has_troops() || !(own_tile || transport_is_navigable_water(water_tile))) {
         return;
     }
 
@@ -358,7 +417,22 @@ void figure_transport_ship::sail_to_landing(tile2i water_tile, tile2i land_order
     }
     advance_action(ACTION_219_TRANSPORT_SHIP_GOING_TO_LANDING);
     route_remove();
+    if (base.tile == water_tile) {
+        base.direction = DIR_FIGURE_NONE;
+    } else {
+        restart_sailing();
+    }
     base.wait_ticks = 0;
+}
+
+// A ship at rest has the "arrived" direction and its progress on the tile reset, so for most of a tile's ticks a new
+// order read as arrived at once: it went back to idling where it was. Put it at the tile centre, heading as before,
+// so it picks its new direction on the next tick.
+void figure_transport_ship::restart_sailing() {
+    if (base.direction >= 8) {
+        base.direction = base.previous_tile_direction < 8 ? base.previous_tile_direction : DIR_0_TOP_RIGHT;
+    }
+    base.progress_on_tile = 14;
 }
 
 void figure_transport_ship::move_to_tile(tile2i water_tile) {
@@ -375,6 +449,7 @@ void figure_transport_ship::move_to_tile(tile2i water_tile) {
     base.destination_tile = water_tile;
     advance_action(ACTION_214_TRANSPORT_SHIP_SAILING);
     route_remove();
+    restart_sailing();
     d.evade_mode = evade_waiting;
 }
 
@@ -461,6 +536,15 @@ void figure_transport_ship::disembark_troops() {
         f->allow_move_type = EMOVE_TERRAIN;
         f->set_flag(e_figure_flag_invisible, false);
         f->map_figure_add();
+    }
+
+    // The standard isn't one of the company's figures; bring it ashore too, or it drowns on the ship's tile.
+    figure* standard = m->standard_figure_id ? figure_get(m->standard_figure_id) : nullptr;
+    if (standard && standard->is_alive() && standard->formation_id == m->id) {
+        standard->map_figure_remove();
+        standard->tile = disembark;
+        standard->previous_tile = disembark;
+        standard->map_figure_add();
     }
 
     formation_batalion_move_to(m, order);

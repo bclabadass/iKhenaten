@@ -63,6 +63,7 @@ void animation_context::setup(const animation_t &anim) {
         offset = anim.offset;
     }
     max_frames = anim.max_frames;
+    frame_step = (uint8_t)std::max<int>(0, anim.frame_step);
     frame_duration = std::max<int16_t>(1, anim.duration);
     pos = anim.pos;
     loop = anim.loop;
