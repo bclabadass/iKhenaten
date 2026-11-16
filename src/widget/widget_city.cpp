@@ -1142,11 +1142,16 @@ bool screen_city_t::allow_building_info(tile2i tile) {
 
 // The company on or near a tapped tile: its soldiers and standard, a tile or two away (a finger covers more than one
 // tile), or its fort.
+// Nearest ring first, so a tap between two companies takes the closer one.
 static int formation_near_tile(tile2i tile) {
     int formation_id = formation_batalion_at(tile);
-    for (int dy = -2; dy <= 2 && formation_id <= 0; dy++) {
-        for (int dx = -2; dx <= 2 && formation_id <= 0; dx++) {
-            formation_id = formation_batalion_at(tile.shifted(dx, dy));
+    for (int r = 1; r <= 2 && formation_id <= 0; r++) {
+        for (int dy = -r; dy <= r && formation_id <= 0; dy++) {
+            for (int dx = -r; dx <= r && formation_id <= 0; dx++) {
+                if (std::max(std::abs(dx), std::abs(dy)) == r) {
+                    formation_id = formation_batalion_at(tile.shifted(dx, dy));
+                }
+            }
         }
     }
     if (formation_id <= 0) {
@@ -1628,6 +1633,45 @@ bool screen_city_t::handle_transport_click(tile2i tile) {
     return false;
 }
 
+// Where troops land for a tap: the shore tile nearest it, on land or water, within a few tiles, and the water
+// beside it the ship sails to. The original takes a click on the exact shore tile; a finger rarely hits it, and a
+// tap on the water or a little inland did nothing.
+static bool transport_landing_near(tile2i tap, tile2i& water_out, tile2i& land_out) {
+    static const vec2i dirs[] = {{0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}};
+    auto is_nav_water = [](tile2i t) {
+        return t.valid() && map_terrain_is(t, TERRAIN_WATER | TERRAIN_DEEPWATER)
+               && !map_terrain_is(t, TERRAIN_BUILDING);
+    };
+    auto land_ok = [](tile2i t) {
+        return t.valid() && !map_terrain_is(t, TERRAIN_WATER | TERRAIN_DEEPWATER)
+               && !map_terrain_is(t, TERRAIN_BUILDING | TERRAIN_WALL | TERRAIN_ROCK | TERRAIN_ELEVATION);
+    };
+    if (!tap.valid()) {
+        return false;
+    }
+    const int radius = 4;
+    int best = INT_MAX;
+    for (int dy = -radius; dy <= radius; dy++) {
+        for (int dx = -radius; dx <= radius; dx++) {
+            const int dist = dx * dx + dy * dy;
+            tile2i land = tap.shifted(dx, dy);
+            if (dist >= best || !land_ok(land)) {
+                continue;
+            }
+            for (const vec2i& d : dirs) {
+                tile2i water = land.shifted(d);
+                if (is_nav_water(water)) {
+                    best = dist;
+                    land_out = land;
+                    water_out = water;
+                    break;
+                }
+            }
+        }
+    }
+    return best != INT_MAX;
+}
+
 void screen_city_t::transport_map_click(int transport_figure_id, int pick_mode, tile2i tile) {
     if (!tile.valid()) {
         highlighted_formation = 0;
@@ -1663,57 +1707,9 @@ void screen_city_t::transport_map_click(int transport_figure_id, int pick_mode, 
         return;
     }
     case TRANSPORT_PICK_LANDING: {
-        // map_water_is_point_inside() is bounds-only; require real navigable water.
-        auto is_nav_water = [](tile2i t) {
-            return t.valid()
-                && map_terrain_is(t, TERRAIN_WATER | TERRAIN_DEEPWATER)
-                && !map_terrain_is(t, TERRAIN_BUILDING);
-        };
-
-        tile2i land_order = tile2i::invalid;
-        tile2i water = tile;
-        if (!is_nav_water(water)) {
-            land_order = tile;
-            static const vec2i dirs[] = {
-                {0, 1}, {1, 1}, {1, 0}, {1, -1}, {0, -1}, {-1, -1}, {-1, 0}, {-1, 1}
-            };
-            auto has_shore = [](tile2i water_tile) {
-                for (const vec2i &d : dirs) {
-                    tile2i land = water_tile.shifted(d);
-                    if (!land.valid()) {
-                        continue;
-                    }
-                    if (map_terrain_is(land, TERRAIN_WATER | TERRAIN_DEEPWATER)) {
-                        continue;
-                    }
-                    if (map_terrain_is(land, TERRAIN_BUILDING | TERRAIN_WALL | TERRAIN_ROCK | TERRAIN_ELEVATION)) {
-                        continue;
-                    }
-                    return true;
-                }
-                return false;
-            };
-            water = tile2i::invalid;
-            tile2i fallback = tile2i::invalid;
-            for (const vec2i &dir : dirs) {
-                tile2i cand = tile.shifted(dir);
-                if (!is_nav_water(cand)) {
-                    continue;
-                }
-                if (!fallback.valid()) {
-                    fallback = cand;
-                }
-                if (has_shore(cand)) {
-                    water = cand;
-                    break;
-                }
-            }
-            if (!water.valid()) {
-                water = fallback;
-            }
-        }
-        if (water.valid() && land_order.valid()) {
-            ship->sail_to_landing(water, land_order);
+        tile2i water, land;
+        if (transport_landing_near(tile, water, land)) {
+            ship->sail_to_landing(water, land);
         }
         highlighted_formation = 0;
         window_city_show();
