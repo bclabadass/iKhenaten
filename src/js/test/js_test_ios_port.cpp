@@ -918,3 +918,11 @@ static void __test_figure_play_die_sound(int fid) {
     }
 }
 ANK_FUNCTION_1(__test_figure_play_die_sound);
+
+static void __test_figure_set_destination_building(int fid, int bid) {
+    figure* f = figure_get(fid);
+    if (f && f->is_valid()) {
+        f->set_destination(building_get(bid));
+    }
+}
+ANK_FUNCTION_2(__test_figure_set_destination_building);

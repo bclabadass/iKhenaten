@@ -420,6 +420,9 @@ void figure_worker::enter_idle_pool() {
     base.wait_ticks = 0;
     base.animctx.frame = 0;
     base.set_flag(e_figure_flag_invisible, true);
+    // An idle laborer looks for work afresh. Keeping the old site made GOING_OUT walk straight back to it and
+    // skip find_work: once a monument's ground was levelled its laborers circled there and brought no blocks.
+    set_destination((building*)nullptr);
     advance_action(ACTION_8_LABORER_IDLE);
 }
 
