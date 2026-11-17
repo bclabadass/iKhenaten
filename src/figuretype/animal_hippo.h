@@ -56,6 +56,7 @@ public:
         uint8_t anim_tick;
         uint8_t frame_count;
         uint8_t frame_advanced;
+        uint8_t reroutes;
     } FIGURE_RUNTIME_DATA_T;
 
     virtual void on_create() override;

@@ -30,6 +30,7 @@ constexpr int k_hippo_actions[4] = {
     ACTION_26_HIPPO_ANIMATE,
     ACTION_25_HIPPO_CHARGE,
 };
+constexpr int max_reroutes = 8;
 } // namespace
 
 bool figure_hippo::is_prey_candidate(const figure *f) const {
@@ -166,7 +167,8 @@ void figure_hippo::go_to_water() {
         const tile2i dest(tile().grid_offset() + map_grid_direction_delta(dir));
         if (dest.valid() && map_grid_is_inside(dest, 1)) {
             const int terrain = map_terrain_get(dest);
-            if ((terrain & TERRAIN_WATER) && !(terrain & TERRAIN_DIKE)) {
+            // Water under a wharf, dock or ferry landing is blocked to hippos: one sent there never arrived.
+            if ((terrain & TERRAIN_WATER) && !(terrain & (TERRAIN_DIKE | TERRAIN_BUILDING))) {
                 base.destination_tile = dest;
                 base.route_remove();
                 return;
@@ -189,7 +191,7 @@ void figure_hippo::go_to_water() {
                 continue;
             }
             const int terrain = map_terrain_get(t);
-            if (!(terrain & TERRAIN_WATER) || (terrain & TERRAIN_DIKE)) {
+            if (!(terrain & TERRAIN_WATER) || (terrain & (TERRAIN_DIKE | TERRAIN_BUILDING))) {
                 continue;
             }
             const int dist = calc_maximum_distance(tile(), t);
@@ -385,9 +387,18 @@ void figure_hippo::figure_action() {
         base.move_ticks(spd);
         if (base.direction == DIR_FIGURE_REROUTE) {
             base.route_remove();
+            // A destination that got blocked (a building went up on it) asks for a new route for ever.
+            if (++d.reroutes > max_reroutes) {
+                d.reroutes = 0;
+                base.direction = base.previous_tile_direction;
+                choose_next_action();
+            }
         } else if (base.direction == DIR_FIGURE_CAN_NOT_REACH || base.direction == DIR_FIGURE_NONE) {
+            d.reroutes = 0;
             base.direction = base.previous_tile_direction;
             choose_next_action();
+        } else {
+            d.reroutes = 0;
         }
         break;
     }
