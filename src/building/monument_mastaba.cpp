@@ -542,11 +542,10 @@ bool building_mastaba::draw_ornaments_and_animations_flat_impl(painter &ctx, vec
         draw_flat_phase_foundation(ctx, color_mask, tiles_size, image_grounded);
         break;
     case MASTABA_PHASE_BRICKS:
-        // OG block-engine drives courses via remaining_blocks; flat tile-progress
-        // overlay fights height art when progress was never remake-worked.
-        if (!mastaba_engine_block_phase_active(&base)) {
-            draw_flat_phase_bricks(ctx, color_mask, tiles_size);
-        }
+        // The ground under the first course: a part's own map tile covers one of its four tiles, this draws the
+        // rest. It was skipped while the block engine ran, but that state is keyed by the head, so only the head
+        // part lost its ground (three black tiles at the corner).
+        draw_flat_phase_bricks(ctx, color_mask, tiles_size);
         break;
     default:
         break;
