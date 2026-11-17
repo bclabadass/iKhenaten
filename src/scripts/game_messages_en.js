@@ -6546,6 +6546,14 @@ game_messages_en {
             text: "Masons have completed their finishing touches on the gleaming outer casing of fine limestone, and the Brick Pyramid is finally done!"
         }
     }
+    mastaba_congratulations {
+        id: 533,
+        size [30, 18]
+        title { text: "Mastaba finished!" }
+        content {
+            text: "The last brick has been laid in place, and work on the Mastaba is now complete!"
+        }
+    }
     sphinx_congratulations {
         id: 532,
         size [30, 18]

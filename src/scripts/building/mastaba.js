@@ -389,5 +389,7 @@ function building_mastaba_on_place_checks_es(ev) {
 [es=(building_small_mastaba, complete_construction), es=(building_medium_mastaba, complete_construction), es=(building_large_mastaba, complete_construction)]
 function building_mastaba_complete_construction(ev) {
   var b = city.get_building(ev.bid)
-  __city_message_post_with_popup_delay(MESSAGE_CAT_MONUMENTS, true, "message_history_mastaba", b.type, __map_grid_offset(b.tile), true, "message_building_mastaba")
+  // OG: the completion popup ("Mastaba finished!", eventmsg PHRASE_mastaba_congratulations); the history page
+  // stays reachable through the help link.
+  __city_message_post_with_popup_delay(MESSAGE_CAT_MONUMENTS, true, "mastaba_congratulations", b.type, __map_grid_offset(b.tile), true, "message_history_mastaba")
 }
