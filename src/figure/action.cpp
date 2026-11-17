@@ -202,6 +202,9 @@ void figure::action_perform() {
         dcast()->figure_roaming_action();
 
         if (state == FIGURE_STATE_DYING) { // update corpses / dying animation
+            // kill() sets the corpse action; saves where an attack resumed the old action still carry dying
+            // figures stuck in it (their action's own timer undid the corpse timer, so they never went).
+            action_state = FIGURE_ACTION_149_CORPSE;
             figure_combat_handle_corpse();
         }
 

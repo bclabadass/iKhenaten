@@ -320,7 +320,8 @@ void figure::figure_combat_handle_corpse() {
 
 void figure::resume_activity_after_attack() {
     num_attackers = 0;
-    action_state = action_state_before_attack;
+    // A figure killed in the fight stays a corpse: restoring its old action kept it "alive" for good.
+    action_state = (state == FIGURE_STATE_DYING) ? FIGURE_ACTION_149_CORPSE : action_state_before_attack;
     opponent_id = 0;
     attacker_id1 = 0;
     attacker_id2 = 0;
