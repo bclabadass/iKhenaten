@@ -6,7 +6,7 @@ figure_worker {
 		walk { pack:PACK_SPR_MAIN, id:116, max_frames:12 }
 		death { pack:PACK_SPR_MAIN, id:117, max_frames:8, loop:false }
 		work { pack:PACK_SPR_MAIN, id:118, max_frames:12 }
-		pulling { pack:PACK_SPR_MAIN, id:160, max_frames:12 } // OG IMAGE_GROUP_FIGURE_LABORER_PULLING
+		pulling { pack:PACK_SPR_MAIN, id:121, max_frames:12 } // OG IMAGE_GROUP_FIGURE_LABORER_PULLING (160), minus 39 in SprMain (figures.js, figure_sled); 160 here is the ostrich
 	}
 
 	sounds {
