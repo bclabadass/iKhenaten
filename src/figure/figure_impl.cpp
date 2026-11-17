@@ -1,5 +1,7 @@
 #include "figure/figure_impl.h"
 
+#include "building/monument_mastaba.h"
+
 #include "figure/figure.h"
 #include "figuretype/figure_cartpusher.h"
 #include "game/game_config.h"
@@ -654,4 +656,8 @@ figure_impl::static_params &figure_impl::current_params() {
 
 const figure_impl::static_params &figure_impl::params() const {
     return (const static_params &)figure_static_params::get(type());
+}
+
+void figure_impl::adjust_draw_position(vec2i& pixel, vec2i& sort_pixel) {
+    building_mastaba::lift_figure_on_footprint(base.tile, pixel, sort_pixel);
 }

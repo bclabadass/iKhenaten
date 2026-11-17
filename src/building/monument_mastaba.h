@@ -94,6 +94,8 @@ public:
     static void update_course_images(building* any_part);
     // A worker on this part stands in its middle, on top of its courses, and draws after the whole mastaba.
     static bool place_figure_on_part(building_id part_id, vec2i& pixel, vec2i& sort_pixel);
+    // Any figure on a mastaba tile with courses (a sled train delivering) stands on top of them, drawn after it.
+    static bool lift_figure_on_footprint(tile2i tile, vec2i& pixel, vec2i& sort_pixel);
     virtual void sync_visuals() override;
     static void finalize(building *b, const vec2i size_b);
     static int get_image(int orientation, tile2i tile, tile2i start, tile2i end);

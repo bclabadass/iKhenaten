@@ -332,9 +332,8 @@ void figure_bricklayer::adjust_draw_position(vec2i& pixel, vec2i& sort_pixel) {
     const auto& rd = runtime_data();
     const bool on_part = action_state(ACTION_8_BRICKLAYER_WAIT_FOR_BLOCK) || action_state(ACTION_2_BRICKLAYER_WORK)
                          || (action_state(ACTION_7_BRICKLAYER_WALK_TO_PART) && rd.walk_mode != PYRAMID_WALK_NONE);
-    if (!on_part) {
-        return;
-    }
     const building_id part_id = rd.climb.part ? rd.climb.part : rd.part_bid;
-    building_mastaba::place_figure_on_part(part_id, pixel, sort_pixel);
+    if (!on_part || !building_mastaba::place_figure_on_part(part_id, pixel, sort_pixel)) {
+        figure_impl::adjust_draw_position(pixel, sort_pixel);
+    }
 }

@@ -255,6 +255,29 @@ void building_mastaba::update_course_images(building* any_part) {
     }
 }
 
+namespace {
+    int mastaba_course_lift(building* head, building* part, int courses) {
+        if (courses <= 0) {
+            return 0;
+        }
+        const vec2i size_b = building_mastaba::get_params(head->type).init_tiles;
+        const tile2i end = head->tile.shifted(size_b.y - 1, size_b.x - 1);
+        const image_t* img = image_get(
+          building_small_mastabe_get_bricks_image(head->orientation, part->type, part->tile, head->tile, end, courses));
+        return img ? img->isometric_top_height : 0;
+    }
+
+    // Draw after the mastaba's front row, so the courses in front never cover a figure standing on top.
+    int mastaba_sort_after(building* head) {
+        int bottom = 0;
+        grid_tiles tiles = map_grid_get_tiles(head->tile, mastaba_footprint_end(head));
+        for (auto& t : tiles) {
+            bottom = std::max(bottom, g_camera.lookup_tile_to_pixel(t).y);
+        }
+        return bottom + 1;
+    }
+} // namespace
+
 bool building_mastaba::place_figure_on_part(building_id part_id, vec2i& pixel, vec2i& sort_pixel) {
     building* part = building_get(part_id);
     auto* pm = (part && part->id) ? part->dcast_mastaba() : nullptr;
@@ -279,23 +302,21 @@ bool building_mastaba::place_figure_on_part(building_id part_id, vec2i& pixel, v
     }
     const int n = part->size * part->size;
     const vec2i centre = vec2i(sum.x / n, sum.y / n) + vec2i(HALF_TILE_WIDTH_PIXELS - 1, HALF_TILE_HEIGHT_PIXELS);
+    pixel = centre + vec2i(0, 8 - mastaba_course_lift(head, part, courses));
+    sort_pixel = vec2i(pixel.x - (HALF_TILE_WIDTH_PIXELS - 1), mastaba_sort_after(head));
+    return true;
+}
 
-    int lift = 0;
-    if (courses > 0) {
-        const vec2i size_b = get_params(head->type).init_tiles;
-        const tile2i end = head->tile.shifted(size_b.y - 1, size_b.x - 1);
-        const image_t* img = image_get(
-          building_small_mastabe_get_bricks_image(head->orientation, part->type, part->tile, head->tile, end, courses));
-        lift = img ? img->isometric_top_height : 0;
+bool building_mastaba::lift_figure_on_footprint(tile2i tile, vec2i& pixel, vec2i& sort_pixel) {
+    building* part = building_get(map_building_at(tile));
+    auto* pm = (part && part->id) ? part->dcast_mastaba() : nullptr;
+    const int courses = pm ? pm->courses_on_part() : -1;
+    building* head = pm ? mastaba_chain_head(part) : nullptr;
+    if (courses <= 0 || !head) {
+        return false;
     }
-    pixel = centre + vec2i(0, 8 - lift);
-
-    int bottom = 0;
-    grid_tiles tiles = map_grid_get_tiles(head->tile, mastaba_footprint_end(head));
-    for (auto& t : tiles) {
-        bottom = std::max(bottom, g_camera.lookup_tile_to_pixel(t).y);
-    }
-    sort_pixel = vec2i(pixel.x - (HALF_TILE_WIDTH_PIXELS - 1), bottom + 1);
+    pixel.y -= mastaba_course_lift(head, part, courses);
+    sort_pixel.y = std::max(sort_pixel.y, mastaba_sort_after(head));
     return true;
 }
 
