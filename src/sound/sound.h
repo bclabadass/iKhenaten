@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "core/xstring.h"
 #include "core/svector.h"
 #include "core/custom_span.hpp"
@@ -48,6 +50,11 @@ public:
     inline xspan<channel_t> channels() { return make_span<channel_t>(_channels.data(), _channels.size()); }
     bool speech_play_file(xstring filename, int volume);
     bool speech_file_exist(xstring filename, vfs::path &fs_path);
+    bool speech_known_missing(xstring filename) const;
+    // Speech files found missing are not looked for again: animals ask for their attack sound every frame of a
+    // fight, and Pharaoh has none for the hippo, hyena or crocodile.
+    std::vector<xstring> speech_missing;
+    int speech_probes = 0;
     void set_channel_volume(int channel, int volume_pct);
     void set_channel_pan(int channel, int left_pct, int right_pct);
     bool is_channel_playing(int channel);

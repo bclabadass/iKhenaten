@@ -11,6 +11,7 @@
 
 #include <SDL_mixer.h>
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 
@@ -100,18 +101,31 @@ bool sound_manager_t::speech_file_exist(xstring filename, vfs::path &fs_path) {
         return false;
     }
 
-    const vfs::path known = speech_normalize_rel(filename_str);
-    if (!known.empty()) {
-        return speech_try_rel(known.c_str(), fs_path);
-    }
-
-    const vfs::path base = vfs::path(filename_str).basename();
-    if (base.empty() || speech.walker_dir.empty()) {
+    if (speech_known_missing(filename)) {
         return false;
     }
 
-    bstring256 rel(speech.walker_dir.c_str(), base.c_str());
-    return speech_try_rel(rel.c_str(), fs_path);
+    ++speech_probes;
+    bool found = false;
+    const vfs::path known = speech_normalize_rel(filename_str);
+    if (!known.empty()) {
+        found = speech_try_rel(known.c_str(), fs_path);
+    } else {
+        const vfs::path base = vfs::path(filename_str).basename();
+        if (!base.empty() && !speech.walker_dir.empty()) {
+            bstring256 rel(speech.walker_dir.c_str(), base.c_str());
+            found = speech_try_rel(rel.c_str(), fs_path);
+        }
+    }
+
+    if (!found) {
+        speech_missing.push_back(filename);
+    }
+    return found;
+}
+
+bool sound_manager_t::speech_known_missing(xstring filename) const {
+    return std::find(speech_missing.begin(), speech_missing.end(), filename) != speech_missing.end();
 }
 
 bool sound_manager_t::speech_play_file(xstring filename, int volume) {
@@ -121,7 +135,11 @@ bool sound_manager_t::speech_play_file(xstring filename, int volume) {
     }
 
     vfs::path fs_path;
+    const bool known_missing = speech_known_missing(filename);
     if (!speech_file_exist(filename, fs_path)) {
+        if (known_missing) {
+            return false;
+        }
         logs::warn("Sound: speech file not found '%s'", filename.empty() ? "" : filename.c_str());
         return false;
     }

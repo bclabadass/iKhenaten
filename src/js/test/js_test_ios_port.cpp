@@ -902,3 +902,11 @@ pcstr __test_music_menu_track_start() {
     return g_sound.music_current_track().c_str();
 }
 ANK_FUNCTION(__test_music_menu_track_start);
+
+// Looks a speech file up as speech_play_file does; returns how many disk lookups speech has made so far.
+static int __test_speech_lookup(xstring filename) {
+    vfs::path fs_path;
+    g_sound.speech_file_exist(filename, fs_path);
+    return g_sound.speech_probes;
+}
+ANK_FUNCTION_1(__test_speech_lookup);
