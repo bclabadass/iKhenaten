@@ -232,10 +232,12 @@ void figure_warship::ram() {
         return;
     }
 
-    figure *target = figure_get(find_ram_target());
-    if (!target) {
+    // figure_get(0) is the empty slot 0, never null: with no ship ahead the ram hit it, and killing it crashed.
+    const figure_id target_id = find_ram_target();
+    if (!target_id) {
         return;
     }
+    figure* target = figure_get(target_id);
 
     int target_dir = target->direction;
     if (target_dir > DIR_7_TOP) {
@@ -439,10 +441,11 @@ void figure_warship::evade() {
         return;
     }
     base.wait_ticks = 0;
-    figure *enemy = figure_get(find_closest_enemy_ship(p.evade_range));
-    if (!enemy) {
+    const figure_id enemy_id = find_closest_enemy_ship(p.evade_range);
+    if (!enemy_id) {
         return;
     }
+    figure* enemy = figure_get(enemy_id);
 
     // OG: direction from enemy to ship, then ship_escape_moves for that facing.
     int dir = calc_general_direction(enemy->tile, base.tile);
@@ -597,9 +600,8 @@ void figure_warship::docked() {
         return;
     }
     base.wait_ticks = 0;
-    figure *enemy = figure_get(find_closest_enemy_ship(p.face_enemy_range));
-    if (enemy) {
-        base.previous_tile_direction = calc_general_direction(base.tile, enemy->tile);
+    if (const figure_id enemy_id = find_closest_enemy_ship(p.face_enemy_range)) {
+        base.previous_tile_direction = calc_general_direction(base.tile, figure_get(enemy_id)->tile);
     }
 }
 
