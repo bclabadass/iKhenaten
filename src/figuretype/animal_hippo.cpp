@@ -634,6 +634,20 @@ void figure_hippo::main_image_update() {
         return;
     }
 
+    // The dive is one strip with no facings; drawn as facing + 8 * frame it ran into the next group's art.
+    const bool water = in_deep_water() || map_terrain_is(tile(), TERRAIN_WATER);
+    if (action_state(ACTION_26_HIPPO_ANIMATE) && water && !base.in_attack()) {
+        const animation_t& dive = anim(animkeys().dancer);
+        const int base_img = dive.first_img();
+        const auto& d = runtime_data();
+        const int frames = std::max<int>(1, dive.max_frames);
+        const int frame = std::min(frames - 1, d.anim_tick * frames / std::max<int>(1, d.frame_count));
+        if (base_img > 0 || base.force_valid_animation) {
+            base.main_image_id = base_img + frame;
+        }
+        return;
+    }
+
     figure_impl::main_image_update();
 }
 

@@ -325,11 +325,11 @@ figure_hippo = {
 		idle : { pack:PACK_SPR_AMBIENT, id:22, max_frames:1 }
 		death : { pack:PACK_SPR_AMBIENT, id:23, max_frames:8, duration:3, loop:false }
 		attack : { pack:PACK_SPR_AMBIENT, id:24, max_frames:7 }
-		swim : { pack:PACK_SPR_AMBIENT, id:25, max_frames:8 }
-		swim_attack : { pack:PACK_SPR_AMBIENT, id:26, max_frames:8 }
-		swim_idle : { pack:PACK_SPR_AMBIENT, id:27, max_frames:8 }
-		eating : { pack:PACK_SPR_AMBIENT, id:28, max_frames:8 } // OG HIPPO_REST
-		dancer : { pack:PACK_SPR_AMBIENT, id:29, max_frames:8 } // OG HIPPO_ANIMATE_IN_WATER
+		swim : { pack:PACK_SPR_AMBIENT, id:25, max_frames:12 }
+		swim_attack : { pack:PACK_SPR_AMBIENT, id:26, max_frames:12 }
+		swim_idle : { pack:PACK_SPR_AMBIENT, id:27, max_frames:12 }
+		eating : { pack:PACK_SPR_AMBIENT, id:28, max_frames:12 } // OG HIPPO_REST
+		dancer : { pack:PACK_SPR_AMBIENT, id:29, max_frames:36 } // OG HIPPO_ANIMATE_IN_WATER: one dive, no facings
 		bubbles : { pack:PACK_SPR_AMBIENT, id:11, max_frames:23, duration:1, loop:false }
 		big_image : { pack:PACK_UNLOADED, id:25, offset:FIGURE_HIPPO }
 	}
