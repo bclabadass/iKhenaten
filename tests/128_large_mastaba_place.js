@@ -220,7 +220,7 @@ function run_test() {
     }
 
     __test_monument_set_phase(bid, 2)
-    if (__test_monument_add_resource(bid, RESOURCE_BRICKS, 13600)) {
+    if (__test_monument_add_resource(bid, RESOURCE_BRICKS, city.get_monument(bid).needs_resource(RESOURCE_BRICKS))) {
         var pct = __test_monument_resource_pct(bid, RESOURCE_BRICKS)
         __log_marker(pct >= 100 ? ('large_mastaba_bricks_ok:' + pct) : ('large_mastaba_bricks_pct:' + pct))
     } else {

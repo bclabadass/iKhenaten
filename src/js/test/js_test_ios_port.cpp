@@ -926,3 +926,17 @@ static void __test_figure_set_destination_building(int fid, int bid) {
     }
 }
 ANK_FUNCTION_2(__test_figure_set_destination_building);
+
+// "blocks,bricks,bricks_per_block,laborer_load" for a monument phase, "" if not a monument.
+static xstring __test_monument_phase_bricks(int bid, int phase) {
+    building* b = building_get(bid);
+    auto* mon = b ? b->dcast_monument() : nullptr;
+    if (!mon) {
+        return xstring("");
+    }
+    bstring64 out;
+    out.printf("%d,%d,%d,%d", mon->phase_blocks(phase), mon->needs_resource(RESOURCE_BRICKS, phase),
+      mon->phase_bricks_per_block(phase), (int)figure_worker::current_params().load);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION_2(__test_monument_phase_bricks);
