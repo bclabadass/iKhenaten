@@ -472,7 +472,13 @@ void sound_manager_t::music_update(bool force) {
 
     const int mission = music_current_mission();
     if (music_playlist_has_mission(mission)) {
-        if (!music_playing()) {
+        if (force) {
+            // The menu track loops, so it never ends on its own and the city music would never start.
+            stop_music();
+            music.current_track = "";
+            music.og = {};
+            og_music_update(mission);
+        } else if (!music_playing()) {
             og_music_update(mission);
         }
         return;

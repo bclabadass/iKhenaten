@@ -891,3 +891,14 @@ static void __test_figure_refresh_animation_and_image(int fid) {
     f->figure_image_update(true);
 }
 ANK_FUNCTION_1(__test_figure_refresh_animation_and_image);
+
+void __test_music_assume_playing(bool on) {
+    g_sound.test_music_playing = on;
+}
+ANK_FUNCTION_1(__test_music_assume_playing);
+
+pcstr __test_music_menu_track_start() {
+    g_sound.play_intro();
+    return g_sound.music_current_track().c_str();
+}
+ANK_FUNCTION(__test_music_menu_track_start);

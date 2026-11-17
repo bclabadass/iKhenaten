@@ -313,6 +313,9 @@ void sound_manager_t::begin_frame() {
 }
 
 bool sound_manager_t::music_playing() {
+    if (test_music_playing) {
+        return !music_current_track().empty();
+    }
     if (!initialized || !_music_player || !_music_player->music) {
         return false;
     }

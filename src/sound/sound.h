@@ -89,6 +89,8 @@ public:
     // Effects the game asked for since the last clear, even with effects or the mixer off (tests).
     std::array<int16_t, 64> requested_effects{};
     int requested_effects_count = 0;
+    // Tests run without a mixer; this makes music_playing() report the current track as still playing.
+    bool test_music_playing = false;
     void stop_city_channels();
     void stop_city_channel(int channel);
 
