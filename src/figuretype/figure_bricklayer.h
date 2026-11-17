@@ -45,6 +45,7 @@ public:
     virtual void figure_action() override;
     virtual void on_destroy() override;
     virtual void update_animation() override;
+    virtual void adjust_draw_position(vec2i& pixel, vec2i& sort_pixel) override;
 
     void assign_monument_task(building_id part_id);
     void assign_statue_task(building *statue);

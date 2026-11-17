@@ -34,7 +34,7 @@ building_small_mastaba {
     init_tiles [10, 4]
 
     // RESOURCE_NONE count = architects (ARCHITECTS). Phase 8 = finished.
-    // Brick phases: blocks = OG block quota; BRICKS = blocks*100; workers drive guild spawn.
+    // Brick phases: blocks = OG block quota; BRICKS = blocks*400; workers drive guild spawn.
     // CLAY quotas are remake-only (gameplay_change_mastaba_clay_delivery); OG hauled bricks only.
     construction {
         phases [

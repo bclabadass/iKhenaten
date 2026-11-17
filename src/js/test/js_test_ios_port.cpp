@@ -940,3 +940,28 @@ static xstring __test_monument_phase_bricks(int bid, int phase) {
     return xstring(out.c_str());
 }
 ANK_FUNCTION_2(__test_monument_phase_bricks);
+
+// Lays up to `count` mastaba blocks through the block engine (as the construction blessing does).
+static int __test_mastaba_lay_blocks(int bid, int count) {
+    return mastaba_engine_boost_blocks(building_get(bid), count);
+}
+ANK_FUNCTION_2(__test_mastaba_lay_blocks);
+
+static int __test_mastaba_part_courses(int part_id) {
+    building* b = building_get(part_id);
+    auto* m = b ? b->dcast_mastaba() : nullptr;
+    return m ? m->courses_on_part() : -2;
+}
+ANK_FUNCTION_1(__test_mastaba_part_courses);
+
+// "x,y,sort_x,sort_y" of a figure's sprite as last placed for drawing (after map_figure_sort_by_y).
+static xstring __test_figure_draw_position(int fid) {
+    figure* f = figure_get(fid);
+    if (!f || !f->id) {
+        return xstring("");
+    }
+    bstring64 out;
+    out.printf("%d,%d,%d,%d", f->main_cached_pos.x, f->main_cached_pos.y, f->main_sort_pixel.x, f->main_sort_pixel.y);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION_1(__test_figure_draw_position);

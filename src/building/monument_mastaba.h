@@ -88,9 +88,16 @@ public:
     int clay_to_haul(int loads_under_way, int load) const;
 
     static void update_images(building *b, int curr_phase, const vec2i size_b);
+    // Brick courses laid on this 2x2 part by the block engine, -1 when the engine does not drive it.
+    int courses_on_part() const;
+    // Sets each part's map tile to its own course (block engine), so a part only rises when its block is laid.
+    static void update_course_images(building* any_part);
+    // A worker on this part stands in its middle, on top of its courses, and draws after the whole mastaba.
+    static bool place_figure_on_part(building_id part_id, vec2i& pixel, vec2i& sort_pixel);
     virtual void sync_visuals() override;
     static void finalize(building *b, const vec2i size_b);
     static int get_image(int orientation, tile2i tile, tile2i start, tile2i end);
+    void draw_flat_part_ground(painter& ctx, color color_mask, const vec2i tiles_size);
     static const base_params &get_params(e_building_type type);
     // How far to move the main part so a rotated mastaba covers the tiles the planner previewed and checked
     // (the footprint of the camera's own orientation).

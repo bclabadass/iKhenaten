@@ -35,6 +35,8 @@ public:
     virtual void figure_roaming_action();
     virtual bool window_info_background(object_info &ctx) { return false; }
     virtual void draw_main_sprite(painter &ctx, vec2i pixel, int highlight);
+    // Moves the figure's sprite and its draw-order point, e.g. onto the courses of a monument it works on.
+    virtual void adjust_draw_position(vec2i& pixel, vec2i& sort_pixel) {}
     virtual void before_poof();
     virtual void poof();
     virtual e_overlay get_overlay() const { return params().overlay; }

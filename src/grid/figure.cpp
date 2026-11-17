@@ -46,6 +46,9 @@ void map_figure_sort_by_y() {
         f->mt_render_worker = false;
         f->main_cached_pos = f->adjust_pixel_offset(f->main_cached_pos);
         f->main_sort_pixel = f->main_cached_pos - f->crowd_pixel_offset() - vec2i(29, 15 + 8);
+        if (figure_impl* impl = f->dcast()) {
+            impl->adjust_draw_position(f->main_cached_pos, f->main_sort_pixel);
+        }
         f->is_main_drawn = false;
         f->is_cart_drawn = false;
         g_figures_y_sort.push_back({ f, f->main_cached_pos, false });
