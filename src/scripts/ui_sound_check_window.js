@@ -24,6 +24,7 @@ var sound_check_sections = [
             { channel: SOUND_EFFECT_FIRE_SPLASH, event: "A fireman puts out a fire" },
             { channel: SOUND_EFFECT_ARROW, event: "An enemy archer or spearman shoots" },
             { channel: SOUND_EFFECT_JAVELIN, event: "A warship fires; a spear or javelin hits" },
+            { channel: SOUND_EFFECT_SHIP_DIE, event: "A boat or ship sinks" },
             { channel: SOUND_EFFECT_SWORD, event: "Infantry strike in melee" },
             { channel: SOUND_EFFECT_SWORD_SWING, event: "A charioteer or enemy swordsman strikes" },
             { channel: SOUND_EFFECT_LIGHT_SWORD, event: "An archer strikes in melee" },

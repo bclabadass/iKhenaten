@@ -71,6 +71,7 @@ void js_register_game_constants(js_State* J) {
     _R(SOUND_EFFECT_FIRE_SPLASH)
     _R(SOUND_EFFECT_FIRE)
     _R(SOUND_EFFECT_DIG)
+    _R(SOUND_EFFECT_SHIP_DIE)
     _R(SOUND_EFFECT_ARROW)
     _R(SOUND_EFFECT_JAVELIN)
     _R(SOUND_EFFECT_SWORD)

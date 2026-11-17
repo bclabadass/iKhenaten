@@ -910,3 +910,11 @@ static int __test_speech_lookup(xstring filename) {
     return g_sound.speech_probes;
 }
 ANK_FUNCTION_1(__test_speech_lookup);
+
+static void __test_figure_play_die_sound(int fid) {
+    figure* f = figure_get(fid);
+    if (f && f->is_valid()) {
+        f->play_die_sound();
+    }
+}
+ANK_FUNCTION_1(__test_figure_play_die_sound);

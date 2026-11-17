@@ -16,7 +16,7 @@ figure_trade_ship {
 		barge_amazing_trades { sound:"barge_e05.wav", text: "#barge_amazing_trades" }
 	}
 
-	category: figure_category_citizen
+	category: figure_category_inactive // OG Figure_model: category 0, never fought
 	max_damage : 250
 	terrain_usage : TERRAIN_USAGE_ANY
 	max_capacity : 1200

@@ -50,6 +50,8 @@ public:
 
     virtual int provide_service() { return 0; }
     virtual bool play_die_sound() { return false; }
+    // True when this figure never opens a fight with `opponent` (an animal and what it does not hunt).
+    virtual bool refuses_fight_with(const figure& opponent) const { return false; }
     // Plague carriers pass roadblocks freely (original Pharaoh).
     virtual bool ignores_roadblocks() const { return false; }
     virtual void update_animation();

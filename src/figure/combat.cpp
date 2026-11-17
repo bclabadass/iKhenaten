@@ -584,6 +584,11 @@ void figure::figure_combat_attack_figure_at(int grid_offset) {
         else if (my_category == figure_category_hostile && opponent_category == figure_category_animal)
             attack = true;
 
+        // Troops aboard a transport share its tile unseen; an animal leaves alone what it does not hunt.
+        if (attack && (!opponent->is_visible() || dcast()->refuses_fight_with(*opponent))) {
+            attack = false;
+        }
+
         if (attack && in_attack() && opponent->num_attackers >= 2) {
             attack = false;
         }

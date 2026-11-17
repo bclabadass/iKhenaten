@@ -17,6 +17,12 @@ void figure::play_die_sound() {
         return;
     }
 
+    // OG effect.c figure sound 17 (ship), death variant; boats fell through to the citizen's death cry.
+    if (is_boat()) {
+        g_sound.play_effect(SOUND_EFFECT_SHIP_DIE);
+        return;
+    }
+
     int is_soldier = 0;
     int is_citizen = 0;
     int effect = 0;

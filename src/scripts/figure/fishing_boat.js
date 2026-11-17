@@ -31,7 +31,7 @@ figure_fishing_boat {
 		fishing_boat_city_is_amazing { sound:"fishing_boat_city_is_amazing.wav", text: "#fishing_boat_city_is_amazing" }
 	}
 
-	category: figure_category_citizen
+	category: figure_category_inactive // OG Figure_model: category 0, never fought
 	max_damage : 20
 	terrain_usage : TERRAIN_USAGE_ANY
 	fish_per_trip : 50

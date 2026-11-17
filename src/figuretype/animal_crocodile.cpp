@@ -35,6 +35,9 @@ bool figure_crocodile::is_prey_candidate(const figure *f) const {
     if (figure_type_any_of(f->type, current_params().forbidden_prey)) {
         return false;
     }
+    if (!f->is_visible()) {
+        return false;
+    }
     // OG: figure_properties[type].category != 0
     return f->category() != figure_category_inactive;
 }
@@ -539,4 +542,8 @@ void figure_crocodile::moveto(tile2i tile) {
     base.destination_tile = tile;
     base.route_remove();
     advance_action(ACTION_9_CROCODILE_WALK);
+}
+
+bool figure_crocodile::refuses_fight_with(const figure& opponent) const {
+    return figure_type_any_of(opponent.type, current_params().forbidden_prey);
 }

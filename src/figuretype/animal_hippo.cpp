@@ -45,6 +45,9 @@ bool figure_hippo::is_prey_candidate(const figure *f) const {
     if (figure_type_any_of(f->type, current_params().forbidden_prey)) {
         return false;
     }
+    if (!f->is_visible()) {
+        return false;
+    }
     return f->category() != figure_category_inactive;
 }
 
@@ -672,4 +675,8 @@ void figure_hippo::moveto(tile2i tile) {
     base.destination_tile = tile;
     base.route_remove();
     advance_action(ACTION_9_HIPPO_WALK);
+}
+
+bool figure_hippo::refuses_fight_with(const figure& opponent) const {
+    return figure_type_any_of(opponent.type, current_params().forbidden_prey);
 }

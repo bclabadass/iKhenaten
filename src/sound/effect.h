@@ -50,6 +50,7 @@ enum e_sound_effect {
     SOUND_EFFECT_SHIP_COLLISION_AFT_QUARTER = 50,
     SOUND_EFFECT_SHIP_COLLISION_BOW = 51,
     SOUND_EFFECT_SHIP_COLLISION_STERN = 52,
+    SOUND_EFFECT_SHIP_DIE = 53, // a boat or ship sinks
 };
 
 // OG sound_play.h / effect.c ids. e_sound_effect above is the Caesar III list the call sites still use;

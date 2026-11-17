@@ -85,6 +85,9 @@ bool figure_hyena::is_prey_candidate(const figure *f) const {
     if (figure_type_any_of(f->type, current_params().forbidden_prey)) {
         return false;
     }
+    if (!f->is_visible()) {
+        return false;
+    }
     // OG: figure_properties[type].category != 0
     return f->category() != figure_category_inactive;
 }
@@ -497,4 +500,8 @@ void figure_hyena::moveto(tile2i tile) {
     base.route_remove();
     advance_action(ACTION_9_HYENA_WALK);
     runtime_data().frame_count = 12;
+}
+
+bool figure_hyena::refuses_fight_with(const figure& opponent) const {
+    return figure_type_any_of(opponent.type, current_params().forbidden_prey);
 }

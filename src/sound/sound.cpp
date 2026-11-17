@@ -1029,6 +1029,8 @@ static og_effect_ref og_effect_for(int effect) {
         return og_effect(OG_SOUND_EFFECT_SHIP_COLLISION_BOW);
     case SOUND_EFFECT_SHIP_COLLISION_STERN:
         return og_effect(OG_SOUND_EFFECT_SHIP_COLLISION_STERN);
+    case SOUND_EFFECT_SHIP_DIE:
+        return og_figure(OG_FIGURE_SOUND_SHIP, OG_FIGURE_SOUND_VARIANT_DIE);
 
     case SOUND_EFFECT_ARROW:
     case SOUND_EFFECT_LIGHT_SWORD:

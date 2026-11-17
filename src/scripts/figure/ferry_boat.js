@@ -31,7 +31,7 @@ figure_ferry_boat {
 		ferry_boat_city_is_amazing { sound:"ferry_boat_city_is_amazing.wav", text: "#ferry_boat_city_is_amazing" }
 	}
 
-	category: figure_category_citizen
+	category: figure_category_inactive // OG Figure_model: category 0, never fought
 	max_damage: 20
 	terrain_usage: TERRAIN_USAGE_ANY
 

@@ -53,6 +53,7 @@ public:
     virtual void main_image_update() override;
     virtual void acquire_attack() override;
     virtual bool play_die_sound() override;
+    virtual bool refuses_fight_with(const figure& opponent) const override;
 
     virtual void herd_moved() override;
     virtual void herd_rest() override;
