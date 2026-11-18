@@ -97,6 +97,14 @@ void object_info::reset(tile2i tile) {
     go_to_advisor_left_a = ADVISOR_NONE;
     go_to_advisor_left_b = ADVISOR_NONE;
     bid = map_building_at(tile);
+    // A temple complex's altar and oracle are parts of it: tapping them showed a generic window that couldn't name
+    // them ("??building.name?" on the Duo). The complex's own window covers its add-ons.
+    if (building* b = ::building_get(bid); b && b->id > 0) {
+        building* head = b->main();
+        if (head && head != b && head->is_temple_complex()) {
+            bid = head->id;
+        }
+    }
     company_orders = false;
     terrain_type = terrain_info_none;
     figure_drawn = 0;

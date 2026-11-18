@@ -694,6 +694,8 @@ localization_en = [
   {key: "#only_one_special_rock_type", group:19, id:70}
   {key: "#must_build_temple_complex_first", group:19, id:71}
   {key: "#temple_complex_limits", group:19, id:72}
+  {key: "#temple_complex_addon_built", text: "built"}
+  {key: "#temple_complex_addon_not_built", text: "not built yet"}
   {key: "#oracle_altar_placement", group:19, id:73}
   {key: "#needs_groundwater", group:19, id:74}
   {key: "#entertainment_venue_at_intersection", group:19, id:75}
