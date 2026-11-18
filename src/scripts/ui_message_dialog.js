@@ -120,11 +120,11 @@ message_dialog_window_god {
     help_id: ""
 
     god_images {
-        osiris { pack:PACK_UNLOADED, id:16, offset:18 }
-        ra     { pack:PACK_UNLOADED, id:16, offset:19 }
+        osiris { pack:PACK_UNLOADED, id:16, offset:23 }
+        ra     { pack:PACK_UNLOADED, id:16, offset:22 }
+        ptah   { pack:PACK_UNLOADED, id:16, offset:21 }
         seth   { pack:PACK_UNLOADED, id:16, offset:20 }
-        bast   { pack:PACK_UNLOADED, id:16, offset:21 }
-        ptah   { pack:PACK_UNLOADED, id:16, offset:22 }
+        bast   { pack:PACK_UNLOADED, id:16, offset:19 }
     }
 
     ui : baseui(message_dialog_window_general, {

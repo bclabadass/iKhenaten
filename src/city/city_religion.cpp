@@ -596,7 +596,7 @@ void city_religion_t::perform_major_blessing(e_god god, bool force_construction)
         } else {
             // increased kingdom by 15
             g_city.kingdome.change(15);
-            messages::god(GOD_RA, "message_blessing_ra_kingdom" );
+            messages::god(GOD_RA, "message_blessing_reputation_from_ra");
             return;
         }
         break;
