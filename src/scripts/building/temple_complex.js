@@ -60,6 +60,7 @@ building_temple_complex_osiris {
 
     flags {
       is_temple_complex: true
+      allow_rotate: true
       is_religion: true
       keeps_visitor_paths: true
     }
@@ -158,6 +159,7 @@ building_temple_complex_osiris {
 
     flags {
       is_temple_complex: true
+      allow_rotate: true
       is_religion: true
       keeps_visitor_paths: true
     }
@@ -260,6 +262,7 @@ building_temple_complex_osiris {
 
     flags {
       is_temple_complex: true
+      allow_rotate: true
       is_religion: true
       keeps_visitor_paths: true
     }
@@ -362,6 +365,7 @@ building_temple_complex_osiris {
 
     flags {
       is_temple_complex: true
+      allow_rotate: true
       is_religion: true
       keeps_visitor_paths: true
     }
@@ -467,6 +471,7 @@ building_temple_complex_osiris {
 
     flags {
       is_temple_complex: true
+      allow_rotate: true
       is_religion: true
       keeps_visitor_paths: true
     }

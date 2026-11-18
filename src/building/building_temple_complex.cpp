@@ -40,8 +40,11 @@ int building_temple_complex::preview::setup_orientation(int orientation) const {
     return 1;
 }
 
+// The complex starts facing 1 and each rotation turns it a step. The planner passes its current orientation here,
+// not the rotation: adding 1 to that started it at 2, and after R (which sets the orientation to the rotation) put it
+// back where it was, so the Rotate button seemed to do nothing.
 int building_temple_complex::preview::update_relative_orientation(build_planner &p, tile2i tile, int global_rotation) const {
-    return global_rotation + 1;
+    return (p.global_rotation + 1) % 4;
 }
 
 int building_temple_complex::preview::update_building_variant(build_planner &planer) const {
