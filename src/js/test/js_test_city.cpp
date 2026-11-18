@@ -204,6 +204,12 @@ int __test_last_message_eventmsg_phrase_id() {
 }
 ANK_FUNCTION(__test_last_message_eventmsg_phrase_id);
 
+int __test_last_message_req_amount() {
+    const int n = city_message_count();
+    return n > 0 ? city_message_get(n - 1).req_amount : -1;
+}
+ANK_FUNCTION(__test_last_message_req_amount);
+
 static void __test_sentiment_set(int value) {
     g_city.sentiment.value = value;
 }

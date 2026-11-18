@@ -256,7 +256,8 @@ void figure_soldier::goback_to_fort() {
         return;
     }
 
-    if (action_state(FIGURE_ACTION_148_FLEEING)) {
+    if (action_state(FIGURE_ACTION_148_FLEEING) || action_state(ACTION_0_SOLDIER_AT_REST)
+        || action_state(ACTION_1_SOLDIER_GOING_TO_FORT)) {
         return;
     }
 
@@ -323,7 +324,8 @@ void figure_soldier::figure_action() {
 
     int speed_factor = soldier_speed(&base);
     int layout = m->layout;
-    if (base.formation_at_rest || action_state() == ACTION_1_SOLDIER_GOING_TO_FORT)
+    if (base.formation_at_rest || action_state() == ACTION_1_SOLDIER_GOING_TO_FORT
+        || action_state() == FIGURE_ACTION_148_FLEEING)
         layout = FORMATION_AT_REST;
 
     const tile2i offset = formation_layout_position_for_figure(type(), layout, base.index_in_formation);
@@ -351,6 +353,20 @@ void figure_soldier::figure_action() {
             route_remove();
         else if (direction() == DIR_FIGURE_CAN_NOT_REACH)
             poof();
+        break;
+
+    // A company with low morale flees home (OG/Julius FIGURE_ACTION_148_FLEEING): with no case here the soldiers
+    // stood where they were, never reached the fort where morale recovers, and stayed panicked for good.
+    case FIGURE_ACTION_148_FLEEING:
+        base.wait_ticks = 0;
+        base.formation_at_rest = 1;
+        base.destination_tile = formation_position;
+        base.move_ticks(speed_factor);
+        if (direction() == DIR_FIGURE_NONE || direction() == DIR_FIGURE_CAN_NOT_REACH) {
+            base.action_state = ACTION_0_SOLDIER_AT_REST;
+        } else if (direction() == DIR_FIGURE_REROUTE) {
+            route_remove();
+        }
         break;
 
     case ACTION_2_SOLDIER_RETURNING_TO_BARRACKS:

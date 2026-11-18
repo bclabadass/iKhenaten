@@ -227,7 +227,8 @@ static void fill_from_event(city_message &msg, const event_ph_t *event, int pare
     msg.sender_faction = event->sender_faction;
     msg.req_resource = event->item.value;
     msg.req_amount = event->amount.value;
-    if (msg.req_amount < 100) {
+    // Goods are asked for in loads; troops in strength (Selima's 7 read "700 troops").
+    if (msg.req_amount < 100 && msg.req_resource != RESOURCE_TROOPS) {
         msg.req_amount *= 100;
     }
     msg.req_city = event->city_id > 0 ? event->city_id : event->location_fields[0] - 1;
