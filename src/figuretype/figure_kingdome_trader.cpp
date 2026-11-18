@@ -148,6 +148,11 @@ void figure_trade_caravan::figure_action() {
 
     if (g_city.figures.total_invading_enemies() > 0) {
         switch (action_state()) {
+        case ACTION_3_TRADE_CARAVAN_LEAVING:
+        case ACTION_4_TRADE_CARAVAN_RECALC_LEAVING:
+        case ACTION_6_CARTPUSHER_ON_FERRY:
+            break;
+
         default:
             base.destination_tile = g_city.map.closest_exit_tile_within_radius();
             base.direction = DIR_0_TOP_RIGHT;
@@ -244,8 +249,16 @@ void figure_trade_caravan::figure_action() {
 
     case ACTION_4_TRADE_CARAVAN_RECALC_LEAVING:
         if (direction() == DIR_FIGURE_CAN_NOT_REACH) {
+            const tile2i exit = g_city.map.closest_exit_tile_within_radius();
+            // OG: a leaving caravan that is lost is removed; retrying the same exit kept it (and its trader slot)
+            // forever.
+            if (!exit.valid() || base.destination_tile == exit) {
+                runtime_data().trader.back_to_city();
+                poof();
+                break;
+            }
             base.direction = DIR_0_TOP_RIGHT;
-            base.destination_tile = g_city.map.closest_exit_tile_within_radius();
+            base.destination_tile = exit;
             advance_action(ACTION_3_TRADE_CARAVAN_LEAVING);
         }
         break;
