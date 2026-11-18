@@ -28,7 +28,7 @@ the two.
   <tr><td>6</td><td>Timna</td><td>$\color{green}{\textbf{Yes}}$</td></tr>
   <tr><td>7</td><td>Behdet</td><td>No</td></tr>
   <tr><td>8</td><td>Abedju</td><td>No</td></tr>
-  <tr><td>9</td><td rowspan="15">Old Kingdom</td><td>Selima</td><td>No</td></tr>
+  <tr><td>9</td><td rowspan="15">Old Kingdom</td><td>Selima</td><td>$\color{green}{\textbf{Yes}}$</td></tr>
   <tr><td>10</td><td>Abu</td><td>No</td></tr>
   <tr><td>11</td><td>Saqqara</td><td>No</td></tr>
   <tr><td>12</td><td>Serabit Khadim (or 13)</td><td>No</td></tr>
