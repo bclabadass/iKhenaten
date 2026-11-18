@@ -246,6 +246,18 @@ int formation_batalion_at_building(int grid_offset) {
     return 0;
 }
 
+// The manual: "All soldiers who survive a battle gain experience from fighting. Each engagement that he walks
+// away from teaches a soldier more." It gives no amounts; a company with survivors gains 5 when an engagement
+// ends (no fighting for three days, or the invaders are gone): a level (20) every four engagements.
+constexpr int BATALION_ENGAGEMENT_EXPERIENCE = 5;
+
+void formation_batalion_gain_engagement_experience(formation* m) {
+    if (!m->own_batalion || m->num_figures <= 0) {
+        return;
+    }
+    m->experience = (uint16_t)std::min<int>(m->experience + BATALION_ENGAGEMENT_EXPERIENCE, BATALION_MAX_EXPERIENCE);
+}
+
 void formations_t::batalions_update() {
     for (int i = 1; i < MAX_FORMATIONS; i++) {
         formation* m = formation_get(i);
@@ -253,6 +265,7 @@ void formations_t::batalions_update() {
             continue;
         }
 
+        const bool was_fighting = m->recent_fight > 0;
         formation_decrease_monthly_counters(m);
         if (g_city.figures.total_invading_enemies() <= 0) {
             formation_clear_monthly_counters(m);
@@ -262,6 +275,10 @@ void formations_t::batalions_update() {
             if (figure_get(m->figures[n])->in_attack()) {
                 formation_record_fight(m);
             }
+        }
+
+        if (was_fighting && !m->recent_fight) {
+            formation_batalion_gain_engagement_experience(m);
         }
 
         if (m->has_low_morale()) {

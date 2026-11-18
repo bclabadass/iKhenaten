@@ -443,6 +443,14 @@ static int __test_formation_get_experience(int formation_id) {
 }
 ANK_FUNCTION_1(__test_formation_get_experience);
 
+static void __test_formation_record_fight(int formation_id) {
+    formation* m = formation_get(formation_id);
+    if (m && m->in_use) {
+        formation_record_fight(m);
+    }
+}
+ANK_FUNCTION_1(__test_formation_record_fight);
+
 static void __test_barracks_request_tower_sentry() {
     building_barracks_request_tower_sentry();
 }

@@ -7,6 +7,7 @@
 bool formation_batalion_recruits_needed();
 
 void formation_batalion_update_recruit_status(building* fort);
+void formation_batalion_gain_engagement_experience(formation* m);
 
 void formation_batalion_change_layout(formation* m, e_formation_layout new_layout);
 
