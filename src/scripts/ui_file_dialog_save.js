@@ -28,7 +28,13 @@ function file_dialog_save_handle_commit(ev) {
         ui.window_city_show()
         return
     }
-    game.write_savegame(normalized + ".svx")
+    // A failed write used to close the dialog as if it had worked (Brendan on the Duo: no new save in the list).
+    if (!game.write_savegame(normalized + ".svx")) {
+        log_warning("Save failed: " + normalized + ".svx")
+        file_dialog_save.failed = true
+        app_clear_pending_exit_after_save()
+        return
+    }
     ui.window_city_show()
     __set_last_loaded_utf8(FILE_TYPE_SAVED_GAME, normalized)
     app_finish_exit_after_save()
@@ -47,6 +53,7 @@ file_dialog_save {
     draw_underlying: true
     show_filename: ""
     show_filename_applied: ""
+    failed: false
 
     ui: baseui(file_dialog_chrome_base, {})
 }
@@ -78,11 +85,14 @@ function file_dialog_save_ui_draw_foreground(window) {
         window.filename.value = file_dialog_save.show_filename
         file_dialog_save.show_filename_applied = file_dialog_save.show_filename
     }
+    // City warnings aren't drawn under the dialog: say it on the dialog's own line.
+    window.hint.text = file_dialog_save.failed ? __loc("#save_failed") : __loc(43, 5)
 }
 
 [es=(file_dialog_save, init)]
 function file_dialog_save_on_init(window) {
     window.title.text = __loc(43, 0)
+    file_dialog_save.failed = false
     window.hint.text = __loc(43, 5)
 
     var dir = file_dialog_savegame_dir()

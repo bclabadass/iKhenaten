@@ -7,6 +7,8 @@
 #include "platform/platform.h"
 
 #include <cassert>
+#include <cerrno>
+#include <cstring>
 #include <cinttypes>
 #include <filesystem>
 #include <string.h>
@@ -190,7 +192,7 @@ bool ChunkSerializer::serialize(pcstr filename, int offset, e_file_format format
 
     FILE* fp = vfs::file_open_os(write_path, "wb");
     if (!fp) {
-        logs::error("Unable to write file [%s], file could not be accessed.", write_path.c_str());
+        logs::error("Unable to write file [%s], file could not be accessed (%s).", write_path.c_str(), strerror(errno));
         clear();
         return false;
     } else if (file_offset) {
@@ -236,18 +238,29 @@ bool ChunkSerializer::serialize(pcstr filename, int offset, e_file_format format
 
             // The last piece may be smaller than buf->size
             if (!result) {
-                logs::error("Unable to write file [%s], write failure at chunk %d (%s).",
-                            fs_path.c_str(), i, chunk->name);
+                logs::error("Unable to write file [%s], write failure at chunk %d (%s): %s.", fs_path.c_str(), i,
+                  chunk->name, strerror(errno));
                 abort_write();
                 return false;
             }
         }
     }
 
+    // A full disk can surface only when the buffered tail is flushed here.
+    const bool flushed = fflush(fp) == 0 && !ferror(fp);
+    const int flush_errno = errno;
     vfs::file_close_os(fp);
+    if (!flushed) {
+        logs::error("Unable to write file [%s], flush failed (%s).", write_path.c_str(), strerror(flush_errno));
+        if (atomic_write) {
+            vfs::file_remove(write_path);
+        }
+        clear();
+        return false;
+    }
     if (atomic_write && !vfs::file_rename_os(write_path, fs_path)) {
-        logs::error("Unable to write file [%s], could not replace it with [%s].",
-                    fs_path.c_str(), write_path.c_str());
+        logs::error("Unable to write file [%s], could not replace it with [%s] (%s).", fs_path.c_str(),
+          write_path.c_str(), strerror(errno));
         vfs::file_remove(write_path);
         clear();
         return false;

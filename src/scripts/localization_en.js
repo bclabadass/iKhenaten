@@ -317,6 +317,7 @@ localization_en = [
   {key:"#quickload_ok", text:"Quickloaded"}
   {key:"#quicksave_missing", text:"No quicksave"}
   {key:"#quicksave_failed", text:"Quicksave failed"}
+  {key:"#save_failed", text:"Save failed. Is the storage full?"}
   {key:"#quickload_failed", text:"Quickload failed"}
   {key:"#TR_HOTKEY_INCREASE_GAME_SPEED", text:"Increase game speed"}
   {key:"#TR_HOTKEY_DECREASE_GAME_SPEED", text:"Decrease game speed"}
