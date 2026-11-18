@@ -5,6 +5,10 @@
 //   [test-marker] culture_og_full_ok
 //   [test-marker] culture_og_lowest_ok
 
+// Records count only for buildings the mission allows (test 385); allow them all here.
+var CULTURE_BUILDINGS = [BUILDING_BOOTH, BUILDING_BANDSTAND, BUILDING_PAVILLION, BUILDING_SENET_HOUSE, BUILDING_ZOO,
+    BUILDING_SCRIBAL_SCHOOL, BUILDING_LIBRARY, BUILDING_DENTIST, BUILDING_PHYSICIAN, BUILDING_MORTUARY]
+
 var CULTURE_FIELDS = ['booth', 'bandstand', 'pavilion', 'senet_house', 'zoo', 'school', 'library', 'religion',
     'dentist', 'physician', 'mortuary']
 
@@ -20,6 +24,9 @@ function culture_with(overrides) {
 function run_test() {
     __log_info_native('[test:452] OG culture rating')
     test_ensure_city_session('data/default.map')
+    for (var b = 0; b < CULTURE_BUILDINGS.length; b++) {
+        __scenario_building_allow(CULTURE_BUILDINGS[b], true)
+    }
 
     var full = culture_with({})
     if (full.rating !== 100) {

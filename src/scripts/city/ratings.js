@@ -3,20 +3,21 @@ log_info("akhenaten: city_ratings.js loaded")
 // OG culture_records (city_data.c): the culture rating is the lowest of these points; the index of the lowest
 // record is the advisor's explanation. Band 0 is coverage up to limits[0], band i is coverage below limits[i],
 // past the last limit the last points. The bonus re-bands every record by bonus_limits and adds bonus_points
-// for each one bonus_margin below the lowest (OG city_ratings_culture_bonus).
+// for each one bonus_margin below the lowest (OG city_ratings_culture_bonus). A record whose building the
+// mission doesn't allow is left out (religion has none and always counts).
 culture_rating {
   records [
-    { coverage: "jugglers",  points [5, 15, 25, 40, 55, 75, 100],   limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "musicians", points [10, 20, 30, 45, 60, 80, 100],  limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "dancers",   points [15, 25, 35, 50, 65, 85, 100],  limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "senet",     points [50, 55, 65, 75, 85, 95, 100],  limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "zoo",       points [70, 75, 80, 85, 90, 95, 100],  limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "jugglers",  building: BUILDING_BOOTH,  points [5, 15, 25, 40, 55, 75, 100],   limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "musicians", building: BUILDING_BANDSTAND, points [10, 20, 30, 45, 60, 80, 100],  limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "dancers",   building: BUILDING_PAVILLION,  points [15, 25, 35, 50, 65, 85, 100],  limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "senet",     building: BUILDING_SENET_HOUSE,  points [50, 55, 65, 75, 85, 95, 100],  limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "zoo",       building: BUILDING_ZOO,  points [70, 75, 80, 85, 90, 95, 100],  limits [0, 20, 40, 60, 80, 100] }
     { coverage: "religion",  points [0, 10, 25, 40, 60, 85, 100],   limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "school",    points [40, 45, 50, 60, 75, 85, 100],  limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "library",   points [60, 65, 70, 75, 80, 90, 100],  limits [0, 20, 40, 60, 80, 100] }
-    { coverage: "dentist",   points [15, 20, 25, 35, 50, 65, 100],  limits [0, 20, 40, 60, 80, 90] }
-    { coverage: "physician", points [20, 25, 30, 40, 55, 70, 100],  limits [0, 20, 40, 60, 80, 90] }
-    { coverage: "mortuary",  points [35, 45, 55, 70, 85, 100, 100], limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "school",    building: BUILDING_SCRIBAL_SCHOOL,  points [40, 45, 50, 60, 75, 85, 100],  limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "library",   building: BUILDING_LIBRARY,  points [60, 65, 70, 75, 80, 90, 100],  limits [0, 20, 40, 60, 80, 100] }
+    { coverage: "dentist",   building: BUILDING_DENTIST,  points [15, 20, 25, 35, 50, 65, 100],  limits [0, 20, 40, 60, 80, 90] }
+    { coverage: "physician", building: BUILDING_PHYSICIAN, points [20, 25, 30, 40, 55, 70, 100],  limits [0, 20, 40, 60, 80, 90] }
+    { coverage: "mortuary",  building: BUILDING_MORTUARY,  points [35, 45, 55, 70, 85, 100, 100], limits [0, 20, 40, 60, 80, 100] }
   ]
   bonus_limits [0, 20, 40, 60, 80, 100]
   bonus_margin : 30

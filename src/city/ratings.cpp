@@ -26,10 +26,11 @@ declare_console_command_p(addculture) {
 
 struct culture_rating_record {
     xstring coverage;
+    int building = 0;
     svector<int, 8> points;
     svector<int, 8> limits;
 };
-ANK_CONFIG_STRUCT(culture_rating_record, coverage, points, limits)
+ANK_CONFIG_STRUCT(culture_rating_record, coverage, building, points, limits)
 
 // OG culture_records (city_data.c) and city_ratings_culture_bonus, in scripts/city/ratings.js.
 struct culture_rating_params_t {
@@ -73,6 +74,12 @@ namespace {
 
     // Band i (i >= 1) is coverage below limits[i]; band 0 is coverage up to limits[0]; past the last limit
     // the last points apply.
+    // A service the mission doesn't offer (Selima has no Dentist: 0% capped culture at 15 of its goal of 20)
+    // is left out, as a mission's culture goal has to be reachable with the buildings it allows.
+    bool culture_record_counts(const culture_rating_record& r) {
+        return r.building == BUILDING_NONE || scenario_building_allowed((e_building_type)r.building);
+    }
+
     int culture_points(const svector<int, 8>& points, const svector<int, 8>& limits, int coverage) {
         if (points.empty()) {
             return 0;
@@ -122,6 +129,9 @@ void city_ratings_t::update_culture_rating() {
     int lowest_points = 100;
     int lowest_index = 0;
     for (int i = 0; i < (int)records.size(); ++i) {
+        if (!culture_record_counts(records[i])) {
+            continue;
+        }
         const int points
           = culture_points(records[i].points, records[i].limits, culture_coverage_value(records[i].coverage));
         if (points < lowest_points) {
@@ -134,6 +144,9 @@ void city_ratings_t::update_culture_rating() {
     // the 90-limit records (dentist, physician) can reach, at 90..99% coverage.
     int bonus = 0;
     for (const auto& r : records) {
+        if (!culture_record_counts(r)) {
+            continue;
+        }
         const int points = culture_points(r.points, culture_rating.bonus_limits, culture_coverage_value(r.coverage));
         if (points + culture_rating.bonus_margin < lowest_points) {
             bonus += culture_rating.bonus_points;
