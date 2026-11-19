@@ -231,6 +231,8 @@ bool building_monument_has_unfinished(std::initializer_list<e_building_type> typ
 // Burial tombs (mastaba / pyramid / …) vs non-tomb monuments (sphinx / obelisk / …).
 // Shared by the tomb robber and the funeral walker.
 bool building_monument_is_non_tomb_type(e_building_type type);
+int building_monument_scenario_slots(e_building_type type);
+bool building_monument_placement_limit_reached(e_building_type type);
 bool building_monument_is_finished_burial_tomb(building &b);
 
 // VALID or MOTHBALLED (halted construction). Not destroyed / deleted.

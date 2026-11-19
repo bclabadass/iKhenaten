@@ -756,6 +756,56 @@ void building_monument::set_funeral_done(bool done) {
     d.funeral_done = done ? 1 : 0;
 }
 
+struct monument_def_entry {
+    int type = 0;
+    svector<int, 4> defs;
+};
+ANK_CONFIG_STRUCT(monument_def_entry, type, defs)
+
+// OG monument_get_def_id, shared with scripts/city/monuments.js.
+struct monument_def_ids_t {
+    svector<monument_def_entry, 48> types;
+};
+ANK_CONFIG_STRUCT(monument_def_ids_t, types)
+monument_def_ids_t ANK_VARIABLE(monument_def_ids);
+
+int building_monument_scenario_slots(e_building_type type) {
+    const auto entry = std::find_if(monument_def_ids.types.begin(), monument_def_ids.types.end(),
+      [type](const monument_def_entry& e) { return e.type == type; });
+    if (entry == monument_def_ids.types.end()) {
+        return 0;
+    }
+    int slots = 0;
+    for (const int def :
+      {(int)g_scenario.monuments.first, (int)g_scenario.monuments.second, (int)g_scenario.monuments.third}) {
+        if (def > 0 && std::find(entry->defs.begin(), entry->defs.end(), def) != entry->defs.end()) {
+            slots++;
+        }
+    }
+    return slots;
+}
+
+// OG: a mission's monuments are its briefing's three slots, one building each, so a monument can be placed as many
+// times as the slots name it (Brendan on the Duo: any number could be placed). Monuments carried over from an earlier
+// mission take no slot; a type the briefing doesn't name (test maps, editor) has no limit.
+bool building_monument_placement_limit_reached(e_building_type type) {
+    const int slots = building_monument_scenario_slots(type);
+    if (slots <= 0) {
+        return false;
+    }
+    int placed = 0;
+    buildings_valid_do([&](building& b) {
+        if (b.type != type || !b.is_main()) {
+            return;
+        }
+        auto* monument = b.dcast_monument();
+        if (monument && !monument->is_preexisting()) {
+            placed++;
+        }
+    });
+    return placed >= slots;
+}
+
 bool building_monument::is_preexisting() const {
     const building *mb = base.main();
     if (!mb) {

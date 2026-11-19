@@ -192,3 +192,13 @@ void __map_monuments_clear() {
     map_monuments_clear();
 }
 ANK_FUNCTION(__map_monuments_clear)
+
+bool __building_monument_limit_reached(int type) {
+    return building_monument_placement_limit_reached((e_building_type)type);
+}
+ANK_FUNCTION_1(__building_monument_limit_reached)
+
+int __building_monument_scenario_slots(int type) {
+    return building_monument_scenario_slots((e_building_type)type);
+}
+ANK_FUNCTION_1(__building_monument_scenario_slots)

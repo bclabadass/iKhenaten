@@ -19,43 +19,52 @@ var MONUMENT_DEF_WEIGHTS = [
 	48,                    // 37 Abu Simbel
 ]
 
-// OG monument_get_def_id: the def ids a building type can register as.
+// OG monument_get_def_id: the def ids a building type can register as. Read by C++ too (monuments.cpp: a mission
+// allows each monument as many times as its briefing's three slots name it).
+monument_def_ids {
+  types [
+    { type: BUILDING_SMALL_BENT_PYRAMID, defs: [1] }
+    { type: BUILDING_MEDIUM_BENT_PYRAMID, defs: [2] }
+    { type: BUILDING_SMALL_MUDBRICK_PYRAMID, defs: [3] }
+    { type: BUILDING_MEDIUM_MUDBRICK_PYRAMID, defs: [4] }
+    { type: BUILDING_LARGE_MUDBRICK_PYRAMID, defs: [5] }
+    { type: BUILDING_MUDBRICK_PYRAMID_COMPLEX, defs: [6] }
+    { type: BUILDING_GRAND_MUDBRICK_PYRAMID_COMPLEX, defs: [7] }
+    { type: BUILDING_SMALL_STEPPED_PYRAMID, defs: [8] }
+    { type: BUILDING_MEDIUM_STEPPED_PYRAMID, defs: [9] }
+    { type: BUILDING_LARGE_STEPPED_PYRAMID, defs: [10] }
+    { type: BUILDING_STEPPED_PYRAMID_COMPLEX, defs: [11] }
+    { type: BUILDING_GRAND_STEPPED_PYRAMID_COMPLEX, defs: [12] }
+    { type: BUILDING_SMALL_PYRAMID, defs: [13] }
+    { type: BUILDING_MEDIUM_PYRAMID, defs: [14] }
+    { type: BUILDING_LARGE_PYRAMID, defs: [15] }
+    { type: BUILDING_PYRAMID_COMPLEX, defs: [16] }
+    { type: BUILDING_GRAND_PYRAMID_COMPLEX, defs: [17] }
+    { type: BUILDING_SMALL_MASTABA, defs: [18] }
+    { type: BUILDING_MEDIUM_MASTABA, defs: [19] }
+    { type: BUILDING_LARGE_MASTABA, defs: [20] }
+    { type: BUILDING_SPHINX, defs: [21] }
+    { type: BUILDING_SMALL_OBELISK, defs: [22] }
+    { type: BUILDING_LARGE_OBELISK, defs: [23] }
+    { type: BUILDING_SUN_TEMPLE, defs: [24] }
+    { type: BUILDING_MAUSOLEUM, defs: [25, 26, 27] }
+    { type: BUILDING_PHAROS_LIGHTHOUSE, defs: [28] }
+    { type: BUILDING_ALEXANDRIA_LIBRARY, defs: [29] }
+    { type: BUILDING_CAESAREUM, defs: [30] }
+    { type: BUILDING_COLOSSI, defs: [31] }
+    { type: BUILDING_TEMPLE_OF_LUXOR, defs: [32] }
+    { type: BUILDING_SMALL_ROYAL_TOMB, defs: [33] }
+    { type: BUILDING_MEDIUM_ROYAL_TOMB, defs: [34] }
+    { type: BUILDING_LARGE_ROYAL_TOMB, defs: [35] }
+    { type: BUILDING_GRAND_ROYAL_TOMB, defs: [36] }
+    { type: BUILDING_ABU_SIMBEL, defs: [37] }
+  ]
+}
+
 var MONUMENT_DEF_IDS = {}
-MONUMENT_DEF_IDS[BUILDING_SMALL_BENT_PYRAMID]             = [1]
-MONUMENT_DEF_IDS[BUILDING_MEDIUM_BENT_PYRAMID]            = [2]
-MONUMENT_DEF_IDS[BUILDING_SMALL_MUDBRICK_PYRAMID]         = [3]
-MONUMENT_DEF_IDS[BUILDING_MEDIUM_MUDBRICK_PYRAMID]        = [4]
-MONUMENT_DEF_IDS[BUILDING_LARGE_MUDBRICK_PYRAMID]         = [5]
-MONUMENT_DEF_IDS[BUILDING_MUDBRICK_PYRAMID_COMPLEX]       = [6]
-MONUMENT_DEF_IDS[BUILDING_GRAND_MUDBRICK_PYRAMID_COMPLEX] = [7]
-MONUMENT_DEF_IDS[BUILDING_SMALL_STEPPED_PYRAMID]          = [8]
-MONUMENT_DEF_IDS[BUILDING_MEDIUM_STEPPED_PYRAMID]         = [9]
-MONUMENT_DEF_IDS[BUILDING_LARGE_STEPPED_PYRAMID]          = [10]
-MONUMENT_DEF_IDS[BUILDING_STEPPED_PYRAMID_COMPLEX]        = [11]
-MONUMENT_DEF_IDS[BUILDING_GRAND_STEPPED_PYRAMID_COMPLEX]  = [12]
-MONUMENT_DEF_IDS[BUILDING_SMALL_PYRAMID]                  = [13]
-MONUMENT_DEF_IDS[BUILDING_MEDIUM_PYRAMID]                 = [14]
-MONUMENT_DEF_IDS[BUILDING_LARGE_PYRAMID]                  = [15]
-MONUMENT_DEF_IDS[BUILDING_PYRAMID_COMPLEX]                = [16]
-MONUMENT_DEF_IDS[BUILDING_GRAND_PYRAMID_COMPLEX]          = [17]
-MONUMENT_DEF_IDS[BUILDING_SMALL_MASTABA]                  = [18]
-MONUMENT_DEF_IDS[BUILDING_MEDIUM_MASTABA]                 = [19]
-MONUMENT_DEF_IDS[BUILDING_LARGE_MASTABA]                  = [20]
-MONUMENT_DEF_IDS[BUILDING_SPHINX]                         = [21]
-MONUMENT_DEF_IDS[BUILDING_SMALL_OBELISK]                  = [22]
-MONUMENT_DEF_IDS[BUILDING_LARGE_OBELISK]                  = [23]
-MONUMENT_DEF_IDS[BUILDING_SUN_TEMPLE]                     = [24]
-MONUMENT_DEF_IDS[BUILDING_MAUSOLEUM]                      = [25, 26, 27]
-MONUMENT_DEF_IDS[BUILDING_PHAROS_LIGHTHOUSE]              = [28]
-MONUMENT_DEF_IDS[BUILDING_ALEXANDRIA_LIBRARY]             = [29]
-MONUMENT_DEF_IDS[BUILDING_CAESAREUM]                      = [30]
-MONUMENT_DEF_IDS[BUILDING_COLOSSI]                        = [31]
-MONUMENT_DEF_IDS[BUILDING_TEMPLE_OF_LUXOR]                = [32]
-MONUMENT_DEF_IDS[BUILDING_SMALL_ROYAL_TOMB]               = [33]
-MONUMENT_DEF_IDS[BUILDING_MEDIUM_ROYAL_TOMB]              = [34]
-MONUMENT_DEF_IDS[BUILDING_LARGE_ROYAL_TOMB]               = [35]
-MONUMENT_DEF_IDS[BUILDING_GRAND_ROYAL_TOMB]               = [36]
-MONUMENT_DEF_IDS[BUILDING_ABU_SIMBEL]                     = [37]
+for (var i = 0; i < monument_def_ids.types.length; i++) {
+	MONUMENT_DEF_IDS[monument_def_ids.types[i].type] = monument_def_ids.types[i].defs
+}
 
 // The weight of a building type (its first def id).
 var MONUMENT_WEIGHTS = {}

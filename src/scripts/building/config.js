@@ -9,6 +9,8 @@ function get_building_config_by_id(type) {
 }
 function building_is_unique_built(type) {
     var cfg = get_building_config_by_id(type)
+    // A mission's monuments: as many as its briefing names (building_monument_placement_limit_reached).
+    if (cfg && cfg.flags && cfg.flags.is_monument && __building_monument_limit_reached(type)) return true
     if (!cfg || !cfg.planner_update_rule || !cfg.planner_update_rule.unique_building) return false
     if (type == BUILDING_PERSONAL_MANSION || type == BUILDING_FAMILY_MANSION || type == BUILDING_DYNASTY_MANSION) {
         return __city_get_mansion_id() > 0

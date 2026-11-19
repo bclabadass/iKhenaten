@@ -911,6 +911,12 @@ void build_planner::update_unique_only_one_check() {
     if (unique_already_placed) {
         immediate_warning = "#only_one_building_of_this_type";
         can_place = CAN_NOT_PLACE;
+        return;
+    }
+
+    if (params.flags.is_monument && building_monument_placement_limit_reached(build_type)) {
+        immediate_warning = "#monument_limit_reached";
+        can_place = CAN_NOT_PLACE;
     }
 }
 
