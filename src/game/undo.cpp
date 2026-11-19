@@ -290,11 +290,9 @@ void game_undo_perform() {
 
         for (int i = 0; i < data.num_buildings; i++) {
             if (data.buildings[i].id) {
+                // No marble refund here (Caesar III's oracle cost 2 marble): placing a temple complex takes none, and
+                // the refund hung the game in city_storageyards_add_resource (Brendan on the Duo, Selima).
                 building* b = building_get(data.buildings[i].id);
-                if (b->type == BUILDING_ORACLE || (b->type >= BUILDING_TEMPLE_COMPLEX_OSIRIS && b->type <= BUILDING_TEMPLE_COMPLEX_BAST)) {
-                    events::emit(event_storageyards_add_resource{ RESOURCE_MARBLE, 2 });
-                }
-
                 b->state = BUILDING_STATE_UNDO;
             }
         }

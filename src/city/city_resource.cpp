@@ -109,7 +109,9 @@ void city_storageyards_add_resource(event_storageyards_add_resource ev) {
 
     buildings_valid_do<building_storage_yard>([&] (auto warehouse) {
         assert(warehouse && warehouse->is_valid());
-        while (ev.amount && warehouse->add_resource(ev.resource, UNITS_PER_LOAD, /*force*/false)) {
+        // add_resource returns 0 once the load is stored and -1 when the yard won't take it; testing it as a bool
+        // looped forever on a yard that refused (Brendan on the Duo: undoing a temple complex froze the game).
+        while (ev.amount > 0 && warehouse->add_resource(ev.resource, UNITS_PER_LOAD, /*force*/ false) == 0) {
             ev.amount -= UNITS_PER_LOAD;
         }
     });
