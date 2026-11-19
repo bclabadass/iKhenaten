@@ -1376,6 +1376,23 @@ static int __test_events_count() {
 }
 ANK_FUNCTION(__test_events_count);
 
+// One log line per scenario event: index, type/subtype, state, trigger, tag, date and chain actions.
+static void __test_events_dump() {
+    const int n = g_scenario.events.events_count();
+    for (int i = 0; i < n; i++) {
+        const event_ph_t* e = g_scenario.events.at(i);
+        if (!e) {
+            continue;
+        }
+        logs::info(
+          "[events] #%d type=%d sub=%d state=%d trig=%d tag=%d y%d m%d active=%d done=%d ref=%d late=%d def=%d", i,
+          (int)e->type, (int)e->subtype, (int)e->event_state, (int)e->event_trigger_type, (int)e->tag_id,
+          (int)e->time.year, (int)e->time.month, e->is_active ? 1 : 0, (int)e->on_completed_action,
+          (int)e->on_refusal_action, (int)e->on_too_late_action, (int)e->on_defeat_action);
+    }
+}
+ANK_FUNCTION(__test_events_dump);
+
 static int __test_event_trigger(int id) {
     const event_ph_t* e = g_scenario.events.at(id);
     return e ? (int)e->event_trigger_type : -1;

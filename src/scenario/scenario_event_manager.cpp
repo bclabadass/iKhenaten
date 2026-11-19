@@ -234,10 +234,100 @@ void event_manager_t::load_mission_metadata(const mission_id_t &missionid) {
     });
 }
 
+namespace {
+
+    bool event_pending(const event_ph_t& e) {
+        switch (e.event_state) {
+        case e_event_state_in_progress:
+        case e_event_state_overdue:
+        case e_event_state_dispatched:
+        case e_event_state_dispatched_late:
+        case e_event_state_troops_away:
+        case e_event_state_troops_return:
+        case e_event_state_troops_return_too_late:
+            return true;
+        default:
+            return e.is_active;
+        }
+    }
+
+    bool event_spent(const event_ph_t& e) {
+        return e.event_trigger_type == EVENT_TRIGGER_ALREADY_FIRED && !event_pending(e);
+    }
+
+    bool event_links_to(const event_ph_t& e, int id) {
+        return e.on_completed_action == id || e.on_refusal_action == id || e.on_too_late_action == id
+               || e.on_defeat_action == id;
+    }
+
+    // A slot that can never matter again: a spent one-shot no live event leads to, or a chain child only spent events
+    // lead to (an unlinked child may still be being wired up by a mission script, so it needs a parent).
+    bool event_slot_reusable(int id) {
+        const auto& list = g_scenario_events.event_list;
+        const event_ph_t& e = list[id];
+        const bool child = e.event_trigger_type == EVENT_TRIGGER_ONLY_VIA_EVENT && !event_pending(e);
+        if (!event_spent(e) && !child) {
+            return false;
+        }
+        int parents = 0;
+        for (int i = 1; i < (int)list.size(); ++i) {
+            if (i == id || !event_links_to(list[i], id)) {
+                continue;
+            }
+            if (!event_spent(list[i])) {
+                return false;
+            }
+            parents++;
+        }
+        return event_spent(e) || parents > 0;
+    }
+
+    // Mission scripts add events as they go (Selima: a luxury request and its four outcomes every two years, a timber
+    // demand every year), and the list is a fixed 150: past it, emplace_back wrote over the list's size and the save
+    // schema, and no save could be written again (Brendan on the Duo). A full list reuses a slot that can't matter
+    // again.
+    event_ph_t* alloc_event_slot(int& event_id) {
+        auto& list = g_scenario_events.event_list;
+        if (!list.full()) {
+            list.emplace_back();
+            event_id = (int)list.size() - 1;
+            return &list.back();
+        }
+        for (int id = 1; id < (int)list.size(); ++id) {
+            if (!event_slot_reusable(id)) {
+                continue;
+            }
+            for (auto& other : list) {
+                if (other.on_completed_action == id)
+                    other.on_completed_action = -1;
+                if (other.on_refusal_action == id)
+                    other.on_refusal_action = -1;
+                if (other.on_too_late_action == id)
+                    other.on_too_late_action = -1;
+                if (other.on_defeat_action == id)
+                    other.on_defeat_action = -1;
+                if (other.parent_id == id)
+                    other.parent_id = -1;
+            }
+            logs::info("[events] list full (%d): event %d (type %d, tag %d) reused", (int)list.size(), id,
+              (int)list[id].type, (int)list[id].tag_id);
+            event_id = id;
+            return &list[id];
+        }
+        logs::error("[events] list full (%d) and nothing reusable: event dropped", (int)list.size());
+        return nullptr;
+    }
+
+} // namespace
+
 void event_manager_t::create_good_request(int tag, e_resource r, int amount, int months_initial, int8_t subtype,
                                           e_event_trigger_type trigger, int8_t city_id) {
-    auto& request = g_scenario_events.event_list.emplace_back();
-    int event_id = g_scenario_events.event_list.size() - 1;
+    int event_id = -1;
+    event_ph_t* request_slot = alloc_event_slot(event_id);
+    if (!request_slot) {
+        return;
+    }
+    auto& request = *request_slot;
     memset(&request, 0, sizeof(event_ph_t));
     request.type = EVENT_TYPE_REQUEST;
     request.time.year = game.simtime.years_since_start();
@@ -260,8 +350,12 @@ void event_manager_t::create_good_request(int tag, e_resource r, int amount, int
 }
 
 void event_manager_t::create_pharaoh_gift(int tag, e_resource r, int amount) {
-    auto& event = g_scenario_events.event_list.emplace_back();
-    int event_id = g_scenario_events.event_list.size() - 1;
+    int event_id = -1;
+    event_ph_t* event_slot = alloc_event_slot(event_id);
+    if (!event_slot) {
+        return;
+    }
+    auto& event = *event_slot;
     memset(&event, 0, sizeof(event_ph_t));
     event.type = EVENT_TYPE_GIFT_FROM_PHARAOH;
     event.time.year = game.simtime.years_since_start();
@@ -283,8 +377,12 @@ void event_manager_t::create_pharaoh_gift(int tag, e_resource r, int amount) {
 
 void event_manager_t::create_foreign_army_attack_warning(int tag, int8_t sender_faction, int months_initial,
                                                          int invader) {
-    auto& event = g_scenario_events.event_list.emplace_back();
-    int event_id = g_scenario_events.event_list.size() - 1;
+    int event_id = -1;
+    event_ph_t* event_slot = alloc_event_slot(event_id);
+    if (!event_slot) {
+        return;
+    }
+    auto& event = *event_slot;
     memset(&event, 0, sizeof(event_ph_t));
     event.type = EVENT_TYPE_FOREIGN_ARMY_ATTACK_WARNING;
     event.time.year = game.simtime.years_since_start();
@@ -301,8 +399,12 @@ void event_manager_t::create_foreign_army_attack_warning(int tag, int8_t sender_
 }
 
 void event_manager_t::create_distant_battle(int tag, pcstr city, vec2i pos) {
-    auto &event = g_scenario_events.event_list.emplace_back();
-    int event_id = g_scenario_events.event_list.size() - 1;
+    int event_id = -1;
+    event_ph_t* event_slot = alloc_event_slot(event_id);
+    if (!event_slot) {
+        return;
+    }
+    auto& event = *event_slot;
     memset(&event, 0, sizeof(event_ph_t));
     event.type = EVENT_TYPE_DISTANT_BATTLE;
     event.time.year = game.simtime.years_since_start();
@@ -318,8 +420,12 @@ void event_manager_t::create_distant_battle(int tag, pcstr city, vec2i pos) {
 }
 
 void event_manager_t::win_distant_battle(int tag, pcstr city, vec2i pos) {
-    auto &event = g_scenario_events.event_list.emplace_back();
-    int event_id = g_scenario_events.event_list.size() - 1;
+    int event_id = -1;
+    event_ph_t* event_slot = alloc_event_slot(event_id);
+    if (!event_slot) {
+        return;
+    }
+    auto& event = *event_slot;
     memset(&event, 0, sizeof(event_ph_t));
     event.type = EVENT_TYPE_DISTANT_BATTLE_WON;
     event.time.year = game.simtime.years_since_start();
@@ -336,8 +442,12 @@ void event_manager_t::win_distant_battle(int tag, pcstr city, vec2i pos) {
 
 void event_manager_t::create_chain_event(int tag, e_event_type type, int amount, e_resource resource,
                                          int8_t subtype, int8_t city_id, e_event_trigger_type trigger) {
-    auto& event = g_scenario_events.event_list.emplace_back();
-    int event_id = g_scenario_events.event_list.size() - 1;
+    int event_id = -1;
+    event_ph_t* event_slot = alloc_event_slot(event_id);
+    if (!event_slot) {
+        return;
+    }
+    auto& event = *event_slot;
     memset(&event, 0, sizeof(event_ph_t));
     event.type = type;
     event.amount.value = amount;
@@ -363,11 +473,12 @@ void event_manager_t::create_chain_event(int tag, e_event_type type, int amount,
 }
 
 int event_manager_t::create_invasion(const invasion_event_desc &desc) {
-    if (events_count() >= MAX_EVENTS) {
+    int event_id = -1;
+    event_ph_t* event_slot = alloc_event_slot(event_id);
+    if (!event_slot) {
         return -1;
     }
-    auto &event = g_scenario_events.event_list.emplace_back();
-    const int event_id = g_scenario_events.event_list.size() - 1;
+    auto& event = *event_slot;
     memset(&event, 0, sizeof(event_ph_t));
     event.type = EVENT_TYPE_INVASION;
     event.event_id = event_id;
