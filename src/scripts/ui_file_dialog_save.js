@@ -1,5 +1,8 @@
 log_info("akhenaten: file dialog save (script UI) started")
 
+// The last save from the dialog failed; shown on its bottom line until it opens again.
+var file_dialog_save_failed = false
+
 function file_dialog_save_basename_from_list_entry(name) {
     return file_dialog_basename_from_exts(name, ["svx"])
 }
@@ -31,7 +34,7 @@ function file_dialog_save_handle_commit(ev) {
     // A failed write used to close the dialog as if it had worked (Brendan on the Duo: no new save in the list).
     if (!game.write_savegame(normalized + ".svx")) {
         log_warning("Save failed: " + normalized + ".svx")
-        file_dialog_save.failed = true
+        file_dialog_save_failed = true
         app_clear_pending_exit_after_save()
         return
     }
@@ -53,7 +56,6 @@ file_dialog_save {
     draw_underlying: true
     show_filename: ""
     show_filename_applied: ""
-    failed: false
 
     ui: baseui(file_dialog_chrome_base, {})
 }
@@ -86,13 +88,13 @@ function file_dialog_save_ui_draw_foreground(window) {
         file_dialog_save.show_filename_applied = file_dialog_save.show_filename
     }
     // City warnings aren't drawn under the dialog: say it on the dialog's own line.
-    window.hint.text = file_dialog_save.failed ? __loc("#save_failed") : __loc(43, 5)
+    window.hint.text = file_dialog_save_failed ? __loc("#save_failed") : __loc(43, 5)
 }
 
 [es=(file_dialog_save, init)]
 function file_dialog_save_on_init(window) {
     window.title.text = __loc(43, 0)
-    file_dialog_save.failed = false
+    file_dialog_save_failed = false
     window.hint.text = __loc(43, 5)
 
     var dir = file_dialog_savegame_dir()
