@@ -1393,6 +1393,13 @@ static void __test_events_dump() {
 }
 ANK_FUNCTION(__test_events_dump);
 
+// The original scenario's reserved block as loaded from the map: 104 allowed-building flags, then 5 temple-complex
+// flags.
+static int __test_scenario_pak_reserved(int i) {
+    return (i >= 0 && i < scenario_data_t::SCENARIO_PAK_RESERVED_INT16S) ? g_scenario.pak_reserved[i] : -9999;
+}
+ANK_FUNCTION_1(__test_scenario_pak_reserved);
+
 static int __test_event_trigger(int id) {
     const event_ph_t* e = g_scenario.events.at(id);
     return e ? (int)e->event_trigger_type : -1;

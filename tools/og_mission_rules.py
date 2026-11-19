@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Generate src/scripts/mission_og_rules.js from the original campaign file (Pharaoh's mission1.pak).
+
+Each mission in the pak is a version-149 map; its scenario record (1592 bytes, og::scenario_record in
+src/io/og_save/og_types.h) holds the mission editor's "Allowed structures" flags and the temple complexes
+the mission allows, per god. The flags follow the editor list in text group 67: flag n is entry 67.n
+("Raw materials" = 1 ... "Zoo" = 45); with that numbering every mission keeps the editor's own rules
+(forts need a Recruiter, Fort: Charioteers needs a Chariot Maker).
+
+Usage: tools/og_mission_rules.py <path to mission1.pak> [output .js]
+"""
+import os
+import re
+import struct
+import sys
+
+RECORD_SIZE = 1592
+OFF_GODS = 10
+OFF_MAP_WIDTH = 44
+OFF_NAME = 60
+OFF_RANK = 650
+OFF_ALLOWED = 1032
+OFF_COMPLEXES = 1240
+
+# Text group 67, entries 1..45, and the building types each one stands for.
+EDITOR_LIST = [
+    ("Raw materials", []),
+    ("Gold Mine", ["GOLD_MINE"]),
+    ("Water Lift", ["WATER_LIFT"]),
+    ("Irrigation Ditch", ["IRRIGATION_DITCH"]),
+    ("Fishing Wharf", ["FISHING_WHARF"]),
+    ("Work Camp", ["WORK_CAMP"]),
+    ("Granary", ["GRANARY"]),
+    ("Bazaar", ["BAZAAR"]),
+    ("Storage Yard", ["STORAGE_YARD"]),
+    ("Dock", ["DOCK"]),
+    ("Juggling", ["BOOTH", "JUGGLER_SCHOOL"]),
+    ("Music", ["BANDSTAND", "CONSERVATORY"]),
+    ("Dancing", ["PAVILLION", "DANCE_SCHOOL"]),
+    ("Senet games", ["SENET_HOUSE"]),
+    ("Festival Square", ["FESTIVAL_SQUARE"]),
+    ("Scribal School", ["SCRIBAL_SCHOOL"]),
+    ("Library", ["LIBRARY"]),
+    ("Water Supply", ["WATER_SUPPLY"]),
+    ("Dentist", ["DENTIST"]),
+    ("Apothecary", ["APOTHECARY"]),
+    ("Physician", ["PHYSICIAN"]),
+    ("Mortuary", ["MORTUARY"]),
+    ("Tax Collector", ["TAX_COLLECTOR"]),
+    ("Courthouse", ["COURTHOUSE"]),
+    ("Palace", ["VILLAGE_PALACE", "TOWN_PALACE", "CITY_PALACE"]),
+    ("Mansion", ["PERSONAL_MANSION", "FAMILY_MANSION", "DYNASTY_MANSION"]),
+    ("Roadblock", ["ROADBLOCK"]),
+    ("Bridge", ["LOW_BRIDGE"]),
+    ("Ferry Landing", ["FERRY"]),
+    ("Gardens", ["GARDENS"]),
+    ("Plaza", ["PLAZA"]),
+    ("Statues", ["SMALL_STATUE", "MEDIUM_STATUE", "LARGE_STATUE"]),
+    ("Wall", ["MUD_WALL"]),
+    ("Tower", ["MUD_TOWER"]),
+    ("Gatehouse", ["MUD_GATEHOUSE"]),
+    ("Recruiter", ["RECRUITER"]),
+    ("Fort: Infantry", ["FORT_INFANTRY"]),
+    ("Fort: Archers", ["FORT_ARCHERS"]),
+    ("Fort: Charioteers", ["FORT_CHARIOTEERS"]),
+    ("Academy", ["MILITARY_ACADEMY"]),
+    ("Weaponsmith", ["WEAPONSMITH"]),
+    ("Chariot Maker", ["CHARIOTS_WORKSHOP"]),
+    ("Warship Wharf", ["WARSHIP_WHARF"]),
+    ("Transport Wharf", ["TRANSPORT_WHARF"]),
+    ("Zoo", ["ZOO"]),
+]
+GODS = ["OSIRIS", "RA", "PTAH", "SETH", "BAST"]
+
+
+def record_ok(e, o):
+    if o < 0 or o + RECORD_SIZE > len(e):
+        return False
+    w, h = struct.unpack_from("<ii", e, o + OFF_MAP_WIDTH)
+    gods = struct.unpack_from("<5h", e, o + OFF_GODS)
+    rank = struct.unpack_from("<h", e, o + OFF_RANK)[0]
+    complexes = struct.unpack_from("<5h", e, o + OFF_COMPLEXES)
+    return (w == h and 40 <= w <= 228 and all(0 <= g <= 2 for g in gods) and 0 <= rank <= 10
+            and all(c in (0, 1) for c in complexes) and any(gods))
+
+
+def find_record(e):
+    marker = re.search(rb"Brief description of this map", e)
+    if marker and record_ok(e, marker.start() - 64 - OFF_NAME):
+        return marker.start() - 64 - OFF_NAME
+    for o in range(0, len(e) - RECORD_SIZE, 2):
+        if record_ok(e, o):
+            return o
+    return None
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        return 1
+    pak = open(sys.argv[1], "rb").read()
+    out_path = sys.argv[2] if len(sys.argv) > 2 else os.path.join(
+        os.path.dirname(__file__), "..", "src", "scripts", "mission_og_rules.js")
+    count = 53
+    offsets = list(struct.unpack_from("<%di" % count, pak, 0)) + [len(pak)]
+
+    lines = []
+    for m in range(count):
+        e = pak[offsets[m]:offsets[m + 1]]
+        o = find_record(e)
+        if o is None:
+            print("mission %d: no scenario record found" % m, file=sys.stderr)
+            continue
+        flags = struct.unpack_from("<104h", e, o + OFF_ALLOWED)
+        complexes = struct.unpack_from("<5h", e, o + OFF_COMPLEXES)
+        name = e[o + OFF_NAME:o + OFF_NAME + 64].split(b"\0")[0].decode("latin1")
+        off = [b for n, (_, types) in enumerate(EDITOR_LIST, start=1) if not flags[n] for b in types]
+        allowed_complexes = [GODS[g] for g in range(5) if complexes[g]]
+        lines.append("    { id: %d, off: [%s], complexes: [%s] } // %s" % (
+            m, ", ".join("BUILDING_" + b for b in off),
+            ", ".join("BUILDING_TEMPLE_COMPLEX_" + g for g in allowed_complexes), name))
+
+    with open(out_path, "w") as f:
+        f.write("log_info(\"akhenaten: mission_og_rules.js started\")\n\n")
+        f.write("// Generated by tools/og_mission_rules.py from the original campaign (mission1.pak); do not edit by hand.\n")
+        f.write("// off: buildings the mission editor's \"Allowed structures\" list turns off (text group 67).\n")
+        f.write("// complexes: the temple complexes the mission allows. Applied when a mission loads (scenario.cpp).\n")
+        f.write("og_mission_rules {\n  missions [\n")
+        f.write("\n".join(lines))
+        f.write("\n  ]\n}\n")
+    print("wrote %s (%d missions)" % (out_path, len(lines)))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -16,6 +16,9 @@
 #include "core/log.h"
 
 #include "js/js_game.h"
+#include "building/building_temple_complex.h"
+#include "building/monuments.h"
+#include <algorithm>
 
 #include <cstring>
 
@@ -93,6 +96,76 @@ int scenario_data_t::city_tax_percentage() const {
         return meta.tax_percentage.get();
     }
     return finance_tax_rules.tax_percentage.get();
+}
+
+struct og_mission_rule {
+    int id = -1;
+    svector<int, 64> off;
+    svector<int, 8> complexes;
+};
+ANK_CONFIG_STRUCT(og_mission_rule, id, off, complexes)
+
+// The original campaign's building rules per mission, generated from mission1.pak (scripts/mission_og_rules.js).
+struct og_mission_rules_t {
+    svector<og_mission_rule, 64> missions;
+};
+ANK_CONFIG_STRUCT(og_mission_rules_t, missions)
+og_mission_rules_t ANK_VARIABLE(og_mission_rules);
+
+namespace {
+
+    // Missions before Timna unlock their buildings through tutorials, which the original handles outside these flags.
+    constexpr int OG_RULES_FIRST_MISSION = 5;
+
+    void allow_temple_complex(e_building_type complex, bool allow) {
+        scenario_building_allow(complex, allow);
+        const auto* params
+          = dynamic_cast<const building_temple_complex::base_params_t*>(&building_static_params::get(complex));
+        if (!params) {
+            return;
+        }
+        for (const e_building_type addon : params->allowed_altar) {
+            scenario_building_allow(addon, allow);
+        }
+        for (const e_building_type addon : params->allowed_oracle) {
+            scenario_building_allow(addon, allow);
+        }
+    }
+
+} // namespace
+
+// The mission scripts' building lists drifted from the original (Brendan on the Duo: Fort: Charioteers on Selima,
+// a Seth temple complex and a mastaba on Saqqara). Applied after a mission's list is read, so a script's own unlocks
+// later in the game still work: buildings the original's editor turned off stay off, the temple complexes are the
+// original's (with their altar and oracle), and a monument the briefing's slots don't name is not offered.
+void scenario_apply_og_mission_rules(int mission) {
+    const auto rule = std::find_if(og_mission_rules.missions.begin(), og_mission_rules.missions.end(),
+      [mission](const og_mission_rule& r) { return r.id == mission; });
+    if (rule != og_mission_rules.missions.end()) {
+        if (mission >= OG_RULES_FIRST_MISSION) {
+            for (const int type : rule->off) {
+                scenario_building_allow((e_building_type)type, false);
+            }
+        }
+        for (const e_building_type complex : {BUILDING_TEMPLE_COMPLEX_OSIRIS, BUILDING_TEMPLE_COMPLEX_RA,
+               BUILDING_TEMPLE_COMPLEX_PTAH, BUILDING_TEMPLE_COMPLEX_SETH, BUILDING_TEMPLE_COMPLEX_BAST}) {
+            const bool og_allows
+              = std::find(rule->complexes.begin(), rule->complexes.end(), (int)complex) != rule->complexes.end();
+            allow_temple_complex(complex, og_allows);
+        }
+    }
+
+    const bool slots_named
+      = g_scenario.monuments.first > 0 || g_scenario.monuments.second > 0 || g_scenario.monuments.third > 0;
+    if (slots_named) {
+        for (int type = 0; type < BUILDING_MAX; ++type) {
+            const auto& params = building_static_params::get((e_building_type)type);
+            if (params.flags.is_monument && g_scenario.allowed_buildings[type]
+                && building_monument_scenario_slots((e_building_type)type) == 0) {
+                scenario_building_allow((e_building_type)type, false);
+            }
+        }
+    }
 }
 
 void scenario_data_t::load_metadata(const mission_id_t &missionid, bool is_new_mission) {
@@ -203,6 +276,10 @@ void scenario_data_t::load_metadata(const mission_id_t &missionid, bool is_new_m
     // Keep pak rate if present; otherwise default 10%. Mission meta ladder is read via debt_interest().
     if (debt_interest_rate <= 0) {
         debt_interest_rate = 10;
+    }
+
+    if (missionid._id >= 0) {
+        scenario_apply_og_mission_rules(missionid._id);
     }
 
     if (is_new_mission) {

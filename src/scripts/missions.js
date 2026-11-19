@@ -353,6 +353,34 @@ function mission_request_outcome(ev) {
 	return "ok"
 }
 
+var MISSION_TEMPLE_COMPLEXES = [BUILDING_TEMPLE_COMPLEX_OSIRIS, BUILDING_TEMPLE_COMPLEX_RA, BUILDING_TEMPLE_COMPLEX_PTAH,
+	BUILDING_TEMPLE_COMPLEX_SETH, BUILDING_TEMPLE_COMPLEX_BAST]
+
+function mission_building_pak(type) {
+	var cfg = get_building_config_by_id(type)
+	return (cfg && cfg.animations && cfg.animations._pack) ? cfg.animations._pack.pack : -1
+}
+
+// A mission's temple complex comes from the original's data (scenario_apply_og_mission_rules), not from the mission
+// script, which only loads the pictures of the complex it lists: load those of whichever complex is allowed.
+[es=event_mission_start]
+function missions_request_temple_complex_paks(ev) {
+	for (var i = 0; i < MISSION_TEMPLE_COMPLEXES.length; i++) {
+		var complex = MISSION_TEMPLE_COMPLEXES[i]
+		if (!__scenario_building_allowed(complex)) {
+			continue
+		}
+		var cfg = get_building_config_by_id(complex)
+		var types = [complex].concat((cfg && cfg.allowed_altar) || [], (cfg && cfg.allowed_oracle) || [])
+		for (var t = 0; t < types.length; t++) {
+			var pak = mission_building_pak(types[t])
+			if (pak >= 0) {
+				__image_request_pak(pak)
+			}
+		}
+	}
+}
+
 import mission.m_000_nubt
 import mission.m_001_thinis
 import mission.m_002_perwadjyt
