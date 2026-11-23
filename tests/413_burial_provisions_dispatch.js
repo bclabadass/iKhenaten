@@ -1,5 +1,5 @@
 ﻿// Burial provisions: set requirements, stock a yard, partial + full dispatch,
-// complete() gate.
+// complete() gate. Provisions count loads, like Pharaoh's requests: 8 linen needs 800 in the yards.
 
 function run_test() {
     __log_info_native('[test:413] burial provisions dispatch')
@@ -43,15 +43,15 @@ function run_test() {
     }
     __log_marker('burial_empty_reject_ok')
 
-    var sy = test_staffed_yard_with_resource(RESOURCE_LINEN, 8, -1, -1)
+    var sy = test_staffed_yard_with_resource(RESOURCE_LINEN, 800, -1, -1)
     if (!sy) {
         __log_info_native('[test:413] yard linen failed')
         __test_signal_ready()
         return
     }
     // Limestone in same or another yard
-    if (!__test_storage_yard_add_resource(sy, RESOURCE_LIMESTONE, 32)) {
-        var sy2 = test_staffed_yard_with_resource(RESOURCE_LIMESTONE, 32, -1, -1)
+    if (!__test_storage_yard_add_resource(sy, RESOURCE_LIMESTONE, 3200)) {
+        var sy2 = test_staffed_yard_with_resource(RESOURCE_LIMESTONE, 3200, -1, -1)
         if (!sy2) {
             __log_info_native('[test:413] yard limestone failed')
             __test_signal_ready()
@@ -68,6 +68,11 @@ function run_test() {
     }
     if (__scenario_burial_provisions_dispatched(RESOURCE_LINEN) !== 3) {
         __log_info_native('[test:413] dispatched linen != 3')
+        __test_signal_ready()
+        return
+    }
+    if (city.get_building(sy).stored_resource(RESOURCE_LINEN) !== 500) {
+        __log_info_native('[test:413] yard linen want 500 after 3 loads, got ' + city.get_building(sy).stored_resource(RESOURCE_LINEN))
         __test_signal_ready()
         return
     }

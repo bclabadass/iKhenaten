@@ -126,7 +126,8 @@ bool __scenario_burial_provisions_complete() {
 }
 ANK_FUNCTION(__scenario_burial_provisions_complete)
 
-// Returns amount actually dispatched, or negative:
+// Burial provisions are counted in loads, like Pharaoh's requests (the scenario's 10 pottery is 1000 in the yards).
+// Returns the loads actually dispatched, or negative:
 //   -1 not enough goods in storage yards
 //   -2 commodity already fulfilled / nothing required
 //   -3 invalid args
@@ -140,16 +141,17 @@ int __scenario_burial_provisions_dispatch(int resource, int amount) {
         return -2;
     }
 
+    constexpr int units_per_load = 100;
     const e_resource res = static_cast<e_resource>(resource);
-    const int available = burial_yards_available(res);
+    const int available = burial_yards_available(res) / units_per_load;
     if (available <= 0) {
         return -1;
     }
 
     const int take = std::min({amount, remaining, available});
-    event_storageyards_remove_resource ev{res, take, /*staffed_only*/ false};
+    event_storageyards_remove_resource ev{res, take * units_per_load, /*staffed_only*/ false};
     city_storageyards_remove_resource(ev);
-    const int removed = take - ev.amount;
+    const int removed = (take * units_per_load - ev.amount) / units_per_load;
     if (removed <= 0) {
         return -1;
     }

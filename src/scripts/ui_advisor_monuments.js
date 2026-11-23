@@ -6,6 +6,17 @@ var MONUMENT_PHASE_FINISHED = -1
 var burial_dispatch_resource = RESOURCE_NONE
 var burial_dispatch_amount = 0
 
+// Burial provisions are counted in loads (the scenario's 10 pottery is 1000 in the yards).
+var BURIAL_UNITS_PER_LOAD = 100
+
+function burial_loads_in_yards(res) {
+    return Math.floor(city_resource_view(res).yards_stored / BURIAL_UNITS_PER_LOAD)
+}
+
+function burial_loads_text(res, loads) {
+    return String(city_resource_view(res).stack_proper_quantity(loads * BURIAL_UNITS_PER_LOAD))
+}
+
 function monuments_advisor_status_line(bid) {
     var monument = city.get_monument(bid)
     if (!monument) {
@@ -55,15 +66,12 @@ function burial_provisions_on_render_item(p) {
     var dispatched = __scenario_burial_provisions_dispatched(res)
     var remaining = __scenario_burial_provisions_remaining(res)
     var rv = city_resource_view(res)
-    var in_yards = rv.yards_stored
-    var need_disp = rv.stack_proper_quantity(required)
-    var done_disp = rv.stack_proper_quantity(dispatched)
-    var stored_disp = rv.stack_proper_quantity(in_yards)
+    var in_yards = burial_loads_in_yards(res)
 
     ui.resource_icon([px + 7, py + 7], res)
-    ui.label(String(done_disp) + " / " + String(need_disp) + " " + __loc(23, res),
+    ui.label(burial_loads_text(res, dispatched) + " / " + burial_loads_text(res, required) + " " + __loc(23, res),
              [px + 30, py + 7], FONT_NORMAL_WHITE_ON_DARK)
-    ui.label(String(stored_disp) + " " + __loc(199, 1),
+    ui.label(String(rv.stack_proper_quantity(rv.yards_stored)) + " " + __loc(199, 1),
              [px + 30, py + 25], FONT_NORMAL_WHITE_ON_DARK)
 
     var status
@@ -77,7 +85,7 @@ function burial_provisions_on_render_item(p) {
         status = __loc(52, 47) // can fulfill / ready
         status_font = FONT_NORMAL_YELLOW
     }
-    ui.label(status, [px + 310, py + 25], status_font)
+    ui.label(status, [px + 280, py + 25], status_font)
 
     if (p.hover && remaining > 0) {
         ui.button_border({ x: px + 2, y: py + 2 }, { x: p.sizex - 4, y: p.sizey - 4 }, false)
@@ -92,7 +100,7 @@ function burial_provisions_on_click_item(p) {
         ui.show_ok(__loc(5, 33), __loc(5, 32))
         return
     }
-    var stored = city_resource_view(res).yards_stored
+    var stored = burial_loads_in_yards(res)
     if (stored <= 0) {
         ui.show_ok(__loc(5, 31), __loc(5, 30))
         return
@@ -104,8 +112,7 @@ function burial_provisions_on_click_item(p) {
 
 function burial_dispatch_max_allowed() {
     var remaining = __scenario_burial_provisions_remaining(burial_dispatch_resource)
-    var stored = city_resource_view(burial_dispatch_resource).yards_stored
-    return Math.min(remaining, stored)
+    return Math.min(remaining, burial_loads_in_yards(burial_dispatch_resource))
 }
 
 function burial_dispatch_clamp_amount() {
@@ -151,8 +158,7 @@ function burial_dispatch_amount_text() {
     if (burial_dispatch_resource === RESOURCE_NONE) {
         return "0"
     }
-    var rv = city_resource_view(burial_dispatch_resource)
-    return String(rv.stack_proper_quantity(burial_dispatch_amount))
+    return burial_loads_text(burial_dispatch_resource, burial_dispatch_amount) + " " + __loc(23, burial_dispatch_resource)
 }
 
 [es=advisor_window]
@@ -171,7 +177,7 @@ advisor_monuments_window {
                 monuments_panel : inner_panel({pos[32, 60], size[36, 8]})
                 monuments_list : scrollable_list({
                     pos[38, 66]
-                    size[35, 7]
+                    size[33, 7]
                     view_items: 3
                     buttons_size_y: 40
                     buttons_margin_x: 0
@@ -186,11 +192,11 @@ advisor_monuments_window {
                 no_monuments : label({pos[120, 110], text:"${53.69}", font:FONT_NORMAL_WHITE_ON_DARK })
 
                 burial_title  : text({pos[60, 200], text{group:199, id:10}, font:FONT_NORMAL_BLACK_ON_LIGHT })
-                burial_hint   : label({pos[60, 218], text:"${199.3}", font:FONT_NORMAL_BLACK_ON_LIGHT })
+                burial_hint   : text({pos[60, 218], text{group:199, id:3}, font:FONT_NORMAL_BLACK_ON_LIGHT })
                 burial_panel  : inner_panel({pos[32, 238], size[36, 8]})
                 burial_list : scrollable_list({
                     pos[38, 244]
-                    size[35, 7]
+                    size[33, 7]
                     view_items: 3
                     buttons_size_y: 40
                     buttons_margin_x: 0
@@ -253,24 +259,23 @@ burial_dispatch_window {
     pos [(sw(0) - px(28)) / 2, (sh(0) - px(12)) / 2]
     allow_rmb_goback : true
     draw_underlying : true
+    // A relayout re-runs this file and resets the chosen provision and amount; wait until the window closes.
+    defer_relayout : true
 
     ui {
         background_image : background({pack:PACK_UNLOADED, id:11})
         background       : outer_panel({size[28, 12]})
-        resource_icon    : resource_icon({pos[16, 16], resource:RESOURCE_NONE})
-        title            : text_center({pos[48, 16], size[px(28) - 64, 20], text[199, 4], font: FONT_LARGE_BLACK_ON_LIGHT})
+        title            : text_center({pos[16, 16], size[px(28) - 32, 20], text[199, 4], font: FONT_LARGE_BLACK_ON_LIGHT})
 
         amounts_panel    : inner_panel({pos[32, 56], size[24, 4]
             ui {
-                btn_all   : button({pos[16, 12], size[80, 24], text[199, 5], font: FONT_NORMAL_WHITE_ON_DARK})
+                resource_icon : resource_icon({pos[16, 20], resource:RESOURCE_NONE})
+                amount_value  : label({pos[48, 24], font: FONT_NORMAL_WHITE_ON_DARK, textfn: burial_dispatch_amount_text})
+                arrow_down    : arrowdown({pos[176, 18], tiny: false, allow_repeat: true })
+                arrow_up      : arrowup({pos[200, 18], tiny: false, allow_repeat: true })
+                btn_all       : button({pos[280, 18], size[80, 24], text[199, 5], font: FONT_NORMAL_WHITE_ON_DARK})
             }
         })
-
-        hint_label       : text({pos[48, 100], text[199, 3], font: FONT_NORMAL_WHITE_ON_DARK})
-        arrow_down       : arrowdown({pos[160, 96], tiny: false, allow_repeat: true })
-        arrow_up         : arrowup({pos[184, 96], tiny: false, allow_repeat: true })
-        amount_value     : label({pos[220, 100], font: FONT_NORMAL_WHITE_ON_DARK
-                                  textfn: burial_dispatch_amount_text})
 
         btn_dispatch     : button({pos[48, 140], size[160, 24], text[199, 6], font: FONT_NORMAL_BLACK_ON_LIGHT})
         btn_cancel       : button({pos[240, 140], size[160, 24], text[199, 7], font: FONT_NORMAL_BLACK_ON_LIGHT})
@@ -307,5 +312,5 @@ function burial_dispatch_window_arrow_up(window) {
 [es=(burial_dispatch_window, init)]
 function burial_dispatch_window_init(window) {
     burial_dispatch_clamp_amount()
-    window.resource_icon.image(burial_dispatch_resource)
+    window.resource_icon.image = burial_dispatch_resource
 }
