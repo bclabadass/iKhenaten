@@ -44,8 +44,11 @@ void building_conservatory::spend_musician_to_festival_square() {
             building *square = building_get(square_id);
             if (square->is_valid() && map_has_road_access(square->tile, square->size)) {
                 // Check if we have road access and workers
+                // Own slot: the long walk to the square held the service slot, and no musician left for a venue
+                // until it was back.
                 if (has_road_access() && worker_percentage() > 0) {
-                    create_figure_with_destination(FIGURE_MUSICIAN, square, (e_figure_action)ACTION_6_ENTERTAINER_GOING_TO_SQUARE);
+                    create_figure_with_destination(FIGURE_MUSICIAN, square,
+                      (e_figure_action)ACTION_6_ENTERTAINER_GOING_TO_SQUARE, BUILDING_SLOT_MUSICIAN);
                 }
             }
         }
