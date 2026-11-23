@@ -67,9 +67,10 @@ function run_test() {
         return t397_fail('Saqqara')
     }
     var dock_menu = building_menu_ctrl.is_enabled(BUILDING_DOCK)
-    __log_info_native('[test:397] Saqqara dock in the build menu: ' + dock_menu)
-    if (!dock_menu) {
-        return t397_fail('Saqqara dock not in the build menu')
+    var dock2_menu = building_menu_ctrl.is_enabled(BUILDING_DOCK_UP)
+    __log_info_native('[test:397] Saqqara build menu: dock ' + dock_menu + ', second dock ' + dock2_menu)
+    if (!dock_menu || dock2_menu) {
+        return t397_fail('Saqqara build menu should show one dock')
     }
     if (!t397_check(12, { dock: [BUILDING_DOCK, true] }, 'og_rules_meidum_dock')
         || !t397_check(19, { dock: [BUILDING_DOCK, false] }, 'og_rules_bahariya_no_dock')) {

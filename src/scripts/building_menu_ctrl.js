@@ -65,6 +65,10 @@ building_menu_ctrl.is_enabled = function(type) {
     if (type == BUILDING_INDUSTRY_OFFICE && !game_features.gameplay_enhanced_industry_office) {
         return false
     }
+    // Allowing the dock allows its second type too (OG BUILD_DOCK2); the menu has one "Dock", as in the original.
+    if (type == BUILDING_DOCK_UP && building_menu_ctrl.is_enabled(BUILDING_DOCK)) {
+        return false
+    }
     var e = building_menu_ctrl.enabled[type]
     return (e !== undefined && e !== null) ? e : false
 }
