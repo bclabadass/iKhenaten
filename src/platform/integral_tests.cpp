@@ -224,6 +224,18 @@ struct xvalue_test_threaded_t {
     int value = 0;
 };
 
+// "plumless" and "buckeroo" share a CRC32: interned strings with the same hash must stay two strings (a long test run
+// once hit such a pair and a script read the wrong one).
+void run_xstring_collision_unit_tests() {
+    expect_true(crc32("plumless", 8) == crc32("buckeroo", 8), "plumless and buckeroo share a CRC32");
+    const xstring a("plumless");
+    const xstring b("buckeroo");
+    expect_eq_str(a.c_str(), "plumless", "first of a CRC32 pair keeps its text");
+    expect_eq_str(b.c_str(), "buckeroo", "second of a CRC32 pair keeps its text");
+    expect_true(!(a == b), "a CRC32 pair interns as two strings");
+    expect_true(xstring("buckeroo") == b, "the second of a CRC32 pair is found again");
+}
+
 void run_xvalue_unit_tests() {
     {
         auto &a1 = xvalue<xvalue_test_a_t>::ref();
@@ -662,6 +674,7 @@ void run_integral_tests_impl() {
     run_bvariant_unit_tests();
     run_isometric_split_unit_tests();
     run_xvalue_unit_tests();
+    run_xstring_collision_unit_tests();
 }
 
 hvector<xstring, 16> list_test_files() {

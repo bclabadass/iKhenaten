@@ -91,7 +91,8 @@ public:
 };
 
 struct xstring_container {
-    std::unordered_map<uint32_t, xstring_value *> data;
+    // Keyed by CRC32, which two different strings can share: entries with the same key are told apart by their text.
+    std::unordered_multimap<uint32_t, xstring_value*> data;
     linear_allocator allocator;
 
     void verify();
@@ -149,10 +150,14 @@ xstring_value *xstring_container::dock(pcstr value) {
     verify_no_crash(s_len <= 65535u);
 
     const std::uint32_t crc = crc32(value, static_cast<std::uint32_t>(s_len));
-    const auto it = g_xstring->data.find(crc);
-    if (it != g_xstring->data.end()) {
-        verify_no_crash((it->second->value == value) && "xstring intern CRC collision");
-        return it->second;
+    const auto range = g_xstring->data.equal_range(crc);
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second->value == value) {
+            return it->second;
+        }
+    }
+    if (range.first != range.second) {
+        logs::info("xstring: CRC %08X shared by \"%s\" and \"%s\"", crc, range.first->second->value.c_str(), value);
     }
 
     xstring_value *const new_xstr = g_xstring->allocator.allocate();
