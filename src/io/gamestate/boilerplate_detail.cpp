@@ -1,4 +1,5 @@
 #include "boilerplate_detail.h"
+#include "building/building_burning_ruin.h"
 
 #include "building/building.h"
 #include "building/building_barracks.h"
@@ -149,6 +150,7 @@ void GamestateLoadDetail::post_load() {
     // building counts / storage
     city_resource_determine_available();
     g_city.update_allowed_foods();
+    building_burning_ruin::repair_stale_tiles();
     g_city.buildings.update_counters();
     g_city.on_post_load();
     g_city.resource.calculate_stocks();

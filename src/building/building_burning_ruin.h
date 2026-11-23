@@ -35,6 +35,9 @@ public:
 
     static int initial_burned_days(const building& b) { return (b.map_random_7bit & 7) + 1; }
     static void update_all_ruins();
+    // Saves from before the fire fix keep burnt tiles pointing at ruins that are gone (or at buildings that took their
+    // ids since); they become plain rubble, so clearing them can't remove another building.
+    static void repair_stale_tiles();
     static xspan<uint16_t> get_all();
     static std::pair<int, tile2i> get_closest_from(tile2i tile);
 };

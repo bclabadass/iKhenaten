@@ -18,6 +18,9 @@
 #include "grid/routing/routing_terrain.h"
 #include "grid/routing/routing.h"
 #include "js/js_register.h"
+#include "core/log.h"
+#include "graphics/image.h"
+#include "graphics/image_groups.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_burning_ruin);
 
@@ -146,6 +149,42 @@ void building_burning_ruin::update_animation() {
 
 bool building_burning_ruin::target_route_tile_blocked(int grid_offset) const {
     return (state() != BUILDING_STATE_RUBBLE);
+}
+
+void building_burning_ruin::repair_stale_tiles() {
+    const auto& params = building_static_params::get(BUILDING_BURNING_RUIN);
+    const int ruin_first = params.first_img("base0");
+    const int ruin_last = ruin_first + 9 * 4;
+    int repaired = 0;
+    for (int y = 0; y < scenario_map_data()->height; y++) {
+        for (int x = 0; x < scenario_map_data()->width; x++) {
+            const tile2i t(x, y);
+            const int bid = map_building_at(t);
+            if (!bid) {
+                continue;
+            }
+            building* b = building_get(bid);
+            const int img = map_image_at(t);
+            const bool ruin_picture = ruin_first > 0 && img >= ruin_first && img < ruin_last;
+            const bool stale = b->state == BUILDING_STATE_UNUSED
+                               || (ruin_picture && (b->type != BUILDING_BURNING_RUIN || b->tile != t));
+            if (!stale) {
+                continue;
+            }
+            const int grid_offset = t.grid_offset();
+            map_building_set(grid_offset, 0);
+            map_property_set_multi_tile_size(grid_offset, 1);
+            map_property_set_multi_tile_xy(grid_offset, 0, 0, 1);
+            map_terrain_remove(grid_offset, TERRAIN_CLEARABLE);
+            map_terrain_add(grid_offset, TERRAIN_RUBBLE);
+            map_image_set(grid_offset, image_id_from_group(GROUP_TERRAIN_RUBBLE, (map_random_get(grid_offset) & 7)));
+            ++repaired;
+        }
+    }
+    if (repaired) {
+        logs::info("burning ruins: %d stale burnt tiles turned to rubble", repaired);
+        map_routing_update_land();
+    }
 }
 
 xspan<uint16_t> building_burning_ruin::get_all() {

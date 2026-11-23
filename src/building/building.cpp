@@ -675,19 +675,28 @@ void building::destroy_on_fire_impl(bool plagued) {
         waterside_building = 1;
     }
 
+    // Ruins go only where this building stands: a part's size can be its whole building's (a storage room is 3 in
+    // config), and ruins laid past it burned the road and gardens around and stacked on other parts' tiles.
+    svector<tile2i, 64> own_tiles;
+    grid_area varea = map_grid_get_area(tile, size, 0);
+    map_grid_area_foreach(varea, [this, &own_tiles](tile2i t) {
+        if (map_building_at(t) == id && !own_tiles.full()) {
+            own_tiles.push_back(t);
+        }
+    });
+
     map_building_tiles_remove(id, tile);
     unsigned int rand_int = random_short();
 
-    grid_area varea = map_grid_get_area(tile, size, 0);
-    map_grid_area_foreach(varea, [plagued] (tile2i tile) {
-        if (map_terrain_is(tile, TERRAIN_WATER)) {
-            return;
+    for (const tile2i t : own_tiles) {
+        if (map_terrain_is(t, TERRAIN_WATER)) {
+            continue;
         }
 
         // FIXME: possible can't render image & fire animation
-        building *ruin = building_create(BUILDING_BURNING_RUIN, tile, 0);
+        building *ruin = building_create(BUILDING_BURNING_RUIN, t, 0);
         ruin->has_plague = plagued;
-    });
+    }
 
     if (waterside_building) {
         map_routing_update_water();
