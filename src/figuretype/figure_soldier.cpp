@@ -1,4 +1,5 @@
 #include "figure_soldier.h"
+#include "game/game_events.h"
 
 #include "city/city.h"
 #include "city/map.h"
@@ -14,8 +15,7 @@
 #include "grid/figure.h"
 #include "grid/grid.h"
 #include "grid/point.h"
-#include "sound/sound.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "scenario/distant_battle.h"
 
 static const vec2i ALTERNATIVE_POINTS[] = {
@@ -287,7 +287,7 @@ void figure_soldier::update_image(const formation* m, int &dir) {
 
 bool figure_soldier::play_die_sound() {
     if (g_city.figures.soldiers == 1) {
-        g_sound.speech_play_file("Wavs/sword_atk.wav", 255);
+        events::emit(event_sound_speech{"Wavs/sword_atk.wav"});
     }
 
     return true;

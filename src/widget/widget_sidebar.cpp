@@ -18,7 +18,9 @@
 #include "sound/sound.h"
 #include "game/game.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
+
+#include <cmath>
 #include "js/js_struct.h"
 #include "graphics/elements/ui_js.h"
 
@@ -26,6 +28,11 @@ struct sidebar_window_draw { vec2i pos; int opened_menu; };
 ANK_REGISTER_STRUCT_WRITER(sidebar_window_draw, pos, opened_menu);
 
 ui::sidebar_window_expanded_t ANK_VARIABLE(sidebar_window_expanded);
+
+static void sidebar_subscribe_events() {
+    sidebar_window_expanded.subscribe_events();
+}
+static events::session_subscriber g_sidebar_session(&sidebar_subscribe_events);
 ui::sidebar_window_collapsed_t ANK_VARIABLE(sidebar_window_collapsed);
 
 ui::sidebar_window g_sidebar;
@@ -43,7 +50,6 @@ void ui::sidebar_window_expanded_t::init() {
     extra_block_size = img ? img->size() : vec2i{0, 0};
 
     widget_minimap_init();
-    subscribe_events();
 }
 
 void ui::sidebar_window_expanded_t::subscribe_events() {
@@ -101,6 +107,7 @@ void ui::sidebar_window_expanded_t::ui_draw_extra(UiFlags flags) {
 
 void ui::sidebar_window_expanded_t::ui_draw_foreground(UiFlags flags) {
     OZZY_PROFILER_FUNCTION();
+    const size_t sidebar_commands = ui::command_mark();
 
     {
         OZZY_PROFILER_SECTION(_, "sidebar_window_draw")
@@ -126,10 +133,12 @@ void ui::sidebar_window_expanded_t::ui_draw_foreground(UiFlags flags) {
     const UiFlags wflags = is_disabled ? UiFlags_Readonly : UiFlags_None;
 
     ui.begin_widget(pos);
+    const size_t minimap_commands = ui::command_mark();
     widget_minimap_draw({x_offset + MINIMAP_X_OFFSET, MINIMAP_Y_OFFSET + top_menu_height() - TOP_MENU_HEIGHT}, 0);
+    widget_minimap_draw_border(x_offset);
+    ui::move_commands_below(minimap_commands, sidebar_commands);
 
     ui.draw(wflags);
-    widget_minimap_draw_border(x_offset);
 
     ui.end_widget();
 
@@ -138,7 +147,9 @@ void ui::sidebar_window_expanded_t::ui_draw_foreground(UiFlags flags) {
     ui.event(sidebar_window_draw{pos, opened_menu}, get_section(), "ui_draw_after");
     ui.end_widget();
 
+    const size_t relief_commands = ui::command_mark();
     ui_draw_relief(flags);
+    ui::move_commands_below(relief_commands, sidebar_commands);
 }
 
 void ui::sidebar_window_collapsed_t::collapse() {
@@ -199,15 +210,15 @@ void ui::sidebar_window_collapsed_t::ui_draw_foreground(UiFlags flags) {
     ui.pos.y = (int)(top_menu_height() / scale) - TOP_MENU_HEIGHT;
 
     // Scaled, the panel's own beaded left strip would be thicker than every other strip: hide it,
-    // and widget_sidebar_city_draw_foreground draws a 1x one. The relief is drawn straight away,
-    // the rest through the UI queue, so both are clipped.
+    // and widget_sidebar_city_draw_foreground draws a 1x one.
     const bool own_strip_hidden = scale > 1.0f;
     const vec2i clip_pos{x_offset + edge_strip_width, 0};
     const vec2i clip_size{screen_width(), screen_height()};
     if (own_strip_hidden) {
-        graphics_set_clip_rectangle(clip_pos, clip_size);
         ui::push(ui::cmd_t::clip_set, ui::opt::Pos{clip_pos}, ui::opt::Size{clip_size});
     }
+    // After the clip: the relief is moved below the panel's commands and must stay inside it.
+    const size_t sidebar_commands = ui::command_mark();
 
     {
         OZZY_PROFILER_SECTION(_, "sidebar_window_draw")
@@ -223,11 +234,12 @@ void ui::sidebar_window_collapsed_t::ui_draw_foreground(UiFlags flags) {
     ui.draw(wflags);
     ui.end_widget();
 
+    const size_t relief_commands = ui::command_mark();
     int relief_y_offset = SIDEBAR_MAIN_SECTION_HEIGHT + (int)(top_menu_height() / scale);
     sidebar_common_draw_relief({ x_offset, relief_y_offset }, relief_block);
+    ui::move_commands_below(relief_commands, sidebar_commands);
 
     if (own_strip_hidden) {
-        graphics_reset_clip_rectangle();
         ui::push(ui::cmd_t::clip_reset);
     }
 }

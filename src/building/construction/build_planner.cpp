@@ -1,13 +1,11 @@
 #include "build_planner.h"
+#include "core/draw_phase.h"
 
 #include <algorithm>
+#include <cmath>
 
-#include "editor/tool.h"
-#include "graphics/view/lookup.h"
-#include "graphics/view/view.h"
 #include "grid/floodplain.h"
 #include "core/log.h"
-#include "widget/widget_sidebar.h"
 
 #include "building/building_dock.h"
 #include "building/building_road.h"
@@ -27,6 +25,7 @@
 #include "building/building_bridge.h"
 #include "building/building_mansion.h"
 #include "city/city_industry.h"
+#include "building/building_ferry.h"
 #include "building/building_fort.h"
 #include "building/building.h"
 #include "city/campaign_carry.h"
@@ -41,10 +40,6 @@
 #include "clear.h"
 #include "figure/formation_batalion.h"
 #include "game/undo.h"
-#include "graphics/image.h"
-#include "graphics/image_groups.h"
-#include "graphics/graphics.h"
-#include "graphics/window.h"
 #include "grid/bridge.h"
 #include "grid/building.h"
 #include "grid/building_tiles.h"
@@ -61,7 +56,7 @@
 #include "game/game_config.h"
 #include "routed.h"
 #include "city/city.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "core/profiler.h"
 #include "scenario/scenario.h"
 
@@ -79,6 +74,11 @@ enum e_place_reservoir {
 };
 
 build_planner g_city_planner;
+
+static void city_planner_subscribe_events() {
+    g_city_planner.subscribe_events();
+}
+static events::session_subscriber g_city_planner_session(&city_planner_subscribe_events);
 
 static int last_items_cleared;
 
@@ -117,33 +117,8 @@ const int TILE_GRID_OFFSETS_PH[4][MAX_TILES] = {
    GRID_OFFSET(4, -2), GRID_OFFSET(2, -4), GRID_OFFSET(4, -3), GRID_OFFSET(3, -4), GRID_OFFSET(4, -4)},
 };
 
-void build_planner::add_building_tiles_from_list(int building_id, bool graphics_only) {
-    for (int row = 0; row < size.y; ++row) {
-        for (int column = 0; column < size.x; ++column) {
-            int image_id = tile_graphics_array[row][column];
-            int size = tile_sizes_array[row][column];
-            tile2i tile = tile_coord_cache[row][column];
-
-            // correct for city orientation
-            switch (g_camera.orientation / 2) {
-            case 0: tile.shift(0, -size + 1); break;
-            case 1: break;
-            case 2: tile.shift(-size + 1, 0); break;
-            case 3: tile.shift(-size + 1, -size + 1); break;
-            }
-
-            if (image_id > 0 && size > 0) {
-                if (!graphics_only) {
-                    map_building_tiles_add(building_id, tile, size, image_id, TERRAIN_BUILDING);
-                } else {
-                    map_image_set(tile.grid_offset(), image_id);
-                }
-            }
-        }
-    }
-}
-
 bool build_planner::ghost_mark_deleting(tile2i tile) {
+    draw_phase::check_write("build_planner");
     if (!game_features::gameui_visual_feedback_on_delete) {
         return false;
     }
@@ -166,61 +141,6 @@ void build_planner::mark_construction(tile2i tile, vec2i size, int terrain, bool
         && map_building_tiles_mark_construction(tile, size.x, size.y, terrain, absolute_xy)) {
         g_city_planner.draw_as_constructing = true;
     }
-}
-
-void build_planner::draw_tile_graphics_array(painter &ctx, tile2i start, tile2i end, vec2i pixel) {
-    // go through the tiles DIAGONALLY to render footprint and top correctly
-    for (int dg_y = 0; dg_y < size.y + size.x - 1; dg_y++) {
-        for (int dg_x = fmax(0, dg_y - size.y + 1); dg_x < size.x && dg_x < dg_y + 1; dg_x++) {
-            // extract proper row and column index from the mess above
-            int row = dg_y - dg_x;
-            int column = dg_x;
-
-            int image_id = tile_graphics_array[row][column];
-            if (image_id > 0) {
-                auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile_full);
-                command.image_id = image_id;
-                command.pixel = pixel_coords_cache[row][column];
-                command.mask = COLOR_MASK_GREEN;
-                command.location = SOURCE_LOCATION;
-            } else if(image_id < 0) {
-                auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
-                command.image_id = image_id_from_group(GROUP_TERRAIN_BLACK);
-                command.pixel = pixel_coords_cache[row][column];
-                command.mask = COLOR_MASK_GREEN;
-                command.location = SOURCE_LOCATION;
-            }
-        }
-    }
-}
-
-static int has_nearby_enemy(int x_start, int y_start, int x_end, int y_end) {
-    for (int i = 1; i < MAX_FIGURES; i++) {
-        figure* f = figure_get(i);
-        if (!!game_features::gameplay_hyenas_block) {
-            if (f->state != FIGURE_STATE_ALIVE || !f->is_enemy()) {
-                continue;
-            }
-
-        } else if (f->state != FIGURE_STATE_ALIVE || !f->is_enemy()) {
-            continue;
-        }
-
-        int tile_x = f->tile.x();
-        int tile_y = f->tile.y();
-        int dx = (tile_x > x_start) ? (tile_x - x_start) : (x_start - tile_x);
-        int dy = (tile_y > y_start) ? (tile_y - y_start) : (y_start - tile_y);
-        if (dx <= 12 && dy <= 12) {
-            return 1;
-        }
-
-        dx = (tile_x > x_end) ? (tile_x - x_end) : (x_end - tile_x);
-        dy = (tile_y > y_end) ? (tile_y - y_end) : (y_end - tile_y);
-        if (dx <= 12 && dy <= 12) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 int build_planner::place_houses(bool measure_only, int x_start, int y_start, int x_end, int y_end) {
@@ -278,7 +198,7 @@ int build_planner::can_be_placed() {
     return can_place;
 }
 
-void build_planner::init() {
+void build_planner::subscribe_events() {
     events::subscribe([this] (event_city_building_mode ev) {
         e_building_type btype = (e_building_type)ev.value;
         if (ev.value == BUILDING_NONE) {
@@ -296,6 +216,11 @@ void build_planner::init() {
 void build_planner::reset() {
     // reset build info
     total_cost = 0;
+    site_parts.clear();
+    site_blocked = false;
+    site_orientation = 0;
+    ferry_placement = FERRY_PLACEMENT_NONE;
+    ferry_first = 0;
     build_type = BUILDING_NONE;
     in_progress = false;
     draw_as_constructing = false;
@@ -339,7 +264,6 @@ void build_planner::init_tiles(int size_x, int size_y) {
 
             // reset caches
             tile_coord_cache[row][column] = {0, 0};
-            pixel_coords_cache[row][column] = {0, 0};
         }
     }
 }
@@ -429,7 +353,7 @@ void build_planner::set_graphics_array(xspan<int> image_set, vec2i size) {
 }
 
 void build_planner::setup_building_variant(tile2i tile, e_building_type type) {
-    const auto &preview = building_planer_renderer::get(type);
+    const auto& preview = placement_rules_of(type);
     int random_value = tile.grid_offset();
     custom_building_variant = preview.setup_building_variant(type, tile, random_value);
 }
@@ -442,12 +366,14 @@ bool build_planner::can_rotate() const {
 }
 
 void build_planner::next_building_variant() {
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
     custom_building_variant = preview.next_building_variant(build_type, end, custom_building_variant);
     update_orientations();
 }
 
 void build_planner::setup_build(e_building_type type) { // select building for construction, set up main terrain restrictions/requirements
+    draw_phase::check_write("build_planner");
+    building_ferry::placement_cancel(*this);
     reset();
 
     // ignore empty building types
@@ -489,12 +415,10 @@ void build_planner::setup_build(e_building_type type) { // select building for c
 
     build_type = type;
 
-    // selecting a real building cancels any active debug terrain-paint tool
-    // so the two placement modes can't both be armed at once
-    editor_tool_deactivate();
+    events::emit(event_build_tool_selected{type});
 
     const auto &params = building_static_params::get(type);
-    const auto &preview = building_planer_renderer::get(type);
+    const auto& preview = placement_rules_of(type);
     preview.setup_build(*this);
 
     setup_building_variant(end, build_type);
@@ -508,7 +432,7 @@ void build_planner::setup_build(e_building_type type) { // select building for c
 
 void build_planner::setup_build_flags() {
     const auto &params = building_static_params::get(build_type);
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
 
     for (const auto flag: e_planner_rules.values) {
         const bool is_need = preview.is_need_flag(*this, flag.id);
@@ -593,340 +517,15 @@ void build_planner::setup_build_flags() {
 }
 
 void build_planner::setup_build_graphics() {
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
     preview.setup_preview_graphics(*this);
 }
 
-static bool is_tile_occupied_by_active_building(tile2i tile) {
-    int bid = map_building_at(tile);
-    if (!bid) {
-        return false;
-    }
-    building *b = building_get(bid);
-    if (!b || b->id <= 0 || b->is_deleted || b->state == BUILDING_STATE_DELETED_BY_PLAYER || b->state == BUILDING_STATE_UNUSED) {
-        return false;
-    }
-    return true;
-}
-
-void build_planner::update_obstructions_check() {
-    tiles_blocked_total = 0;
-    const auto &params = building_static_params::get(build_type);
-    const auto &preview = building_planer_renderer::get(build_type);
-    const bool edge_margin = !draggable() && !params.flags.no_map_edge_margin;
-
-    for (int row = 0; row < size.y; row++) {
-        for (int column = 0; column < size.x; column++) {
-            // check terrain at coords
-            tile2i current_tile = tile_coord_cache[row][column];
-            unsigned int restricted_terrain = TERRAIN_ALL;
-
-            // special cases
-            if (needMeadow() || needFloodplainShore() || needRoad() || needCanals()) {
-                restricted_terrain -= TERRAIN_FLOODPLAIN;
-            }
-
-            bool can_blocked_by_floodplain_edge = !params.flags.is_farm;
-            if (needRoad() || needIntersection() || needCanals()) {
-                restricted_terrain -= TERRAIN_ROAD;
-                can_blocked_by_floodplain_edge = false;
-            }
-
-            if (needRoad() || needCanals()) {
-                restricted_terrain -= TERRAIN_CANAL;
-            }
-
-            if (needWalls()) {
-                restricted_terrain -= TERRAIN_WALL;
-            }
-
-            if (needWater() || needShoreLine()) {
-                restricted_terrain -= TERRAIN_WATER;
-            }
-
-            if (needTempleUpgradeAltar() || needTempleUpgradeOracle()) { // special case
-                return;
-            }
-
-
-            tile_blocked_array[row][column] = false;
-            const bool blocked_by_floodplain_edge = (can_blocked_by_floodplain_edge && map_get_floodplain_edge(current_tile));
-            const bool inside_map
-              = edge_margin ? map_grid_is_inside_building_area(current_tile) : map_grid_is_inside(current_tile, 1);
-            const uint32_t ignore_terrain = preview.ghost_ignore_terrain(*this, current_tile);
-            const uint32_t not_clear_mask = (restricted_terrain & TERRAIN_NOT_CLEAR) & ~ignore_terrain;
-            const bool has_existing_building = is_tile_occupied_by_active_building(current_tile);
-            const bool not_clear = inside_map && (map_terrain_is(current_tile, not_clear_mask) || has_existing_building);
-            const bool allow_tile = inside_map && preview.ghost_allow_tile(*this, current_tile);
-            if (!inside_map || not_clear || !allow_tile || blocked_by_floodplain_edge) {
-                tile_blocked_array[row][column] = true;
-                tiles_blocked_total++;
-            }
-        }
-    }
-
-    if (tiles_blocked_total > 0) {
-        immediate_warning = "#must_build_on_cleared_land";
-        can_place = CAN_NOT_BUT_GREEN;
-    }
-}
-
-void build_planner::update_requirements_check() {
-    // invalid build
-    if (build_type == BUILDING_NONE) {
-        can_place = CAN_NOT_PLACE;
+void build_planner::update_tile_caches() {
+    if (size.x < 1 || size.y < 1) {
         return;
     }
-
-    // out of money!
-    if (g_city.finance.is_out_of_money()) {
-        // TODO: no money needed if building has zero cost?
-        immediate_warning = "#out_of_credit";
-        can_place = CAN_NOT_PLACE;
-        return;
-    }
-
-    /////// special requirements
-    //
-    if (needResources()) {
-        if (g_city.resource.yards_stored((e_resource)additional_req_param1) < additional_req_param2) {
-            //immediate_warning_id = additional_req_param3;
-            can_place = CAN_NOT_BUT_GREEN;
-        }
-    }
-
-    if (needGroundwater()) {
-        if (!map_terrain_exists_tile_in_radius_with_type(end, size.x, 0, TERRAIN_GROUNDWATER)) {
-            immediate_warning = "#needs_groundwater";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-    if (needNearbyWater()) {
-        if (!map_terrain_exists_tile_in_radius_with_type(end, size.x, 3, TERRAIN_WATER)
-            && !map_terrain_exists_tile_in_radius_with_type(end, size.x, 3, TERRAIN_FLOODPLAIN)) {
-            immediate_warning = "#building_not_next_to_water";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needMeadow()) {
-        if (!map_terrain_exists_tile_in_radius_with_type(end, size.x, 1, TERRAIN_MEADOW)
-            && !map_terrain_all_tiles_in_radius_are(end, size.x, 0, TERRAIN_FLOODPLAIN)) {
-            immediate_warning = "#build_farms_on_meadow";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needRock()) {
-        // OG: plain stone quarry accepts any ROCK bit; limestone/granite/sandstone/gem
-        // require build_flags_is_kind_b (ROCK without ORE / monument-rock bits).
-        const bool kind_b = (build_type == BUILDING_LIMESTONE_QUARRY
-                             || build_type == BUILDING_GRANITE_QUARRY
-                             || build_type == BUILDING_SANDSTONE_QUARRY
-                             || build_type == BUILDING_GEMSTONE_MINE);
-        const bool has_rock = kind_b
-            ? map_terrain_exists_rock_kind_b_in_radius(end, size.x, 1)
-            : map_terrain_exists_tile_in_radius_with_type(end, size.x, 1, TERRAIN_ROCK);
-        if (!has_rock) {
-            immediate_warning = "#build_next_to_rocky_areas";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needOre()) {
-        if (!map_terrain_exists_tile_in_radius_with_type(end, size.x, 1, TERRAIN_ORE)) {
-            immediate_warning = "#build_next_to_rocky_areas";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needTrees()) {
-        if (!map_terrain_exists_tile_in_radius_with_type(end, size.x, 1, TERRAIN_SHRUB | TERRAIN_TREE)) {
-            immediate_warning = "#build_wood_cutters_next_to_trees";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needWalls()) {
-        if (!map_terrain_all_tiles_in_radius_are(end, size.x, 0, TERRAIN_WALL)) {
-            immediate_warning = "#build_towers_on_thick_walls";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (!ignoreNearbyEnemy()) {
-        if (has_nearby_enemy(start.x(), start.y(), end.x(), end.y())) {
-            immediate_warning = "#too_close_to_enemy_troops";
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-    if (needRoad() && !!additional_req_param1) {
-        if (!map_terrain_is(end.grid_offset(), TERRAIN_ROAD)) {
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needCanals() && !!additional_req_param1) {
-        if (!map_terrain_is(end.grid_offset(), TERRAIN_CANAL)) {
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    if (needFancyRoad()) {
-        if (!building_road::is_paved(end)) {
-            can_place = CAN_NOT_PLACE;
-        }
-    }
-
-    const auto &preview = building_planer_renderer::get(build_type);
-    can_place = preview.can_place(*this, start, end, can_place);
-
-    if (needRiverAccess()) {
-        if (!map_tile_is_connected_to_open_water(end)) {
-            immediate_warning = "#inland_lake_has_no_sea_access";
-        }
-    }
-}
-
-void build_planner::update_special_case_orientations_check() {
-    int dir_relative;
-
-    // for special buildings that require oriented terrain
-    if (needShoreLine()) {
-        const auto &params = building_static_params::get(build_type);
-        int shoreline_size = (additional_req_param1 > 0) ? additional_req_param1 : params.building_size;
-        shore_orientation result = map_shore_determine_orientation(end, shoreline_size, true);
-        if (needFloodplainShore()) {
-            // in original Pharaoh, this actually is allowed to be built over the EDGE CORNERS.
-            // it looks off, but it's legit!
-            building_variant = 0;
-            if (!result.match) {
-                result = map_shore_determine_orientation(end, shoreline_size, true, true, TERRAIN_FLOODPLAIN);
-                if (result.match && !map_terrain_exists_tile_in_area_with_type(end, size.x, TERRAIN_WATER)) { // correct for water
-                    building_variant = 1;
-                } else {
-                    result.match = false;
-                }
-            } else if (map_terrain_exists_tile_in_area_with_type(end, size.x, TERRAIN_FLOODPLAIN)) { // correct the ShoreLine check for floodplains!
-                result.match = false;
-            }
-        }
-
-        dir_relative = g_camera.relative_orientation(result.orientation_absolute);
-        if (!result.match) {
-            immediate_warning = "#building_not_next_to_water";
-            can_place = CAN_NOT_PLACE;
-        } else if (relative_orientation != dir_relative) {
-            relative_orientation = dir_relative;
-            update_orientations(false);
-        }
-    }
-
-    if (needIntersection()) {
-        bool match = map_orientation_for_venue_with_map_orientation(end, (e_venue_mode_orientation)additional_req_param1, &dir_relative);
-        int city_direction = dir_relative / 2;
-        if (!match) {
-            //immediate_warning_id = additional_req_param2;
-            can_place = CAN_NOT_PLACE;
-        } else if (relative_orientation != city_direction) {
-            relative_orientation = city_direction;
-            update_orientations(false);
-        }
-    }
-
-    const bool temple_altar = needTempleUpgradeAltar();
-    const bool temple_oracle = is_flag(PLANNER_RULE_TEMPLE_UPGRADE_ORACLE);
-    const int temple_options = (temple_altar ? etc_upgrade_altar : 0) | (temple_oracle ? etc_upgrade_oracle : 0);
-    if (temple_altar || temple_oracle) {
-        auto complex = building_at(end)->main()->dcast_temple_complex();
-        if (!complex) {
-            immediate_warning = "#must_have_completed_temple_first";
-            can_place = CAN_NOT_PLACE;
-        } else if (complex->has_upgrade((e_temple_compex_upgrade)temple_options) ) {
-            immediate_warning = "#must_build_temple_complex_first";
-            can_place = CAN_NOT_PLACE;
-        } else {
-            int dir_absolute = (5 - (complex->runtime_data().variant / 2)) % 4;
-            dir_relative = g_camera.relative_orientation(dir_absolute);
-            relative_orientation = (1 + dir_relative) % 2;
-            end = complex->tile();
-            update_orientations(false);
-        }
-    }
-}
-
-void build_planner::update_unique_only_one_check() {
-    if (!build_type) {
-        return;
-    }
-
-    bool unique_already_placed = false;
-
-    const auto &params = building_static_params::get(build_type);
-    bool is_unique_building = params.is_unique_building();
-    if (is_unique_building) {
-        unique_already_placed = g_city.buildings.count_total(build_type);
-    }
-
-    // for unique buildings - only one can be placed inside the mission
-    switch (build_type) {
-    case BUILDING_TEMPLE_COMPLEX_OSIRIS:
-    case BUILDING_TEMPLE_COMPLEX_RA:
-    case BUILDING_TEMPLE_COMPLEX_PTAH:
-    case BUILDING_TEMPLE_COMPLEX_SETH:
-    case BUILDING_TEMPLE_COMPLEX_BAST:
-        //        case BUILDING_TEMPLE_COMPLEX_ALTAR:
-        //        case BUILDING_TEMPLE_COMPLEX_ORACLE:
-        if (g_city.buildings.has_temple_complex() && !game_features::gameplay_change_multiple_temple_complexes) {
-            unique_already_placed = true;
-        }
-        break;
-    case BUILDING_PERSONAL_MANSION:
-    case BUILDING_FAMILY_MANSION:
-    case BUILDING_DYNASTY_MANSION:
-        // OG mansion_placed: one mansion of any tier.
-        unique_already_placed = g_city.buildings.has_mansion();
-        break;
-    case BUILDING_VILLAGE_PALACE:
-    case BUILDING_TOWN_PALACE:
-    case BUILDING_CITY_PALACE:
-    case BUILDING_VILLAGE_PALACE_UP:
-    case BUILDING_TOWN_PALACE_UP:
-        // OG palace_placed: one palace of any tier.
-        unique_already_placed = g_city.buildings.has_palace();
-        break;
-    case BUILDING_TAX_COLLECTOR:
-    case BUILDING_TAX_COLLECTOR_UPGRADED:
-        // OG: cannot place tax office without a palace.
-        if (!g_city.buildings.has_palace()) {
-            immediate_warning = "#no_taxes_without_palace";
-            can_place = CAN_NOT_PLACE;
-            return;
-        }
-        break;
-    default:
-        break;
-    }
-
-    if (unique_already_placed) {
-        immediate_warning = "#only_one_building_of_this_type";
-        can_place = CAN_NOT_PLACE;
-        return;
-    }
-
-    if (params.flags.is_monument && building_monument_placement_limit_reached(build_type)) {
-        immediate_warning = "#monument_limit_reached";
-        can_place = CAN_NOT_PLACE;
-    }
-}
-
-void build_planner::update_coord_caches() {
-    vec2i view_tile = g_camera.lookup_tile_to_pixel(end);
-    if (view_tile.x == 0 && view_tile.y == 0)
-        // this prevents graphics from being drawn on the top left corner
-        // of the screen when the current "end" tile isn't valid.
-        view_tile = g_camera.selected_tile;
-    int orientation = g_camera.orientation / 2;
+    int orientation = map_view_orientation() / 2;
     for (int row = 0; row < size.y; row++) {
         for (int column = 0; column < size.x; column++) {
             // get tile offset
@@ -950,13 +549,7 @@ void build_planner::update_coord_caches() {
                 break;
             }
 
-            // get tile pixel coords
-            int current_x = view_tile.x + x_offset * 30 - y_offset * 30;
-            int current_y = view_tile.y + x_offset * 15 + y_offset * 15;
-
-            // save values in cache
             tile_coord_cache[row][column] = tile;
-            pixel_coords_cache[row][column] = {current_x, current_y};
         }
     }
     switch (orientation) {
@@ -992,12 +585,12 @@ void build_planner::update_orientations(bool check_if_changed) {
     int prev_variant = building_variant;
    //int global_rotation = building_rotation_global_rotation();
 
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
 
     relative_orientation = preview.update_relative_orientation(*this, end, relative_orientation);
     relative_orientation = relative_orientation % 4;
     // Absolute must be fresh before variant: temple (and others) derive variant from it.
-    absolute_orientation = g_camera.absolute_orientation(relative_orientation);
+    absolute_orientation = map_view_absolute_orientation(relative_orientation);
     building_variant = preview.update_building_variant(*this);
 
     // do not refresh graphics if nothing changed
@@ -1006,7 +599,7 @@ void build_planner::update_orientations(bool check_if_changed) {
     }
 
     setup_build_graphics(); // reload graphics, tiles, etc.
-    update_coord_caches();  // refresh caches
+    update_tile_caches();   // refresh caches
 }
 
 void build_planner::dispatch_warnings() {
@@ -1040,6 +633,7 @@ int build_planner::get_total_drag_size(int* x, int* y) {
 }
 
 void build_planner::construction_start(tile2i tile) {
+    draw_phase::check_write("build_planner");
     if (!tile.valid()) {
         return;
     }
@@ -1051,7 +645,7 @@ void build_planner::construction_start(tile2i tile) {
     start = tile;
     end = tile;
 
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
     if (game_undo_start_build(build_type)) {
         in_progress = true;
         const bool can_start = preview.can_construction_start(*this, start);
@@ -1063,6 +657,7 @@ void build_planner::construction_start(tile2i tile) {
 }
 
 void build_planner::construction_cancel(bool release_sidebar) {
+    draw_phase::check_write("build_planner");
     map_property_clear_constructing_and_deleted();
     if (in_progress && draggable()) {
         // Measuring a clear-land drag marks its buildings DELETED_BY_PLAYER; without this the next
@@ -1083,12 +678,13 @@ void build_planner::construction_cancel(bool release_sidebar) {
 }
 
 void build_planner::construction_update(tile2i tile) {
+    draw_phase::check_write("build_planner");
     end = tile;
     if (!end.valid()) {
         return;
     }
 
-    if (!build_type || g_city.finance.is_out_of_money()) {
+    if (!build_type || finance_system::is_out_of_money(g_city.finance)) {
         total_cost = 0;
         return;
     }
@@ -1098,7 +694,7 @@ void build_planner::construction_update(tile2i tile) {
     int items_placed = 1;
 
     const auto &params = building_static_params::get(build_type);
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
     switch (build_type) {
     case BUILDING_CLEAR_LAND:
         last_items_cleared = building_construction_clear_land(true, start, end);
@@ -1127,7 +723,7 @@ void build_planner::construction_update(tile2i tile) {
     case BUILDING_FORT_CHARIOTEERS:
     case BUILDING_FORT_INFANTRY:
         if (g_formations.num_batalions < formation_get_max_forts()) {
-            vec2i offset = FORT_OFFSET[building_fort::placement_rotation()][g_camera.orientation / 2];
+            vec2i offset = FORT_OFFSET[building_fort::placement_rotation()][map_view_orientation() / 2];
             tile2i ground = tile.shifted(offset.x, offset.y);
             if (map_building_tiles_are_clear(tile, 3, TERRAIN_ALL)
                 && map_building_tiles_are_clear(ground, 4, TERRAIN_ALL)) {
@@ -1158,13 +754,14 @@ void build_planner::checks_generic_rules(building* b) {
 }
 
 void build_planner::construction_finalize() { // confirm final placement
+    draw_phase::check_write("build_planner");
     logs::info("[build-btn] finalize enter type=%d start=%d(%d,%d) end=%d(%d,%d) can_place=%d cost=%d",
                (int)build_type, start.grid_offset(), start.x(), start.y(), end.grid_offset(), end.x(), end.y(),
                (int)can_place, total_cost);
 
     in_progress = false;
 
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
     const auto &params = building_static_params::get(build_type);
     can_place = preview.finalize_check(*this, start, end, can_place);
 
@@ -1197,6 +794,7 @@ void build_planner::construction_finalize() { // confirm final placement
 
     checks_generic_rules(last_created_building);
     bool should_recalc_ferry_routes = params.needs.shoreline;
+    total_cost = preview.finalize_cost(*this, total_cost);
 
     setup_building_variant(end, build_type);
     update_orientations(false);
@@ -1238,7 +836,7 @@ void build_planner::construction_finalize() { // confirm final placement
     map_routing_update_walls();
 
     if (should_recalc_ferry_routes) {
-        map_routing_update_ferry_routes();
+        building_ferry::update_routes();
     }
 }
 
@@ -1255,7 +853,11 @@ void build_planner::update_preview(tile2i cursor_tile) {
     }
 
     end = cursor_tile;
-    update_coord_caches();
+    update_tile_caches();
+    site_parts.clear();
+    site_blocked = false;
+    site_orientation = 0;
+    placement_rules_of(build_type).collect_site(*this, end);
 
     immediate_warning = "";
     extra_warning = "";
@@ -1276,7 +878,7 @@ void build_planner::update_preview(tile2i cursor_tile) {
         const int min_length = bridge_span_min_length(is_ship);
         const int max_length = bridge_span_max_length(is_ship);
         const bool blocked = !end_offset || length < min_length || length > max_length
-            || g_city.finance.is_out_of_money();
+                             || finance_system::is_out_of_money(g_city.finance);
         can_place = blocked ? CAN_NOT_PLACE : CAN_PLACE;
         total_cost = blocked ? 0 : (int)params.get_cost() * length;
     }
@@ -1291,80 +893,11 @@ void build_planner::update_hover(tile2i cursor_tile) {
 }
 
 void build_planner::update(tile2i cursor_tile) {
+    draw_phase::check_write("build_planner");
     update_preview(cursor_tile);
 
     if (in_progress && draggable()) {
         construction_update(end);
-    }
-}
-
-void build_planner::draw_flat_tile(vec2i pos, color color_mask, painter &ctx) {
-    auto &command = ImageDraw::create_command(ctx, render_command_t::ert_generic);
-    command.image_id = image_id_from_group(GROUP_TERRAIN_OVERLAY_COLORED);
-    command.pixel = pos;
-    command.mask = color_mask;
-    command.scale = 1.f;
-}
-
-void build_planner::draw_bridge(tile2i tile, vec2i pixel, int type, painter &ctx) {
-    const bool is_ship = (type == BUILDING_UNUSED_SHIP_BRIDGE_83);
-    int length, direction;
-    int end_grid_offset = map_bridge_calculate_length_direction(tile.x(), tile.y(), &length, &direction, is_ship);
-
-    int dir = direction - g_camera.orientation;
-    if (dir < 0)
-        dir += 8;
-
-    const int min_length = bridge_span_min_length(is_ship);
-    const int max_length = bridge_span_max_length(is_ship);
-
-    bool blocked = false;
-    if (length < min_length || length > max_length)
-        blocked = true;
-    else if (!end_grid_offset)
-        blocked = true;
-
-    if (g_city.finance.is_out_of_money())
-        blocked = true;
-
-    int x_delta, y_delta;
-    switch (dir) {
-    case DIR_0_TOP_RIGHT:
-        x_delta = 29;
-        y_delta = -15;
-        break;
-    case DIR_2_BOTTOM_RIGHT:
-        x_delta = 29;
-        y_delta = 15;
-        break;
-    case DIR_4_BOTTOM_LEFT:
-        x_delta = -29;
-        y_delta = 15;
-        break;
-    case DIR_6_TOP_LEFT:
-        x_delta = -29;
-        y_delta = -15;
-        break;
-    default:
-        return;
-    }
-    if (blocked) {
-        draw_flat_tile(ctx, pixel, length > 0 ? COLOR_MASK_GREEN : COLOR_MASK_RED);
-        if (length > 1)
-            draw_flat_tile(ctx, pixel + vec2i(x_delta * (length - 1), y_delta * (length - 1)), COLOR_MASK_RED);
-
-    } else {
-        if (dir == DIR_0_TOP_RIGHT || dir == DIR_6_TOP_LEFT) {
-            for (int i = length - 1; i >= 0; i--) {
-                int sprite_id = map_bridge_get_sprite_id(i, length, dir, type == BUILDING_UNUSED_SHIP_BRIDGE_83);
-                city_draw_bridge_tile(ctx, pixel.x + x_delta * i, pixel.y + y_delta * i, sprite_id, COLOR_MASK_GREEN);
-            }
-        } else {
-            for (int i = 0; i < length; i++) {
-                int sprite_id = map_bridge_get_sprite_id(i, length, dir, type == BUILDING_UNUSED_SHIP_BRIDGE_83);
-                city_draw_bridge_tile(ctx, pixel.x + x_delta * i, pixel.y + y_delta * i, sprite_id, COLOR_MASK_GREEN);
-            }
-        }
     }
 }
 
@@ -1379,7 +912,7 @@ int build_planner::is_blocked_for_building(tile2i tile, int size, blocked_tile_v
         size = 6;
     }
 
-    const int orientation_index = g_camera.orientation / 2;
+    const int orientation_index = map_view_orientation() / 2;
     int blocked = 0;
     for (int dy = 0; dy < size; dy++) {
         for (int dx = 0; dx < size; dx++) {
@@ -1414,140 +947,8 @@ int build_planner::is_blocked_for_building(tile2i tile, int size, blocked_tile_v
     return blocked;
 }
 
-void build_planner::draw_partially_blocked(painter &ctx, int fully_blocked, const blocked_tile_vec &blocked_tiles) {
-    for (auto &tile : blocked_tiles) {
-        vec2i pixel = g_camera.lookup_tile_to_pixel(tile.tile);
-        draw_flat_tile(ctx, pixel, (fully_blocked || tile.blocked) ? COLOR_MASK_RED_30 : COLOR_MASK_GREEN_30);
-    }
-}
-
 int build_planner::tile_grid_offset(int orientation, int y) {
     return TILE_GRID_OFFSETS_PH[orientation][y];
-}
-
-void build_planner::draw_flat_tile(painter &ctx, vec2i pixel, color color_mask) {
-    ctx.img_generic(image_id_from_group(GROUP_TERRAIN_OVERLAY_COLORED), pixel, color_mask);
-}
-
-void build_planner::draw(painter &ctx) {
-    OZZY_PROFILER_FUNCTION();
-    if (needBridge()) {
-        vec2i pixel = pixel_coords_cache[0][0];
-        draw_bridge(end, pixel, build_type, ctx);
-        return;
-    }
-
-    // empty building
-    if (size.x < 1 || size.y < 1) {
-        return;
-    }
-
-    vec2i pixel = pixel_coords_cache[0][0];
-    const auto &preview = building_planer_renderer::get(build_type);
-    if (can_place == CAN_NOT_PLACE) {
-        // draw fully red (placement not allowed)
-        preview.ghost_blocked(*this, ctx, start, end, pixel, /*fully_blocked*/true);
-    } else if (tiles_blocked_total > 0) {
-        // draw green blueprint with red (blocked) tiles
-        preview.ghost_blocked(*this, ctx, start, end, pixel, /*fully_blocked*/false);
-        draw_road_access_marker(ctx);
-    } else if (!draw_as_constructing) {
-        // draw normal building ghost (green)
-        draw_graphics(ctx);
-        draw_road_access_marker(ctx);
-    }
-}
-
-void build_planner::draw_building_ghost(painter &ctx, int image_id, vec2i pixel, color color_mask) {
-    auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile_full);
-    command.image_id = image_id;
-    command.pixel = pixel;
-    command.mask = color_mask;
-    command.location = SOURCE_LOCATION;
-}
-
-void build_planner::draw_ghost_overlay(painter &ctx, int image_id, vec2i pixel) {
-    auto& command = ImageDraw::create_subcommand(ctx, render_command_t::ert_generic);
-    command.image_id = image_id;
-    command.pixel = pixel;
-    command.mask = COLOR_MASK_GREEN;
-    command.scale = 1.f;
-    command.location = SOURCE_LOCATION;
-}
-
-void build_planner::draw_from_below(painter &ctx, int image_id, vec2i pixel, color color_mask) {
-    auto& command = ImageDraw::create_subcommand(ctx, render_command_t::ert_from_below);
-    command.image_id = image_id;
-    command.pixel = pixel;
-    command.mask = color_mask;
-    command.scale = 1.f;
-    command.location = SOURCE_LOCATION;
-}
-
-void build_planner::draw_overlay_tile(painter &ctx, int image_id, vec2i pixel, color color_mask, float scale) {
-    auto& command = ImageDraw::create_command(ctx, render_command_t::ert_generic);
-    command.image_id = image_id;
-    command.pixel = pixel;
-    command.mask = color_mask;
-    command.scale = scale;
-    command.location = SOURCE_LOCATION;
-}
-
-// Opacity of the see-through building preview (gameui_transparent_ghost).
-static constexpr uint32_t k_ghost_alpha = 153; // 60%
-build_planner::ghost_fade_stats g_ghost_fade_stats;
-
-static void fade_opaque_masks(ImageDraw::render_command_vec& commands, size_t from) {
-    for (size_t i = from; i < commands.size(); ++i) {
-        const uint32_t mask = commands[i].mask ? commands[i].mask : COLOR_MASK_NONE;
-        if ((mask & COLOR_CHANNEL_ALPHA) != COLOR_CHANNEL_ALPHA) {
-            g_ghost_fade_stats.kept++; // already translucent, like the 30% footprint tiles
-            continue;
-        }
-        commands[i].mask = (mask & ~COLOR_CHANNEL_ALPHA) | (k_ghost_alpha << COLOR_BITSHIFT_ALPHA);
-        g_ghost_fade_stats.faded++;
-    }
-}
-
-void build_planner::draw_graphics(painter &ctx) {
-    // TODO: bring these all over the unified system
-    // special graphics buildings
-    vec2i pixel = pixel_coords_cache[0][0];
-    const auto &preview = building_planer_renderer::get(build_type);
-    auto& commands = ImageDraw::commands_for(ctx);
-    auto& subcommands = ImageDraw::subcommands_for(ctx);
-    const size_t first_command = commands.size();
-    const size_t first_subcommand = subcommands.size();
-    preview.ghost_preview(*this, ctx, start, end, pixel);
-    g_ghost_fade_stats = {};
-    g_ghost_fade_stats.drawn = (int)(commands.size() - first_command + subcommands.size() - first_subcommand);
-    if (game_features::gameui_transparent_ghost.to_bool()) {
-        fade_opaque_masks(commands, first_command);
-        fade_opaque_masks(subcommands, first_subcommand);
-    }
-}
-
-void build_planner::draw_road_access_marker(painter &ctx) {
-    if (!game_features::gameui_show_building_road_access.to_bool()) {
-        return;
-    }
-    if (!building_type_ghost_road_access(build_type)) {
-        return;
-    }
-
-    const auto &params = building_static_params::get(build_type);
-    const int bsize = params.building_size > 0 ? params.building_size : size.x;
-    const bool assume = building_type_ghost_assume_occupied(build_type);
-    building_road_ports ports = building_road_ports_preview(end, build_type, bsize, absolute_orientation,
-        building_variant, assume);
-    if (!ports.valid) {
-        return;
-    }
-
-    // Dim when the access tile has no route to kingdom entry (last-tick distances).
-    const color mask = map_routing_distance(ports.tile) > 0 ? COLOR_MASK_AMBER : COLOR_MASK_AMBER_40;
-    vec2i access_pixel = g_camera.lookup_tile_to_pixel(ports.tile);
-    draw_building_ghost(ctx, image_id_from_group(GROUP_TERRAIN_OVERLAY_COLORED) + 23, access_pixel, mask);
 }
 
 bool build_planner::place() {
@@ -1562,7 +963,7 @@ bool build_planner::place() {
     // Some of the buildings below have specific warning messages (e.g. roadblocks)
     // that can't be easily put in `building_construction_can_place_on_terrain()`!
     const auto &params = building_static_params::get(build_type);
-    const auto &preview = building_planer_renderer::get(build_type);
+    const auto& preview = placement_rules_of(build_type);
     int placement_cost = params.get_cost();
     bool placed_free = false; // something placed at no cost (monuments are free to lay out, as in the original)
     last_created_building = nullptr;

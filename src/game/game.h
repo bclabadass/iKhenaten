@@ -5,7 +5,7 @@
 #include "overlays/city_overlay_fwd.h"
 #include "core/xstring.h"
 #include "core/threading.h"
-#include "game/simulation_time.h"
+#include "game/simulation.h"
 #include "game/game_events.h"
 #include "core/system_time.h"
 #include "core/xfunction.h"
@@ -86,8 +86,6 @@ struct game_t {
     int mission_choice_open_scenario_id = 0;
     int tick_timer_ms = 37;
 
-    simulation_time_t simtime;
-
     struct {
         xstring last_loaded_mission;
         e_session_type last_loaded = e_session_none;
@@ -127,7 +125,6 @@ struct game_t {
     void frame_begin();
     void frame_end();
 
-    void time_init(int year);
     void init_state();
 
     void city_sounds_frame_begin();

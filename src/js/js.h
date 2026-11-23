@@ -26,6 +26,8 @@ bool js_vm_exec_source(pcstr name, pcstr source);
 void js_vm_request_reset();
 /** Bumped on every VM rebuild: a js_State* or script globals from an older generation are gone. */
 uint32_t js_vm_generation();
+/** Re-run every loaded ui_*.js once the screen size settles: window layouts read it when their script runs. */
+void js_vm_request_ui_relayout();
 int js_vm_load_file_and_exec(pcstr path);
 
 void js_vm_add_scripts_folder(vfs::path folder);

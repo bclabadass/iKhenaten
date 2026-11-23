@@ -76,7 +76,7 @@ void kingdome_relation_t::update_debt_state() {
     case e_debt_none:
         // provide bailout
         events::emit(event_finance_donation{ rescue_loan });
-        g_city.finance.calculate_totals();
+        finance_system::calculate_totals(g_city.finance);
 
         debt_state = e_debt_one_time;
         months_in_debt = 0;
@@ -96,7 +96,7 @@ void kingdome_relation_t::update_debt_state() {
             messages::popup("message_out_of_money_again", 0, 0);
             months_in_debt = 0;
         }
-        if (game.simtime.day == 0) {
+        if (g_simulation.simtime.day == 0) {
             months_in_debt++;
         }
 
@@ -116,7 +116,7 @@ void kingdome_relation_t::update_debt_state() {
             months_in_debt = 0;
         }
 
-        if (game.simtime.day == 0) {
+        if (g_simulation.simtime.day == 0) {
             months_in_debt++;
         }
 
@@ -343,11 +343,11 @@ void kingdome_relation_t::advance_year() {
 
     // milestone
     int milestone_pct = 0;
-    if (scenario_criteria_milestone_year(25) == game.simtime.year) {
+    if (scenario_criteria_milestone_year(25) == g_simulation.simtime.year) {
         milestone_pct = 25;
-    } else if (scenario_criteria_milestone_year(50) == game.simtime.year) {
+    } else if (scenario_criteria_milestone_year(50) == g_simulation.simtime.year) {
         milestone_pct = 50;
-    } else if (scenario_criteria_milestone_year(75) == game.simtime.year) {
+    } else if (scenario_criteria_milestone_year(75) == g_simulation.simtime.year) {
         milestone_pct = 75;
     }
 

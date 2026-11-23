@@ -7,10 +7,12 @@
 #include "input/cursor.h"
 #include "input/scroll.h"
 #include "graphics/elements/ui.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
+#include "graphics/render_stats.h"
 #include "core/tokenum.h"
 #include "graphics/elements/ui_js.h"
 #include "game/game_events.h"
+#include "game/simulation.h"
 
 #include <cstring>
 
@@ -92,8 +94,13 @@ static void noop_input(const mouse* m, const hotkeys* h) {
 
 static void reset_input() {
     mouse::ref().reset_button_state();
-    reset_touches(1);
+    g_touch.reset(true);
     g_scroll.stop();
+}
+
+static void set_current_window(window_type* window) {
+    g_window_manager.current_window = window;
+    g_simulation.time_runs = window->sim_time_runs;
 }
 
 static void increase_queue_index() {
@@ -123,6 +130,15 @@ xstring window_get_id() {
     return data.current_window->id;
 }
 
+xstring window_get_id_at_depth(int depth) {
+    auto& data = g_window_manager;
+    const int n = (int)data.window_queue.size();
+    if (depth < 0 || depth >= n) {
+        return {};
+    }
+    return data.window_queue[((data.queue_index - depth) % n + n) % n].id;
+}
+
 void window_show(const window_type* window) {
     auto& data = g_window_manager;
     // push window into queue of screens to render
@@ -131,7 +147,7 @@ void window_show(const window_type* window) {
     ui::clear_active_elements();
     increase_queue_index();
     data.window_queue[data.queue_index] = *window;
-    data.current_window = &data.window_queue[data.queue_index];
+    set_current_window(&data.window_queue[data.queue_index]);
     if (!data.current_window->draw_background)
         data.current_window->draw_background = noop;
 
@@ -155,17 +171,17 @@ void window_go_back() {
     ui::stop_active_input();
     decrease_queue_index();
 
-    data.current_window = &data.window_queue[data.queue_index];
+    set_current_window(&data.window_queue[data.queue_index]);
 }
 
 void windows_manager_t::update_input_after() {
     auto& data = g_window_manager;
-    reset_touches(0);
+    g_touch.reset(false);
     mouse::ref().reset_scroll();
     if (data.current_window) {
         input_cursor_update(data.current_window->id);
     }
-    hotkey_reset_state();
+    g_hotkeys.reset();
 }
 
 void windows_manager_t::handle_input(const mouse *m, const hotkeys *h) {
@@ -196,7 +212,7 @@ void window_draw(int force) {
     // draw the current (top) window in the queue
     ui::begin_frame();
 
-    if (!touch_to_mouse()) {
+    if (!g_touch.to_mouse()) {
         mouse::ref().determine_button_state(); // touch overrides mouse
     }
 
@@ -210,6 +226,7 @@ void window_draw(int force) {
         g_render.clear_screen();
     }
 
+    render_stats::window_draw_begin();
     window_ui_scale_apply(window_ui_scale_for(w->id), true);
 
     {
@@ -228,6 +245,7 @@ void window_draw(int force) {
     }
 
     window_ui_scale_apply(1.0f, true);
+    render_stats::window_draw_end();
     ui::flush_commands();
 }
 

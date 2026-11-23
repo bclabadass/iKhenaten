@@ -28,7 +28,7 @@
 #include "grid/routing/routing.h"
 #include "graphics/elements/tooltip.h"
 #include "building/construction/build_planner.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "core/pool.h"
 #include "core/interlocked.h"
 
@@ -43,6 +43,8 @@
 using namespace render_cmd;
 
 pool<figure::debug_lines_t, 64> debug_tooltip_lines;
+
+bool legacy_figure_actions_remapped = false;
 
 static const vec2i crowd_offsets[] = {
     {0, 0}, {3, 0}, {3, 3}, {-3, 6}, {-3, -3},
@@ -331,6 +333,7 @@ void figure::figure_delete_UNSAFE() {
     state = FIGURE_STATE_NONE;
     memset(this, 0, sizeof(figure));
     id = figure_id;
+    map_figure_draw_state_clear(figure_id);
 }
 
 figure_impl *figure::dcast() {
@@ -593,20 +596,14 @@ vec2i figure::main_sprite_pixel() const {
 }
 
 vec2i figure::cart_sprite_pixel() const {
-    vec2i r = main_cached_pos + cart_offset + default_cart_offset;
+    vec2i r = map_figure_draw_state(id).main_pos + cart_offset + default_cart_offset;
     return r;
 }
 
 void figure::draw_cart_sprite(painter &ctx, vec2i pixel, int highlight) {
     const image_t *img = image_get(cart_image_id);
-    ImageDraw::sprite(ctx,
-        ImageId{cart_image_id},
-        Pixel{pixel},
-        Mask{COLOR_MASK_NONE},
-        UseSortPixel{true},
-        SortPixel{main_sort_pixel});
-
-    is_cart_drawn = true;
+    ImageDraw::sprite(ctx, ImageId{cart_image_id}, Pixel{pixel}, Mask{COLOR_MASK_NONE}, UseSortPixel{true},
+      SortPixel{map_figure_draw_state(id).sort_pixel});
 }
 
 bool figure::do_returnhome(e_terrain_usage terrainchoice, short NEXT_ACTION) {
@@ -708,7 +705,7 @@ void figure::draw_main_sprite(painter &ctx, vec2i pixel, int highlight) {
     command.pixel = pixel;
     command.mask = COLOR_MASK_NONE;
     command.use_sort_pixel = true;
-    command.sort_pixel = main_sort_pixel;
+    command.sort_pixel = map_figure_draw_state(id).sort_pixel;
 }
 
 void figure::draw(painter &ctx, int highlight) {
@@ -717,28 +714,24 @@ void figure::draw(painter &ctx, int highlight) {
         return;
     }
 
-    if (threading::xchg(&mt_render_worker, true)) {
+    figure_draw_state& st = map_figure_draw_state(id);
+    if (st.main_drawn.exchange(true)) {
         return;
     }
 
     if (cart_image_id) {
         switch (type) {
         case FIGURE_MAP_FLAG:
-            draw_map_flag(main_cached_pos, highlight);
+            draw_map_flag(st.main_pos, highlight);
             break;
 
         default:
-            dcast()->draw_main_sprite(ctx, main_cached_pos, highlight);
+            dcast()->draw_main_sprite(ctx, st.main_pos, highlight);
             break;
         }
     } else {
-        draw_main_sprite(ctx, main_cached_pos, highlight);
-        //if (!is_enemy_image && highlight) {
-        //    ImageDraw::img_sprite(ctx, main_image_id, main_cached_pos, COLOR_MASK_LEGION_HIGHLIGHT);
-        //}
+        draw_main_sprite(ctx, st.main_pos, highlight);
     }
-
-    is_main_drawn = true;
 }
 
 void figure::draw_debug(painter &ctx) {
@@ -792,9 +785,9 @@ void figure::draw_debug(painter &ctx) {
         // draw path
         if (routing_path_id) {
             vec2i coords = g_camera.lookup_tile_to_pixel(destination()->tile);
-            build_planner::draw_building_ghost(ctx, image_id_from_group(PACK_CUSTOM, 1) + 3, coords);
+            ghost_draw::draw_building_ghost(ctx, image_id_from_group(PACK_CUSTOM, 1) + 3, coords);
             coords = g_camera.lookup_tile_to_pixel(destination_tile);
-            build_planner::draw_building_ghost(ctx, image_id_from_group(PACK_CUSTOM, 1) + 3, coords);
+            ghost_draw::draw_building_ghost(ctx, image_id_from_group(PACK_CUSTOM, 1) + 3, coords);
             int tx = tile.x();
             int ty = tile.y();
             coords = g_camera.lookup_tile_to_pixel(tile);
@@ -981,6 +974,54 @@ void figure::bind(io_buffer* iob, figure_original_fields* original) {
     iob->bind(BIND_SIGNATURE_UINT8, &f->progress_inside_speed);
     iob->bind(BIND_SIGNATURE_INT16, &f->wait_ticks);                // 0
     iob->bind(BIND_SIGNATURE_INT16, &f->action_state);              // 9
+
+    // Entertainer/boat/fireman/soldier actions were renumbered into linear per-figure
+    // ranges (entertainers 13,90..96 -> 0..7; fireman 70..77 -> 0..7; fishing boat
+    // 190..198 -> 0..8; ferry 200..204 -> 0..4; soldier 80..91 -> 0..11). Older saves
+    // still carry the legacy values; without this remap those figures are left in an
+    // unhandled state (e.g. a juggler stuck walking in place) after loading.
+    if (iob->is_read_access()) {
+        switch (f->type) {
+        case FIGURE_JUGGLER:
+        case FIGURE_MUSICIAN:
+        case FIGURE_DANCER:
+        case FIGURE_SENET_PLAYER:
+            if (f->action_state >= 90 && f->action_state <= 96) {
+                f->action_state -= 90;
+                legacy_figure_actions_remapped = true;
+            } else if (f->action_state == 13) {
+                f->action_state = 7;
+                legacy_figure_actions_remapped = true;
+            }
+            break;
+        case FIGURE_FIREMAN:
+            if (f->action_state >= 70 && f->action_state <= 77) {
+                f->action_state -= 70;
+                legacy_figure_actions_remapped = true;
+            }
+            break;
+        case FIGURE_FISHING_BOAT:
+            if (f->action_state >= 190 && f->action_state <= 198) {
+                f->action_state -= 190;
+                legacy_figure_actions_remapped = true;
+            }
+            break;
+        case FIGURE_FERRY_BOAT:
+            if (f->action_state >= 200 && f->action_state <= 204) {
+                f->action_state -= 200;
+                legacy_figure_actions_remapped = true;
+            }
+            break;
+        case FIGURE_ARCHER:
+        case FIGURE_INFANTRY:
+        case FIGURE_FCHARIOTEER:
+            if (f->action_state >= 80 && f->action_state <= 91) {
+                f->action_state -= 80;
+                legacy_figure_actions_remapped = true;
+            }
+            break;
+        }
+    }
 
     iob->bind(BIND_SIGNATURE_INT16, &f->routing_path_id);           // 12
     iob->bind(BIND_SIGNATURE_INT16, &f->routing_path_current_tile); // 4

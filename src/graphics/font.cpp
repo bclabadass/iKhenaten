@@ -4,9 +4,9 @@
 #include "core/log.h"
 #include "core/memory_manager.h"
 #include "image.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "graphics/imagepak_holder.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 #include "content/atlas_packer.h"
 #include "content/vfs.h"
 #include "game/game_config.h"
@@ -14,7 +14,7 @@
 #include "platform/arguments.h"
 #include "platform/platform.h"
 #include "window/autoconfig_window.h"
-#include "core/app.h"
+#include "core/app_module.h"
 #include "graphics/elements/lang_text.h"
 
 #include <algorithm>
@@ -26,7 +26,6 @@ void ANK_REGISTER_CONFIG_ITERATOR(config_load_external_fonts) {
     font_atlas_regenerate();
 }
 
-ANK_CONFIG_STRUCT(font_config, type, size, bold, color, shadow_offset, line_height, letter_spacing)
 const e_font_tokens_t ANK_CONFIG_ENUM(e_font_tokens);
 
 void game_language::decode_symbols(font_utf8_symbols_t& out) const {

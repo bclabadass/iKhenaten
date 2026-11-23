@@ -7,7 +7,8 @@
 //   [test-marker] culture_skips_unavailable_dentist
 //   [test-marker] culture_selima_ok
 
-var T385_SAVE = '../DuoSaves/Selima 7.svx'
+// Saves live under --user-dir in tests; the Duo saves stay in the Pharaoh folder's Save/DuoSaves/.
+var T385_SAVE = __test_data_dir() + '/Save/DuoSaves/Selima 7.svx'
 var __test385_ok = false
 var T385_FIELDS = ['booth', 'bandstand', 'pavilion', 'senet_house', 'zoo', 'school', 'library', 'religion',
     'dentist', 'physician', 'mortuary']

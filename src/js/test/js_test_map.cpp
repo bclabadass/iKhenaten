@@ -1,10 +1,12 @@
 #include "js/test/js_test_common.h"
+#include "grid/desirability_chunks.h"
 
 #include "building/building_road.h"
 #include "city/city.h"
 #include "city/city_figures.h"
 #include "city/city_malaria_risk.h"
 #include "city/city_recorded_paths.h"
+#include "grid/bridge.h"
 #include "grid/building.h"
 #include "grid/figure.h"
 #include "grid/gems.h"
@@ -114,9 +116,8 @@ static int __test_road_is_paved(int x, int y) {
 }
 ANK_FUNCTION_2(__test_road_is_paved);
 
-extern grid_xx g_desirability_grid;
 static void __test_set_desirability(int x, int y, int value) {
-    map_grid_set(g_desirability_grid, tile2i(x, y).grid_offset(), value);
+    map_grid_set(desirability_grid_chunk::grid, tile2i(x, y).grid_offset(), value);
 }
 ANK_FUNCTION_3(__test_set_desirability);
 
@@ -213,7 +214,27 @@ static int __test_figure_tile_x(int fid) {
 }
 ANK_FUNCTION_1(__test_figure_tile_x);
 
+static int __test_map_bridge_height(int x, int y) {
+    return map_bridge_height(tile2i(x, y).grid_offset());
+}
+ANK_FUNCTION_2(__test_map_bridge_height);
+
 static bool __test_animal_can_travel(int sx, int sy, int dx, int dy) {
     return map_routing_animal_can_travel(tile2i(sx, sy), tile2i(dx, dy));
 }
 ANK_FUNCTION_4(__test_animal_can_travel);
+
+static bool __test_citizen_road_by_ferry(int sx, int sy, int dx, int dy) {
+    return map_routing_citizen_can_travel_over_road(tile2i(sx, sy), tile2i(dx, dy), true);
+}
+ANK_FUNCTION_4(__test_citizen_road_by_ferry);
+
+static bool __test_citizen_land_route(int sx, int sy, int dx, int dy) {
+    return map_routing_citizen_can_travel_over_land(tile2i(sx, sy), tile2i(dx, dy), false);
+}
+ANK_FUNCTION_4(__test_citizen_land_route);
+
+static int __test_map_building_height(int x, int y) {
+    return map_building_height_at(tile2i(x, y).grid_offset());
+}
+ANK_FUNCTION_2(__test_map_building_height);

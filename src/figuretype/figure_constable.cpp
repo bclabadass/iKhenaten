@@ -9,7 +9,9 @@
 #include "figuretype/figure_tomb_robber.h"
 #include "game/game_config.h"
 #include "grid/routing/routing.h"
-#include "js/js_game.h"
+#include "game/game_events.h"
+#include "game/sound_effect.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 
@@ -32,8 +34,12 @@ void figure_constable::on_walk_cycle(bool wrapped) {
 
 void figure_constable::on_attack_tick() {
     if (base.attack_image_offset == 12) {
-        base.play_attack_sound();
+        play_attack_sound();
     }
+}
+
+void figure_constable::play_attack_sound() {
+    events::emit(event_sound_effect{SOUND_EFFECT_POLICE_ATTACK});
 }
 
 // Remake police weapons (gameplay_change_police_weapons): the constable walks to a storage yard and leaves a

@@ -10,7 +10,6 @@
 #include "js/js_struct.h"
 #include "city/city_figures.h"
 #include "platform/platform.h"
-#include "sound/sound.h"
 
 #include <filesystem>
 #if defined(__APPLE__)
@@ -73,7 +72,7 @@ void ANK_PERMANENT_CALLBACK(event_synthesize_figure_phrase, ev) {
 #else
     if (std::system(cmd.c_str()) == 0) {
         logs::info("Create file: %s", ev.path.c_str());
-        g_sound.speech_play_file(ev.path, 255);
+        events::emit(event_sound_speech{ev.path});
     } else {
         logs::info("akhenaten-tts failed with cmd: %s", cmd.c_str());
     }

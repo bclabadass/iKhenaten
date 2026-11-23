@@ -2,9 +2,10 @@
 
 #include "graphics/image.h"
 #include "graphics/graphics.h"
+#include "graphics/elements/ui.h"
 #include "graphics/screen.h"
 #include "graphics/video.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 #include "graphics/window.h"
 #include "core/bstring.h"
 #include "core/profiler.h"
@@ -61,7 +62,7 @@ static victory_video_rect victory_video_fit(int screen_w, int screen_h, int widt
 static void draw_foreground(int) {
     auto& data = g_victory_video_data;
     const victory_video_rect r = victory_video_fit(screen_width(), screen_height(), data.width, data.height);
-    video_draw_in_rect(r.x, r.y, r.w, r.h);
+    ui::push(ui::cmd_t::video, ui::opt::Pos{vec2i{r.x, r.y}}, ui::opt::Size{vec2i{r.w, r.h}});
 }
 
 static void handle_input(const mouse* m, const hotkeys* h) {

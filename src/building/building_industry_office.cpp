@@ -7,7 +7,7 @@
 #include "graphics/view/view.h"
 #include "grid/building_tiles.h"
 #include "grid/image.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_industry_office);
 
@@ -62,17 +62,23 @@ void building_industry_office::draw_placeholder(painter &ctx, color color_mask) 
         for (int dx = 0; dx < k_size; dx++) {
             tile2i t = tile().shifted(dx, dy);
             vec2i px = g_camera.lookup_tile_to_pixel(t);
-            build_planner::draw_flat_tile(ctx, px, mask);
+            draw_colored_tile(ctx, px, mask);
         }
     }
+}
 
-    vec2i label = g_camera.lookup_tile_to_pixel(tile());
+
+void building_industry_office::draw_postrender_effects(painter& ctx, vec2i point, tile2i tile, color color_mask) {
+    if (tile != this->tile()) {
+        return;
+    }
+    vec2i label = g_camera.lookup_tile_to_pixel(this->tile());
     text_draw_centered("OFFICE", label.x - 40, label.y - 8, 80, FONT_SMALL_PLAIN, COLOR_WHITE);
 }
 
 bool building_industry_office::force_draw_flat_tile(painter &ctx, tile2i tile, vec2i pixel, color mask) {
     const color draw_mask = mask ? mask : COLOR_MASK_GREEN;
-    build_planner::draw_flat_tile(ctx, pixel, draw_mask);
+    draw_colored_tile(ctx, pixel, draw_mask);
     return true;
 }
 

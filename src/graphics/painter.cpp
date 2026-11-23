@@ -1,4 +1,5 @@
 #include "graphics/painter.h"
+#include "core/main_thread.h"
 
 #include "game/game.h"
 #include "core/profiler.h"
@@ -7,7 +8,7 @@
 #include "graphics/render_stats.h"
 #include "graphics/residency_atlas.h"
 #include "graphics/texture_alpha.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 
 #include <cmath>
 #include <string>
@@ -15,7 +16,10 @@
 
 #include <SDL.h>
 
-std::unordered_map<uint64_t, SDL_Texture *> grayscaled_txs;
+#include <map>
+#include <tuple>
+
+std::map<std::tuple<SDL_Texture*, int, int, int, int>, SDL_Texture*> grayscaled_txs;
 
 void painter::draw(SDL_Texture *texture, vec2i pos, vec2i offset, vec2i size, color color, float scale_x, float scale_y,
                    double angle, ImgFlags flags, const bool force_linear) {
@@ -251,6 +255,7 @@ const image_t* painter::img_isometric(int image_id, vec2i p, color color_mask, f
 
 void painter::draw_impl(SDL_Texture *texture, vec2i pos, vec2i offset, vec2i size, color color, float scale_x,
                         float scale_y, double angle, ImgFlags flags, const bool force_linear) {
+    main_thread::check("painter::draw_impl");
     OZZY_PROFILER_FUNCTION();
     if (texture == nullptr) {
         return;
@@ -268,16 +273,13 @@ void painter::draw_impl(SDL_Texture *texture, vec2i pos, vec2i offset, vec2i siz
         DOWNSCALED_CITY = true;
     }
 
-    const bool want_linear = force_linear || overall_scale_factor < 1.0f;
     SDL_Texture *draw_tex = nullptr;
     SDL_Rect texture_coords;
-    const bool found = res_atlas::enabled()
-                       && res_atlas::resolve(texture, offset, size, want_linear, draw_tex, texture_coords);
+    const bool found = res_atlas::enabled() && res_atlas::resolve(texture, offset, size, draw_tex, texture_coords);
     const bool resident = found && res_atlas::render_enabled();
     if (!resident) {
         draw_tex = texture;
         texture_coords = SDL_Rect{offset.x, offset.y, size.x, size.y};
-        g_render.set_texture_scale_mode(texture, overall_scale_factor, force_linear);
     }
 
     int mod_r = (color & COLOR_CHANNEL_RED) >> COLOR_BITSHIFT_RED;
@@ -295,11 +297,7 @@ void painter::draw_impl(SDL_Texture *texture, vec2i pos, vec2i offset, vec2i siz
         mod_g = (mod_g * mod_a + 127) / 255;
         mod_b = (mod_b * mod_a + 127) / 255;
     }
-    SDL_SetTextureColorMod(draw_tex, (Uint8)mod_r, (Uint8)mod_g, (Uint8)mod_b);
-    SDL_SetTextureAlphaMod(draw_tex, (Uint8)mod_a);
-
-    const SDL_BlendMode blend = straight ? SDL_BLENDMODE_BLEND : (SDL_BlendMode)g_render.premult_alpha();
-    SDL_SetTextureBlendMode(draw_tex, blend);
+    const int blend = straight ? (int)SDL_BLENDMODE_BLEND : (int)g_render.premult_alpha();
 
     // uncomment here if you want save something from atlases
     int k = 0;
@@ -339,13 +337,12 @@ void painter::draw_impl(SDL_Texture *texture, vec2i pos, vec2i offset, vec2i siz
     }
 
     {
-        SDL_Rect clip{};
-        SDL_RenderGetClipRect(this->renderer, &clip);
-        if (clip.w > 0 && clip.h > 0 && angle == 0.0) {
-            const float clip_l = (float)clip.x;
-            const float clip_t = (float)clip.y;
-            const float clip_r = (float)(clip.x + clip.w);
-            const float clip_b = (float)(clip.y + clip.h);
+        const rect clip = g_render.clip_rectangle();
+        if (clip.valid() && angle == 0.0) {
+            const float clip_l = (float)clip.mn.x;
+            const float clip_t = (float)clip.mn.y;
+            const float clip_r = (float)clip.mx.x;
+            const float clip_b = (float)clip.mx.y;
 
             if (screen_coords.x + screen_coords.w <= clip_l || screen_coords.x >= clip_r
                 || screen_coords.y + screen_coords.h <= clip_t || screen_coords.y >= clip_b
@@ -419,12 +416,11 @@ void painter::draw_impl(SDL_Texture *texture, vec2i pos, vec2i offset, vec2i siz
         }
     }
 
-    render_stats::note_draw(draw_tex, (int)blend, resident);
-    if (!!(flags & ImgFlag_Mirrored)) {
-        SDL_RenderCopyExF(this->renderer, draw_tex, &texture_coords, &screen_coords, angle, nullptr, SDL_FLIP_HORIZONTAL);
-    } else {
-        SDL_RenderCopyExF(this->renderer, draw_tex, &texture_coords, &screen_coords, angle, nullptr, SDL_FLIP_NONE);
-    }
+    const bool linear = force_linear || overall_scale_factor < 1.0f;
+    render_stats::note_draw(draw_tex, blend, linear, resident);
+    g_render.draw_sprite(sprite_draw_t{g_render.material(draw_tex, blend, linear), texture_coords.x, texture_coords.y, texture_coords.w, texture_coords.h,
+      screen_coords.x, screen_coords.y, screen_coords.w, screen_coords.h, (uint8_t)mod_r, (uint8_t)mod_g,
+      (uint8_t)mod_b, (uint8_t)mod_a, angle, !!(flags & ImgFlag_Mirrored)});
 }
 
 SDL_Texture* painter::convertToGrayscale(SDL_Texture *tx, vec2i offset, vec2i size) {
@@ -432,93 +428,17 @@ SDL_Texture* painter::convertToGrayscale(SDL_Texture *tx, vec2i offset, vec2i si
         return nullptr;
     }
 
-    uint64_t hash = ((uint64_t)tx & 0xffffffff) | ((uint64_t)offset.x << 32) | ((uint64_t)offset.y << 48);
-
-    auto it = grayscaled_txs.find(hash);
+    const auto key = std::make_tuple(tx, offset.x, offset.y, size.x, size.y);
+    auto it = grayscaled_txs.find(key);
     if (it != grayscaled_txs.end()) {
         return it->second;
     }
 
-    auto gray_tx = grayscaled_txs.insert({ hash , nullptr });
-
-    uint32_t format;
-    int w, h;
-
-    /* Get information about texture we want to save */
-    int st = SDL_QueryTexture(tx, &format, NULL, &w, &h);
-    if (st != 0) {
-        return nullptr;
-    }
-
-    if (SDL_BYTESPERPIXEL(format) != 4) {
-        return nullptr;
-    }
-
-    SDL_Texture* ren_tex = SDL_CreateTexture(this->renderer, format, SDL_TEXTUREACCESS_TARGET, size.x, size.y);
-    if (!ren_tex) {
-        return nullptr;
-    }
-
-    struct RenTexDeleter {
-        SDL_Texture *tx;
-        ~RenTexDeleter() { SDL_DestroyTexture(tx); }
-    } _renTexDeleter{ ren_tex };
-
-    /*
-     * Initialize our canvas, then copy texture to a target whose pixel data we
-     * can access
-     */
-    SDL_Texture *old_target = SDL_GetRenderTarget(this->renderer);
-    st = SDL_SetRenderTarget(this->renderer, ren_tex);
-    if (st != 0) {
-        return nullptr;
-    }
-
-    // Declared after the deleter, so it runs first: the target is restored before ren_tex dies.
-    struct RenTargetRestore {
-        SDL_Renderer* renderer;
-        SDL_Texture* target;
-        ~RenTargetRestore() { SDL_SetRenderTarget(renderer, target); }
-    } _renTargetRestore{this->renderer, old_target};
-
-    SDL_SetRenderDrawColor(this->renderer, 0x00, 0x00, 0x00, 0x00);
-    SDL_RenderClear(this->renderer);
-
-    SDL_Rect srcrect{ offset.x, offset.y, size.x, size.y };
-    st = SDL_RenderCopy(this->renderer, tx, &srcrect, NULL);
-    if (st != 0) {
-        return nullptr;
-    }
-
-    /* Create buffer to hold texture data and load it */
-    std::vector<uint32_t> pixels(size.x * size.y);
-    st = SDL_RenderReadPixels(this->renderer, NULL, format, pixels.data(), size.x * SDL_BYTESPERPIXEL(format));
-
-    const SDL_PixelFormat *pxformat = SDL_AllocFormat(format);
-    for (int y = 0; y < size.y; ++y) {
-        for (int x = 0; x < size.x; ++x) {
-            Uint32 *pixel = pixels.data() + y * size.x + x;
-            Uint8 r, g, b, a;
-            SDL_GetRGBA(*pixel, pxformat, &r, &g, &b, &a);
-            Uint8 gray = static_cast<Uint8>(0.3 * r + 0.59 * g + 0.11 * b);
-            *pixel = SDL_MapRGBA(pxformat, gray, gray, gray, a);
-        }
-    }
-
-    /* Copy pixel data over to surface */
-    SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormatFrom(pixels.data(), size.x, size.y, SDL_BITSPERPIXEL(format),
-                                                              size.x * SDL_BYTESPERPIXEL(format), format);
-    if (!surface) {
-        return nullptr;
-    }
-
-    SDL_Texture *gray_tx_ptr = SDL_CreateTextureFromSurface(this->renderer, surface);
-    if (texture_alpha::is_straight(tx)) {
+    SDL_Texture* gray_tx_ptr = g_render.create_grayscale_texture(tx, offset, size);
+    if (gray_tx_ptr && texture_alpha::is_straight(tx)) {
         texture_alpha::mark_straight(gray_tx_ptr);
     }
-
-    gray_tx.first->second = gray_tx_ptr;
-    SDL_FreeSurface(surface);
+    grayscaled_txs[key] = gray_tx_ptr;
 
     return gray_tx_ptr;
 }

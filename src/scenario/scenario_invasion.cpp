@@ -1,4 +1,5 @@
 #include "scenario_invasion.h"
+#include "scenario/scenario_invasion_chunks.h"
 
 #include "building/destruction.h"
 #include "city/city.h"
@@ -17,7 +18,7 @@
 #include "figuretype/figure_enemy_transport.h"
 #include "figuretype/figure_enemy_warship.h"
 #include "game/difficulty.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "grid/grid.h"
 #include "grid/terrain.h"
 #include "grid/water.h"
@@ -28,7 +29,7 @@
 #include "core/log.h"
 #include "core/svector.h"
 #include "empire/empire.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "figure/enemy_army.h"
 #include "scenario/scenario_event_manager.h"
 #include "scenario/event_phrases.h"
@@ -127,21 +128,23 @@ enemy_properties_t ANK_VARIABLE(enemy_persian);
 enemy_properties_t ANK_VARIABLE(enemy_phoenician);
 enemy_properties_t ANK_VARIABLE(enemy_roman);
 enemy_properties_t ANK_VARIABLE(enemy_seapeople);
+enemy_properties_t ANK_VARIABLE(enemy_bedouin);
 
-std::array<enemy_properties_t *, ENEMY_COUNT> g_enemy_properties = {
-    &enemy_barbarian,
-    &enemy_assyrian,
-    &enemy_canaanite,
-    &enemy_egyptian,
-    &enemy_hittite,
-    &enemy_hyksos,
-    &enemy_kushite,
-    &enemy_libian,
-    &enemy_nubian,
-    &enemy_persian,
-    &enemy_phoenician,
-    &enemy_roman,
-    &enemy_seapeople,
+std::array<enemy_properties_t*, ENEMY_COUNT> g_enemy_properties = {
+  &enemy_barbarian,
+  &enemy_assyrian,
+  &enemy_canaanite,
+  &enemy_egyptian,
+  &enemy_hittite,
+  &enemy_hyksos,
+  &enemy_kushite,
+  &enemy_libian,
+  &enemy_nubian,
+  &enemy_persian,
+  &enemy_phoenician,
+  &enemy_roman,
+  &enemy_seapeople,
+  &enemy_bedouin,
 };
 
 // The favour army uses figure IDs 55–57 instead of egyptian proxy types.
@@ -242,8 +245,8 @@ void invasion_data_t::record_spawn(const invasion_opts_t &opts, tile2i tile, int
     invasion_history_entry_t &h = history[history_next];
     h = {};
     h.seq = seq;
-    h.year = (int16_t)game.simtime.years_since_start();
-    h.month = (int8_t)game.simtime.month;
+    h.year = (int16_t)g_simulation.simtime.years_since_start();
+    h.month = (int8_t)g_simulation.simtime.month;
     h.invasion_id = (uint8_t)opts.invasion_id;
     h.enemy_type = (uint8_t)opts.enemy_type;
     h.mode = (uint8_t)opts.mode;
@@ -568,6 +571,9 @@ bool invasion_point_is_sea(tile2i point) {
 }
 
 bool invasion_should_use_sea(const invasion_opts_t &opts) {
+    if (opts.enemy_type == ENEMY_13_BEDOUIN) {
+        return false;
+    }
     if (opts.via_sea) {
         return true;
     }
@@ -823,8 +829,8 @@ void scenario_invasion_process() {
         if (warning.months_to_go <= 0) {
             if (warning.handled != 1) {
                 warning.handled = 1;
-                warning.year_notified = game.simtime.year;
-                warning.month_notified = game.simtime.month;
+                warning.year_notified = g_simulation.simtime.year;
+                warning.month_notified = g_simulation.simtime.month;
                 if (warning.warning_years > 2)
                     events::emit(event_message{ false, "message_distant_battle", 0, 0, SOURCE_LOCATION });
                 else if (warning.warning_years > 1)
@@ -835,8 +841,8 @@ void scenario_invasion_process() {
             }
         }
 
-        if (game.simtime.year >= g_scenario.start_year + g_scenario.invasions[warning.invasion_id].year
-            && game.simtime.month >= g_scenario.invasions[warning.invasion_id].month) {
+        if (g_simulation.simtime.year >= g_scenario.start_year + g_scenario.invasions[warning.invasion_id].year
+            && g_simulation.simtime.month >= g_scenario.invasions[warning.invasion_id].month) {
             // invasion attack time has passed
             warning.in_use = 0;
             if (warning.warning_years > 1) {
@@ -880,7 +886,8 @@ void scenario_invasion_process() {
     // local uprisings
     for (int i = 0; i < MAX_INVASIONS; i++) {
         if (g_scenario.invasions[i].type == INVASION_TYPE_LOCAL_UPRISING) {
-            if (game.simtime.year == g_scenario.start_year + g_scenario.invasions[i].year && game.simtime.month == g_scenario.invasions[i].month) {
+            if (g_simulation.simtime.year == g_scenario.start_year + g_scenario.invasions[i].year
+                && g_simulation.simtime.month == g_scenario.invasions[i].month) {
                 invasion_opts_t opts;
                 opts.enemy_type = ENEMY_0_BARBARIAN;
                 opts.size = g_scenario.invasions[i].amount;
@@ -993,72 +1000,9 @@ int scenario_invasion_start(invasion_opts_t opts) {
 
 // Julius layout: 101 × 32 = 3232 (matches push_chunk size).
 // per warning: u8×4 + i16×6 + i32 + u8 + pad11.
-io_buffer* iob_invasion_warnings = new io_buffer([](io_buffer* iob, size_t version) {
-    for (auto &w : g_invasions.warnings) {
-        iob->bind_bool(w.in_use);
-        iob->bind_bool(w.handled);
-        iob->bind(BIND_SIGNATURE_UINT8, &w.invasion_path_id);
-        iob->bind(BIND_SIGNATURE_UINT8, &w.warning_years);
-        iob->bind_vec2i_compat(w.pos);
-        iob->bind(BIND_SIGNATURE_INT16, &w.image_id);
-        iob->bind(BIND_SIGNATURE_INT16, &w.empire_object_id);
-        iob->bind(BIND_SIGNATURE_INT16, &w.month_notified);
-        iob->bind(BIND_SIGNATURE_INT16, &w.year_notified);
-        iob->bind(BIND_SIGNATURE_INT32, &w.months_to_go);
-        iob->bind(BIND_SIGNATURE_UINT8, &w.invasion_id);
-        iob->bind____skip(11);
-    }
-});
-
 // v172 stub: keep chunk in schema so old saves load; ignore contents.
-io_buffer *iob_invasion_event_pending = new io_buffer([] (io_buffer *iob, size_t version) {
-    iob->bind____skip(272);
-}, [] (size_t version) {
-    // v172 stub: the chunk holds no state, it only keeps a slot in the old positional
-    // layout. The defaulter exists to mark it optional for saves older than v172.
-});
-
 // v173: active binds + history ring (audit/debug; binds are gameplay mid-fight).
 // Layout 1480: header 8 + 16×12 binds + 64×20 history.
-io_buffer *iob_invasion_runtime = new io_buffer([] (io_buffer *iob, size_t version) {
-    auto &data = g_invasions;
-    iob->bind(BIND_SIGNATURE_INT32, &data.history_count);
-    iob->bind(BIND_SIGNATURE_INT32, &data.history_next);
-    for (auto &b : data.binds) {
-        iob->bind_bool(b.in_use);
-        iob->bind_bool(b.enemies_seen);
-        iob->bind_u8(b.invasion_id);
-        iob->bind____skip(1);
-        iob->bind_u16(b.seq);
-        iob->bind_u16(b.on_completed_tag);
-        iob->bind_u16(b.on_refusal_tag);
-        iob->bind_u16(b.on_defeat_tag);
-    }
-    for (auto &h : data.history) {
-        iob->bind_u16(h.seq);
-        iob->bind(BIND_SIGNATURE_INT16, &h.year);
-        iob->bind(BIND_SIGNATURE_INT8, &h.month);
-        iob->bind_u8(h.invasion_id);
-        iob->bind_u8(h.enemy_type);
-        iob->bind_u8(h.mode);
-        iob->bind_u8(h.attack_type);
-        iob->bind____skip(1);
-        iob->bind_u16(h.size);
-        iob->bind(BIND_SIGNATURE_INT16, &h.tile_x);
-        iob->bind(BIND_SIGNATURE_INT16, &h.tile_y);
-        iob->bind_u8(h.want_destroy);
-        iob->bind_u8(h.outcome);
-        iob->bind____skip(2);
-    }
-}, [] (size_t version) {
-    // saves older than v173 have no resolve binds or history ring
-    g_invasions.history_count = 0;
-    g_invasions.history_next = 0;
-    for (auto &b : g_invasions.binds) {
-        b = {};
-    }
-});
-
 const enemy_properties_t &invasion_data_t::get_prop(e_enemy_type type) {
     // Messages store "no faction" as -1 (original saves too); an empty army title rather than a read past the table.
     static const enemy_properties_t none = [] {

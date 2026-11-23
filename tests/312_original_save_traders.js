@@ -1,14 +1,15 @@
 // A save written by the original game keeps other data where this port keeps a figure's runtime data, so its trade
 // caravans loaded with city 255 and crashed when they left the map (Retryohep "Bahariya Oasis 10"). On loading an
 // original save, caravans and trade ships now take their city, trader slot and amount bought from the original's
-// own fields.
+// own fields. Since the 2026-11-22 merge, upstream's original-save loader drops the original's figures (it rebuilds
+// the city), so there may be no traders at all; whatever traders there are must still have a city.
 // Needs the original save in Save/Retryohep/ (real Pharaoh data); without it the test logs a skip and passes.
 // Markers:
 //   [test-marker] original_traders_have_cities
 //   [test-marker] original_save_runs_past_caravan_exit
 //   [test-marker] original_save_traders_skipped
 
-var T312_SAVE = '../Retryohep/Bahariya Oasis 10.sav'
+var T312_SAVE = __test_data_dir() + '/Save/Retryohep/Bahariya Oasis 10.sav'
 
 function t312_traders() {
     var p = ('' + __test_trader_cities()).split(',')
@@ -24,7 +25,7 @@ function run_test() {
 
     var loaded = t312_traders()
     __log_info_native('[test:312] after load ' + JSON.stringify(loaded))
-    if (loaded.traders > 0 && loaded.valid == loaded.traders) {
+    if (loaded.valid == loaded.traders) {
         __log_marker('original_traders_have_cities')
     }
 

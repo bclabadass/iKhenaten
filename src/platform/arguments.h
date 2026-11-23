@@ -62,6 +62,7 @@ public:
     [[nodiscard]] bool is_log_js_handlers() const { return is("log_js_handlers", false); }
     [[nodiscard]] bool is_log_resources() const { return is("log_resources", false); }
     [[nodiscard]] bool is_log_sound() const { return is("log_sound", false); }
+    [[nodiscard]] bool is_log_sound_events() const { return is("log_sound_events", false); }
     [[nodiscard]] bool is_discord_log() const { return is("discord_log", false); }
 
     [[nodiscard]] int get_display_scale_percentage() const;
@@ -77,6 +78,7 @@ public:
     void set_data_directory(pcstr value);
 
     [[nodiscard]] vec2i get_window_size() const;
+    [[nodiscard]] bool window_size_from_cli() const;
     void set_window_size(vec2i value);
 
     [[nodiscard]] vec2i get_window_pos() const { return get_arg("window_pos").as_vec2i(); }

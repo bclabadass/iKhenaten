@@ -1,4 +1,6 @@
 #include "animal_ostrich.h"
+#include "game/sound_effect.h"
+#include "game/game_events.h"
 
 #include "city/city.h"
 #include "core/random.h"
@@ -8,9 +10,8 @@
 #include "graphics/animation.h"
 #include "grid/grid.h"
 #include "grid/terrain.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "sound/effect.h"
-#include "sound/sound.h"
 
 #include <algorithm>
 
@@ -121,7 +122,6 @@ void figure_ostrich::figure_action() {
 
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_12_OSTRICH_HUNTED:
@@ -271,7 +271,7 @@ void figure_ostrich::main_image_update() {
         const int base_img = death.first_img();
         // OG death group: wait_ticks frames, capped at 7.
         const int frame = base.wait_ticks < 8 ? base.wait_ticks : 7;
-        if (base_img > 0 || base.force_valid_animation) {
+        if (base_img > 0) {
             base.main_image_id = base_img + frame;
         }
         return;
@@ -280,7 +280,7 @@ void figure_ostrich::main_image_update() {
     if (action_state(FIGURE_ACTION_149_CORPSE)) {
         const animation_t &death = anim(animkeys().death);
         const int base_img = death.first_img();
-        if (base_img > 0 || base.force_valid_animation) {
+        if (base_img > 0) {
             base.main_image_id = base_img + 7;
         }
         return;
@@ -294,7 +294,7 @@ void figure_ostrich::before_poof() {
 }
 
 bool figure_ostrich::play_die_sound() {
-    g_sound.play_effect(SOUND_EFFECT_OSTRICH_DIE);
+    events::emit(event_sound_effect{SOUND_EFFECT_OSTRICH_DIE});
     return true;
 }
 

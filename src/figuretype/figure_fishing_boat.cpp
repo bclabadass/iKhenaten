@@ -18,7 +18,7 @@
 #include "city/city_figures.h"
 #include "city/city_warnings.h"
 #include "game/game_events.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "scenario/scenario.h"
 #include <algorithm>
 #include "city/object_info.h"

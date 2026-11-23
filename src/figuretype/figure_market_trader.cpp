@@ -5,14 +5,13 @@
 #include "city/city_recorded_paths.h"
 #include "figuretype/figure_market_buyer.h"
 #include "figure/service.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_market_trader);
 
 void figure_market_trader::figure_roaming_action() {
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_125_MARKET_TRADER_ROAMING:

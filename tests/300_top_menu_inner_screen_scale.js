@@ -37,8 +37,12 @@ function run_test() {
         __log_marker('desktop_bar_30')
     }
 
+    // The Duo's inner screen: a 951x669 window at 67% is its 1420x999 canvas.
+    var desktop_w = screen.width
+    var desktop_h = screen.height
     __display_options_set_scale(67)
     __test_pretend_ios(true)
+    __test_screen_resize(951, 669)
     __test_pump_frames(3)
     var inner_header = t300_file_header_width()
     var inner_rows = t300_dropdown_rows()
@@ -75,6 +79,7 @@ function run_test() {
 
     __test_pretend_ios(false)
     __display_options_set_scale(saved_scale)
+    __test_screen_resize(desktop_w, desktop_h)
     __test_pump_frames(3)
     __test_signal_ready()
 }

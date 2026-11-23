@@ -1,4 +1,5 @@
 #include "monument_pyramid_figure.h"
+#include "grid/orientation.h"
 
 #include "building/monument_mastaba.h"
 #include "building/monument_mastaba_engine.h"
@@ -13,7 +14,7 @@
 #include "figuretype/figure_sled.h"
 #include "figuretype/figure_stonemason.h"
 #include "figuretype/figure_worker.h"
-#include "graphics/view/view.h"
+#include "grid/bridge.h"
 #include "grid/building.h"
 #include "grid/grid.h"
 #include "grid/terrain.h"
@@ -118,7 +119,7 @@ int monument_pyramid_figure::rotated_tile_kind(building *part) const {
         }
     }
 
-    const int rotation = g_camera.orientation / 2;
+    const int rotation = map_view_orientation() / 2;
     if (kind < PYRAMID_PART_EDGE_TOP_LEFT) {
         kind += rotation;
         if (kind >= PYRAMID_PART_EDGE_TOP_LEFT) {
@@ -738,7 +739,7 @@ int monument_pyramid_figure::climb_step(figure_id fid, int step) {
         f->direction = 0;
     }
 
-    const int rotation = g_camera.orientation / 2;
+    const int rotation = map_view_orientation() / 2;
     int x = target->tile.x();
     int y = target->tile.y();
     const uint8_t walk = walk_mode(f);
@@ -767,7 +768,7 @@ int monument_pyramid_figure::climb_step(figure_id fid, int step) {
     } else {
         const int kind = rotated_tile_kind(prev);
         int corner = 0;
-        int facing = (int)f->direction - g_camera.orientation + 1;
+        int facing = (int)f->direction - map_view_orientation() + 1;
         if (facing < 0) {
             facing += 8;
         }
@@ -1468,12 +1469,19 @@ void monument_pyramid_figure::follow_on_ground(figure_id fid, figure *f, const f
             f->map_figure_add();
             f->previous_tile = old;
         }
+        if (map_terrain_is(f->tile, TERRAIN_ROAD) && map_is_bridge(f->tile)) {
+            f->set_target_height_bridge();
+        }
     }
     if (f->progress_on_tile == 0) {
         f->previous_tile_direction = f->direction;
         f->direction = leader->direction;
     }
+    const bool keeps_ghost = !f->height_adjusted_ticks && f->current_height;
     f->advance_height();
+    if (!keeps_ghost) {
+        f->set_flag(e_figure_flag_invisible, false);
+    }
 }
 
 int monument_pyramid_figure::follow_step_reaches_leader(figure_id fid, figure *f, const figure *leader, int climb_step_n, int distance) {
@@ -1581,6 +1589,7 @@ namespace {
         case ACTION_26_LABORER_SLED_TO_MAUSOLEUM:
         case ACTION_37_LABORER_SLED_TO_MASTABA:
         case ACTION_29_LABORER_DELIVERED:
+        case ACTION_38_LABORER_SLED_RETURN:
             return true;
         case ACTION_36_LABORER_SLED_TO_TOMB:
             return with_tomb_sled;

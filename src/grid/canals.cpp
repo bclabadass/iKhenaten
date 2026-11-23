@@ -1,6 +1,8 @@
 ﻿#include "canals.h"
+#include "grid/orientation.h"
 
 #include "core/profiler.h"
+#include "grid/canals_chunks.h"
 #include "graphics/image_groups.h"
 #include "graphics/image.h"
 #include "graphics/graphics.h"
@@ -18,7 +20,6 @@
 #include "city/city_buildings.h"
 #include "grid/building.h"
 #include "grid/image_context.h"
-#include "graphics/view/view.h"
 #include "game/game.h"
 #include "game/game_config.h"
 
@@ -59,8 +60,6 @@ namespace {
 
 static int canals_include_construction = 0;
 
-grid_xx canals_grid(FS_UINT8);
-grid_xx canals_grid_backup(FS_UINT8);
 // Filled by this water update. OG uses the canal value itself; a held basin canal is wet but not yet filled.
 grid_xx canals_filled_grid(FS_UINT8);
 
@@ -74,36 +73,28 @@ bool map_canal_is_filled(int grid_offset) {
 }
 
 int map_canal_at(int grid_offset) {
-    return map_grid_get(canals_grid, grid_offset);
+    return map_grid_get(aqueduct_grid_chunk::grid, grid_offset);
 }
 
 void map_canal_set(int grid_offset, int value) {
-    map_grid_set(canals_grid, grid_offset, value);
+    map_grid_set(aqueduct_grid_chunk::grid, grid_offset, value);
 }
 
 void map_canal_remove(int grid_offset) {
-    map_grid_set(canals_grid, grid_offset, 0);
+    map_grid_set(aqueduct_grid_chunk::grid, grid_offset, 0);
 }
 
 void map_canal_clear() {
-    map_grid_clear(canals_grid);
+    map_grid_clear(aqueduct_grid_chunk::grid);
 }
 
 void map_canal_backup() {
-    map_grid_copy(canals_grid, canals_grid_backup);
+    map_grid_copy(aqueduct_grid_chunk::grid, aqueduct_backup_grid_chunk::grid);
 }
 
 void map_canal_restore(void) {
-    map_grid_copy(canals_grid_backup, canals_grid);
+    map_grid_copy(aqueduct_backup_grid_chunk::grid, aqueduct_grid_chunk::grid);
 }
-
-io_buffer* iob_aqueduct_grid = new io_buffer([](io_buffer* iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &canals_grid);
-});
-
-io_buffer *iob_aqueduct_backup_grid = new io_buffer([] (io_buffer *iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &canals_grid_backup);
-});
 
 static bool canal_image_follows_water(int grid_offset) {
     const int building_id = map_building_at(grid_offset);
@@ -111,7 +102,7 @@ static bool canal_image_follows_water(int grid_offset) {
 }
 
 static bool basin_hold_pass_now() {
-    const uint32_t total_days = game.simtime.total_days;
+    const uint32_t total_days = g_simulation.simtime.total_days;
     if (total_days != s_hold_prev_total_days) {
         s_hold_prev_total_days = total_days;
         s_hold_subpass = 0;
@@ -305,7 +296,7 @@ int get_canal_image(int grid_offset, bool is_road, int terrain, const terrain_im
         if (map_terrain_is(grid_offset + GRID_OFFSET(0, 1), TERRAIN_ROAD))
             road_dir_right = true;
 
-        road_dir_right = g_camera.relative_orientation(road_dir_right) % 2;
+        road_dir_right = map_view_relative_orientation(road_dir_right) % 2;
         bool is_paved = building_road::is_paved(tile2i(grid_offset));
 
         if (road_dir_right) // left/right offset is opposite from C3

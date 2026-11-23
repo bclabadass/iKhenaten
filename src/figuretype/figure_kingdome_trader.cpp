@@ -26,13 +26,14 @@
 #include "grid/figure.h"
 #include "grid/road_access.h"
 #include "scenario/map.h"
-#include "game/game.h"
+#include "game/simulation.h"
+#include "game/game_events.h"
 #include "game/game_config.h"
 #include "building/building_ferry.h"
 #include "figuretype/figure_cartpusher.h"
 #include "widget/debug_console.h"
 #include "core/object_property.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 const e_trade_caravan_action_tokens_t ANK_CONFIG_ENUM(e_trade_caravan_action_tokens)
 
@@ -122,8 +123,9 @@ void figure_trade_caravan::on_create() {
     }
     const uint16_t capacity
       = min_cap
-        + (range > 0 ? (random_hash(game.simtime.absolute_tick(), id(), RANDOM_SALT_KINGDOME_TRADER_CAPACITY) % range)
-                     : 0);
+        + (range > 0
+             ? (random_hash(g_simulation.simtime.absolute_tick(), id(), RANDOM_SALT_KINGDOME_TRADER_CAPACITY) % range)
+             : 0);
     d.capacity = std::clamp(capacity, min_cap, max_cap);
 }
 

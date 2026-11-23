@@ -334,6 +334,8 @@ figure_barbarian_transport_ship = {
 
 enemy_barbarian = {
     type : ENEMY_0_BARBARIAN 
+    warship : FIGURE_ENEMY_WARSHIP
+    transport : FIGURE_ENEMY_BARBARIAN_TRANSPORT_SHIP
     percentage_type1 : 80
     percentage_type2 : 20 
     percentage_type3 : 0
@@ -470,6 +472,8 @@ figure_assyrian_chariot = {
 
 enemy_assyrian = {
     type : ENEMY_1_ASSYRIAN
+    warship : FIGURE_ENEMY_ASSYRIAN_WAR_SHIP
+    transport : FIGURE_ENEMY_ASSYRIAN_TRANSPORT_SHIP
     percentage_type1 : 40
     percentage_type2 : 50
     percentage_type3 : 10
@@ -606,6 +610,8 @@ figure_canaanite_chariot = {
 
 enemy_canaanite = {
     type : ENEMY_2_CANAANITE
+    warship : FIGURE_ENEMY_CANAANITE_WAR_SHIP
+    transport : FIGURE_ENEMY_CANAANITE_TRANSPORT_SHIP
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
@@ -615,7 +621,7 @@ enemy_canaanite = {
 }
 
 // egyptian
-// Egyptian transport (FIGURE_ENEMY_EGYPTIAN_TRANSPORT_SHIP = 51). No dedicated
+// Egyptian transport (FIGURE_ENEMY_EGYPTIAN_TRANSPORT_SHIP = 101). No dedicated
 // transport strip in the pack — reuse galera hull frames for E3b.
 figure_egyptian_transport_ship = {
   overlay : OVERLAY_ENEMIES
@@ -1021,6 +1027,8 @@ figure_kingdome_mounted = {
 
 enemy_egyptian = {
     type : ENEMY_3_EGYPTIAN
+    warship : FIGURE_ENEMY_EGYPTIAN_WARSHIP
+    transport : FIGURE_ENEMY_EGYPTIAN_TRANSPORT_SHIP
     percentage_type1 : 80
     percentage_type2 : 20
     percentage_type3 : 0
@@ -1159,6 +1167,8 @@ figure_hittite_chariot = {
 
 enemy_hittite = {
     type : ENEMY_4_HITTITE
+    warship : FIGURE_ENEMY_HITTITE_WAR_SHIP
+    transport : FIGURE_ENEMY_HITTITE_TRANSPORT_SHIP
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
@@ -1292,6 +1302,8 @@ figure_hyksos_chariot = {
 
 enemy_hyksos = {
     type : ENEMY_5_HYKSOS
+    warship : FIGURE_ENEMY_HYKSOS_WAR_SHIP
+    transport : FIGURE_ENEMY_HYKSOS_TRANSPORT_SHIP
     percentage_type1 : 50
     percentage_type2 : 40
     percentage_type3 : 10
@@ -1425,6 +1437,8 @@ figure_kushite_chariot = {
 
 enemy_kushite = {
     type : ENEMY_6_KUSHITE
+    warship : FIGURE_ENEMY_KUSHITE_WAR_SHIP
+    transport : FIGURE_ENEMY_KUSHITE_TRANSPORT_SHIP
     // F1: figure_types[2] is FIGURE_NONE, so the original 20% third-contingent share
     // never spawned. Folded into the axemen (type2) so the army spawns full strength.
     // F2 done: FIGURE_ENEMY_KUSHITE_CHARIOT now has a class, so re-adding a chariot
@@ -1563,6 +1577,8 @@ figure_libian_chariot = {
 
 enemy_libian = {
     type : ENEMY_7_LIBIAN
+    warship : FIGURE_ENEMY_LIBIAN_WAR_SHIP
+    transport : FIGURE_ENEMY_LIBIAN_TRANSPORT_SHIP
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
@@ -1698,6 +1714,8 @@ figure_nubian_chariot = {
 
 enemy_nubian = {
     type : ENEMY_8_NUBIAN
+    warship : FIGURE_ENEMY_NUBIAN_WAR_SHIP
+    transport : FIGURE_ENEMY_NUBIAN_TRANSPORT_SHIP
     // F1: figure_types[2] is FIGURE_NONE, so the original 20% third-contingent share
     // never spawned. Folded into the axemen (type2) so the army spawns full strength.
     // F2 done: FIGURE_ENEMY_NUBIAN_CHARIOT now has a class, so re-adding a chariot
@@ -1836,6 +1854,8 @@ figure_persian_chariot = {
 
 enemy_persian = {
     type : ENEMY_9_PERSIAN
+    warship : FIGURE_ENEMY_PERSIAN_WAR_SHIP
+    transport : FIGURE_ENEMY_PERSIAN_TRANSPORT_SHIP
     percentage_type1 : 80
     percentage_type2 : 20
     percentage_type3 : 0
@@ -1962,6 +1982,8 @@ figure_phoenician_chariot = {
 
 enemy_phoenician = {
     type : ENEMY_10_PHOENICIAN
+    warship : FIGURE_ENEMY_PHOENICIAN_WAR_SHIP
+    transport : FIGURE_ENEMY_PHOENICIAN_TRANSPORT_SHIP
     // F1: figure_types[2] is FIGURE_NONE, so the original 10% third-contingent share
     // never spawned. Folded into the swordsmen (type2) so the army spawns full strength.
     // F2 done: FIGURE_ENEMY_PHOENICIAN_CHARIOT now has a class, so re-adding a chariot
@@ -2101,6 +2123,8 @@ figure_roman_chariot = {
 
 enemy_roman = {
     type : ENEMY_11_ROMAN
+    warship : FIGURE_ENEMY_ROMAN_WAR_SHIP
+    transport : FIGURE_ENEMY_ROMAN_TRANSPORT_SHIP
     percentage_type1 : 50
     percentage_type2 : 50
     percentage_type3 : 0
@@ -2234,6 +2258,8 @@ figure_seapeople_chariot = {
 
 enemy_seapeople = {
     type : ENEMY_12_SEAPEOPLE
+    warship : FIGURE_ENEMY_SEAPEOPLE_WAR_SHIP
+    transport : FIGURE_ENEMY_SEAPEOPLE_TRANSPORT_SHIP
     // F1: figure_types[2] is FIGURE_NONE, so the original 10% third-contingent share
     // never spawned. Folded into the swordsmen (type2) so the army spawns full strength.
     // F2 done: FIGURE_ENEMY_SEAPEOPLE_CHARIOT now has a class, so re-adding a chariot
@@ -2245,6 +2271,33 @@ enemy_seapeople = {
     army_title_id : 29
     figure_types: [FIGURE_ENEMY_SEAPEOPLE_ARCHER, FIGURE_ENEMY_SEAPEOPLE_SWORDMAN, FIGURE_NONE]
     layout: FORMATION_COLUMN
+}
+
+figure_bedouin = {
+  overlay : OVERLAY_ENEMIES
+    animations : {
+        walk : { pack:PACK_SPR_AMBIENT, id:13, max_frames:12 }
+        death : { pack:PACK_SPR_AMBIENT, id:14, max_frames:8, loop:false }
+        attack : { pack:PACK_SPR_AMBIENT, id:15, max_frames:12 }
+    }
+
+    category: figure_category_hostile
+    max_damage : 70
+    attack_value : 12
+    defense_value: 0
+    missile_defense_value : 0
+    terrain_usage : TERRAIN_USAGE_ANY
+    interval_attack_delay : 25
+    is_enemy : true
+    move_cycle : [1, 1, 2]
+}
+
+enemy_bedouin = {
+    percentage_type1 : 100
+    percentage_type2 : 0
+    percentage_type3 : 0
+    figure_types: [FIGURE_BEDOUIN, FIGURE_BEDOUIN, FIGURE_BEDOUIN]
+    layout: FORMATION_ENEMY_MOB
 }
 
 // Message phrases of an EVENT_INVADER_* invasion. warnings: the announcement, then the reminders at

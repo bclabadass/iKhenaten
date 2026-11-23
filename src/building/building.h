@@ -371,6 +371,7 @@ public:
     bool is_ajacent_tile(tile2i t) const;
 
     void set_flag(e_building_flag flag, bool value) { flags.set(flag, value); }
+    void set_type(e_building_type new_type);
     bool get_flag(e_building_flag flag) const { return flags.is_set(flag); }
 
 public:
@@ -426,7 +427,7 @@ ANK_CONFIG_PROPERTY(building, has_road_access, num_workers, max_workers, produce
     using inherited = base_class;
 
 #define BUILDING_RUNTIME_DATA_CHECKS(type)                                                              \
-    static_assert(sizeof(type) < sizeof(building::runtime_data), #type " does not fit building::runtime_data"); \
+    static_assert(sizeof(type) <= sizeof(building::runtime_data), #type " does not fit building::runtime_data"); \
     static_assert(alignof(type) <= building::runtime_data_align, #type " needs a stricter alignment")
 
 #define BUILDING_RUNTIME_DATA(type) ;                                                                   \

@@ -98,6 +98,7 @@ public:
     int lamp_stock() const { return main_tomb()->runtime_data().lamp_stock; }
     void add_lamp_stock(int amount);
     bool is_sealed() const { return main_tomb()->runtime_data().sealed != 0; }
+    virtual bool continues_cliff() const override;
     // OG royal_tomb_is_idle: no lamps on site and no chamber worker — the chambers go dark.
     bool is_idle() const;
     // A laborer may fetch lamps for this tomb (main only; the caller checks for a yard and a hauler).
@@ -132,7 +133,8 @@ public:
     static bool part_tile_allowed(const royal_tomb_layout& l, int part, tile2i t);
     static bool has_unfinished_royal_tomb(e_building_type type);
     // Stonemasons / tomb artisans: the first royal tomb part that takes this figure (0 = none).
-    static building_royal_tomb* find_work(e_figure_type type, figure_id fid, bool assign, int only_stage = -1);
+    static building_royal_tomb* find_work(e_figure_type type, figure_id fid, bool assign);
+    static building_royal_tomb* find_artisan_work(int stage);
     static bool goals_reached();
     static void seal_all_finished();
 

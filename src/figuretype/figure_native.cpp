@@ -9,7 +9,7 @@
 #include "figure/route.h"
 #include "graphics/animkeys.h"
 #include "grid/terrain.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_native);
 
@@ -43,7 +43,6 @@ void figure_native::figure_action() {
 
     switch (base.action_state) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_11_NATIVE_ATTACKING:

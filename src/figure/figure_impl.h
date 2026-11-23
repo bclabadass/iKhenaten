@@ -33,6 +33,7 @@ public:
     virtual void figure_action() {}
     virtual void figure_before_action() {}
     virtual void figure_roaming_action();
+    virtual void figure_dying_action();
     virtual bool window_info_background(object_info &ctx) { return false; }
     virtual void draw_main_sprite(painter &ctx, vec2i pixel, int highlight);
     // Moves the figure's sprite and its draw-order point, e.g. onto the courses of a monument it works on.
@@ -54,8 +55,10 @@ public:
     virtual bool play_die_sound() { return false; }
     // True when this figure never opens a fight with `opponent` (an animal and what it does not hunt).
     virtual bool refuses_fight_with(const figure& opponent) const { return false; }
+    virtual void play_attack_sound() {}
     // Plague carriers pass roadblocks freely (original Pharaoh).
     virtual bool ignores_roadblocks() const { return false; }
+    virtual bool sets_own_height() const { return false; }
     virtual void update_animation();
     virtual void update_day() {}
     virtual bool can_move_by_water() const;
@@ -120,11 +123,13 @@ public:
     ALLOW_SMART_CAST_FIGURE_I(missile)
     ALLOW_SMART_CAST_FIGURE_I(fireman)
     ALLOW_SMART_CAST_FIGURE_I(festival_priest)
+    ALLOW_SMART_CAST_FIGURE_I(priest)
     ALLOW_SMART_CAST_FIGURE_I(ostrich)
     ALLOW_SMART_CAST_FIGURE_I(antelope)
     ALLOW_SMART_CAST_FIGURE_I(hippo)
     ALLOW_SMART_CAST_FIGURE_I(hyena)
     ALLOW_SMART_CAST_FIGURE_I(animal)
+    ALLOW_SMART_CAST_FIGURE_I(predator)
     ALLOW_SMART_CAST_FIGURE_I(ballista)
     ALLOW_SMART_CAST_FIGURE_I(market_buyer)
     ALLOW_SMART_CAST_FIGURE_I(bricklayer)
@@ -235,6 +240,7 @@ GENERATE_SMART_CAST_FIGURE(antelope)
 GENERATE_SMART_CAST_FIGURE(hippo)
 GENERATE_SMART_CAST_FIGURE(hyena)
 GENERATE_SMART_CAST_FIGURE(animal)
+GENERATE_SMART_CAST_FIGURE(predator)
 GENERATE_SMART_CAST_FIGURE(ballista)
 GENERATE_SMART_CAST_FIGURE(market_buyer)
 GENERATE_SMART_CAST_FIGURE(bricklayer)

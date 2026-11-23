@@ -1,5 +1,6 @@
 #include "js/test/js_test_common.h"
 
+#include "game/sim_schedule.h"
 #include "building/building_barracks.h"
 #include "building/building_bazaar.h"
 #include "building/building_fishing_wharf.h"
@@ -19,7 +20,7 @@
 #include "city/city_message.h"
 #include "core/random.h"
 #include "core/xstring.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "figure/figure_impl.h"
 #include "figuretype/animal_asp.h"
 #include "figuretype/animal_lion.h"
@@ -215,6 +216,12 @@ static void __test_sentiment_set(int value) {
 }
 ANK_FUNCTION_1(__test_sentiment_set);
 
+static int __test_migration_update_status() {
+    g_city.migration.update_status();
+    return g_city.migration.percentage;
+}
+ANK_FUNCTION(__test_migration_update_status);
+
 static int __test_kingdom_rating() {
     return g_city.kingdome.rating;
 }
@@ -304,7 +311,7 @@ static void __test_scenario_var_set_string(pcstr name, pcstr value) {
 ANK_FUNCTION_2(__test_scenario_var_set_string);
 
 static void __test_city_update_month() {
-    g_city.update_month(game.simtime);
+    g_city.update_month(g_simulation.simtime);
 }
 ANK_FUNCTION(__test_city_update_month);
 
@@ -435,7 +442,7 @@ static int __test_treasury() {
 ANK_FUNCTION(__test_treasury);
 
 static void __test_simtime_set_month(int month) {
-    game.simtime.month = std::clamp(month, 0, 11);
+    g_simulation.simtime.month = std::clamp(month, 0, 11);
 }
 ANK_FUNCTION_1(__test_simtime_set_month);
 
@@ -491,7 +498,7 @@ ANK_FUNCTION_2(__test_coverage_set);
 
 static int __test_house_tax_units(int bid) {
     auto* house = building_get(bid)->dcast_house();
-    return house ? g_city.finance.house_monthly_tax_units(house) : -1;
+    return house ? finance_system::house_monthly_tax_units(g_city.finance_ctx(), house) : -1;
 }
 ANK_FUNCTION_1(__test_house_tax_units);
 
@@ -588,3 +595,14 @@ void __test_scenario_init_max_year() {
     scenario_criteria_init_max_year();
 }
 ANK_FUNCTION(__test_scenario_init_max_year);
+
+static pcstr __test_sim_schedule() {
+    static std::string out;
+    out.clear();
+    for (const sim_step& step : sim_schedule_steps()) {
+        out += sim_phase_name(step.phase);
+        out += ":" + std::to_string(step.slot) + ":" + step.name + ":" + std::to_string(step.writes) + ";";
+    }
+    return out.c_str();
+}
+ANK_FUNCTION(__test_sim_schedule);

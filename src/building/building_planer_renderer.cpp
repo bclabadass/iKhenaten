@@ -9,7 +9,7 @@
 #include "game/undo.h"
 #include "grid/figure.h"
 #include "graphics/graphics.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "js/js_struct.h"
 
 struct ghost_preview_ev {
@@ -137,9 +137,9 @@ void building_planer_renderer::ghost_blocked(build_planner &planer, painter &ctx
 
     for (int row = 0; row < planer.size.y; row++) {
         for (int column = 0; column < planer.size.x; column++) {
-            vec2i current_coord = planer.pixel_coord_offset(row, column);
+            vec2i current_coord = ghost_draw::pixel_coord_offset(planer, row, column);
             color color_mask = (planer.is_blocked_tile(row, column) || fully_blocked) ? COLOR_MASK_RED_30 : COLOR_MASK_GREEN_30;
-            planer.draw_flat_tile(current_coord, color_mask, ctx);
+            ghost_draw::draw_ground_tile(ctx, current_coord, color_mask);
         }
     }
 }
@@ -152,7 +152,7 @@ void building_planer_renderer::ghost_preview(build_planner &planer, painter &ctx
         return;
     }
 
-    planer.draw_tile_graphics_array(ctx, start, end, pixel);
+    ghost_draw::draw_tile_graphics_array(planer, ctx);
 }
 
 int building_planer_renderer::can_place(build_planner &planer, tile2i start, tile2i end, int state) const {
@@ -192,7 +192,7 @@ int building_planer_renderer::construction_place(build_planner &planer, tile2i s
     verify_no_crash(params.building_size > 0);
 
     // correct building placement for city orientations
-    switch (g_camera.orientation) {
+    switch (planer.view_orientation()) {
     case DIR_2_BOTTOM_RIGHT:
         end = end.shifted(-params.building_size + 1, 0);
         break;
@@ -256,7 +256,7 @@ int building_planer_renderer::construction_update(build_planner &planer, tile2i 
         return 0;
     }
 
-    int real_orientation = (g_camera.orientation / 2) % 2;
+    int real_orientation = (planer.view_orientation() / 2) % 2;
     if (real_orientation == 0) {
         planer.mark_construction(planer.north_tile, planer.size, TERRAIN_ALL, true);
     } else {
@@ -276,7 +276,8 @@ void building_planer_renderer::setup_preview_graphics(build_planner &planer) con
     img_id += params.planner_update_rule.relative_orientation * planer.relative_orientation;
     planer.set_tiles_building(img_id, params.building_size);
 
-    es_t(ghost_preview_ev{ planer.start, planer.end, g_camera.lookup_tile_to_pixel(planer.end), planer.in_progress }, params.name, __func__);
+    es_t(ghost_preview_ev{planer.start, planer.end, ghost_draw::end_pixel(planer), planer.in_progress}, params.name,
+      __func__);
 }
 
 int building_planer_renderer::setup_building_variant(e_building_type type, tile2i tile, int variant) const {

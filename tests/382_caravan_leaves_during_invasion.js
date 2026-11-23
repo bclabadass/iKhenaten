@@ -8,7 +8,8 @@
 //   [test-marker] caravan_lost_removed_ok
 //   [test-marker] caravan_selima_ok
 
-var T382_SAVE = '../DuoSaves/Selima 5.svx'
+// Saves live under --user-dir in tests; the Duo saves stay in the Pharaoh folder's Save/DuoSaves/.
+var T382_SAVE = __test_data_dir() + '/Save/DuoSaves/Selima 5.svx'
 var __test382_ok = false
 
 function test382_fail(msg) {
@@ -17,11 +18,7 @@ function test382_fail(msg) {
 }
 
 function test382_caravan(x, y) {
-    var fid = test_figure_create(FIGURE_TRADE_CARAVAN, x, y)
-    if (fid) {
-        test_figure_set_force_valid_animation(fid, true)
-    }
-    return fid
+    return test_figure_create(FIGURE_TRADE_CARAVAN, x, y)
 }
 
 function run_test() {

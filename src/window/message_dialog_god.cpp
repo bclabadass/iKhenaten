@@ -33,6 +33,7 @@ void ui::message_dialog_god::draw_foreground(UiFlags flags) {
         int image_x = area_abs_pos.x + (area_size.x - img->width) / 2;
         int image_y = area_abs_pos.y + (area_size.y - img->height) / 2;
 
+        // On top of the dialog: in this layout the panels cover the portrait's area.
         ui::eimage(imgid, vec2i{image_x, image_y});
     }
 }

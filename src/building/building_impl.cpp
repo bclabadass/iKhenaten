@@ -1,4 +1,5 @@
 #include "building_impl.h"
+#include "game/sound_effect.h"
 
 #include "building/building.h"
 #include "city/object_info.h"
@@ -24,7 +25,7 @@
 #include "grid/enemy_strength.h"
 #include "grid/tiles.h"
 #include "sound/sound.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "js/js_struct.h"
 #include "game/game_config.h"
 #include "game/game_events.h"
@@ -533,7 +534,7 @@ void building_impl::destroy_by_poof(bool clouds) {
     building* b = base.main();
     if (clouds) {
         figure_create_explosion_cloud(b->tile, b->size);
-        g_sound.play_effect(SOUND_EFFECT_EXPLOSION);
+        events::emit(event_sound_effect{SOUND_EFFECT_EXPLOSION});
     }
 
     do {
@@ -646,13 +647,20 @@ void building_impl::highlight_waypoints() { // highlight the 4 routing tiles for
 void building_impl::on_tick(bool refresh_only) {
     tick_sprite_anims(refresh_only);
 
-    if (base.anim.valid()) {
+    if (base.anim.ticks()) {
         base.anim.update(refresh_only);
     }
 
     for (auto &anim : base.anims) {
-        if (anim.valid()) {
+        if (anim.ticks()) {
             anim.update(refresh_only);
         }
     }
+}
+void building_impl::draw_colored_tile(painter& ctx, vec2i pixel, color mask) {
+    auto& command = ImageDraw::create_command(ctx, render_command_t::ert_generic);
+    command.image_id = image_id_from_group(GROUP_TERRAIN_OVERLAY_COLORED);
+    command.pixel = pixel;
+    command.mask = mask;
+    command.scale = 1.f;
 }

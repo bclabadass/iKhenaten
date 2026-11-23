@@ -25,6 +25,8 @@ function run_test() {
     __display_options_set_scale(100)
     __test_pretend_ios(false)
     __test_pump_frames(4)
+    var desktop_w = screen.width
+    var desktop_h = screen.height
     var desktop = t304_link()
     var label = ui.sidebar_overlay_link_text()
     __log_info_native('[test:304] desktop text "' + desktop.text + '" label "' + label + '" size ' + desktop.size.x)
@@ -43,7 +45,9 @@ function run_test() {
         __log_marker('folded_link_text_drawn_separately')
     }
 
+    // The Duo's inner screen: a 951x669 window at 67% is its 1420x999 canvas.
     __display_options_set_scale(67)
+    __test_screen_resize(951, 669)
     __test_pump_frames(4)
     var inner = t304_link()
     var want = sidebar_window_expanded.overlays_text_x - inner.pos.x + Math.ceil(__ui_text_width(label, FONT_NORMAL_BLACK_ON_LIGHT) * top_menu_text_scale())
@@ -58,6 +62,7 @@ function run_test() {
 
     __test_pretend_ios(false)
     __display_options_set_scale(saved_scale)
+    __test_screen_resize(desktop_w, desktop_h)
     __test_pump_frames(3)
     __test_signal_ready()
 }

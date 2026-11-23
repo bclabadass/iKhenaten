@@ -1,6 +1,7 @@
 #include "building_temple_complex_upgrade.h"
-
 #include "graphics/view/view.h"
+#include "grid/orientation.h"
+
 #include "grid/building_tiles.h"
 #include "grid/terrain.h"
 #include "graphics/view/lookup.h"
@@ -8,7 +9,7 @@
 #include "city/city_buildings.h"
 #include "building/building_temple_complex.h"
 #include "building/rotation.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_temple_complex_altar_amon);
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_temple_complex_oracle_thoth);
@@ -24,7 +25,7 @@ REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_temple_complex_oracle_hathor);
 void building_temple_complex_altar::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i tile, tile2i end, vec2i pixel) const {
     const auto &params = building_static_params::get(planer.build_type);
 
-    int city_orientation = g_camera.orientation / 2;
+    int city_orientation = map_view_orientation() / 2;
     int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
     pcstr orienation_key_fancy[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
 
@@ -45,7 +46,7 @@ void building_temple_complex_altar::preview::ghost_preview(build_planner &planer
     }
 
     vec2i pixel_upgrade = g_camera.lookup_tile_to_pixel(upgrade_base->tile.shifted(offset));
-    planer.draw_building_ghost(ctx, image_id, pixel_upgrade);
+    ghost_draw::draw_building_ghost(ctx, image_id, pixel_upgrade);
 }
 
 int building_temple_complex_altar::preview::construction_place(build_planner &p, tile2i tile, tile2i end, int orientation, int variant) const {
@@ -66,7 +67,7 @@ int building_temple_complex_altar::preview::construction_place(build_planner &p,
 void building_temple_complex_oracle::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i tile, tile2i end, vec2i pixel) const {
     const auto &params = building_static_params::get(planer.build_type);
 
-    int city_orientation = g_camera.orientation / 2;
+    int city_orientation = map_view_orientation() / 2;
     int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
     pcstr orienation_key_fancy[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
 
@@ -87,7 +88,7 @@ void building_temple_complex_oracle::preview::ghost_preview(build_planner &plane
     }
 
     vec2i pixel_upgrade = g_camera.lookup_tile_to_pixel(upgrade_base->tile.shifted(offset));
-    planer.draw_building_ghost(ctx, image_id, pixel_upgrade);
+    ghost_draw::draw_building_ghost(ctx, image_id, pixel_upgrade);
 }
 
 int building_temple_complex_oracle::preview::construction_place(build_planner &p, tile2i tile, tile2i end, int orientation, int variant) const {
@@ -106,7 +107,7 @@ int building_temple_complex_oracle::preview::construction_place(build_planner &p
 }
 
 void building_temple_complex_altar::update_map_orientation(int _) {
-    int city_orientation = g_camera.orientation / 2;
+    int city_orientation = map_view_orientation() / 2;
     int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
     auto complex = ::smart_cast<building_temple_complex *>(main());
     pcstr orienation_key_base[] = { "base_n", "base_e", "base_s", "base_w" };
@@ -120,7 +121,7 @@ void building_temple_complex_altar::update_map_orientation(int _) {
 }
 
 void building_temple_complex_oracle::update_map_orientation(int _) {
-    int city_orientation = g_camera.orientation / 2;
+    int city_orientation = map_view_orientation() / 2;
     int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
     auto complex = ::smart_cast<building_temple_complex *>(main());
     pcstr orienation_key_base[] = { "base_n", "base_e", "base_s", "base_w" };

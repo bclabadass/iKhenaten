@@ -1,4 +1,6 @@
 #include "widget/widget_city.h"
+#include "widget/city/placement_preview.h"
+#include "core/draw_phase.h"
 
 #include "graphics/image.h"
 #include "graphics/graphics.h"
@@ -6,7 +8,7 @@
 #include "graphics/view/view.h"
 #include "grid/property.h"
 #include "grid/grid.h"
-#include "widget/city/building_ghost.h"
+#include "sound/sound_view_queue.h"
 #include "widget/city/flat_draw.h"
 #include "overlays/city_overlay.h"
 #include "graphics/image_groups.h"
@@ -37,7 +39,7 @@
 #include "game/game_config.h"
 #include "io/gamefiles/lang.h"
 #include "core/log.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 #include "scenario/scenario.h"
 #include "scenario/invasion_auto_resolve.h"
 #include "sound/sound_city.h"
@@ -73,7 +75,7 @@
 #include "city/city_figures.h"
 #include "input/mouse.h"
 #include "core/profiler.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "js/js_struct.h"
 
 #include <algorithm>
@@ -108,6 +110,7 @@ struct water_frame_queue_t {
     }
 
     void apply() {
+        draw_phase::allow_writes water_frames_follow_og_timing;
         const int n = std::min(count.load(std::memory_order_relaxed), (int)entries.size());
         for (int i = 0; i < n; i++) {
             map_image_set(entries[i].grid_offset, entries[i].image_id);
@@ -116,6 +119,8 @@ struct water_frame_queue_t {
     }
 };
 static water_frame_queue_t g_water_frame_queue;
+
+static sound_view_queue_t g_sound_view_queue;
 
 void screen_city_t::apply_water_frames() {
     g_water_frame_queue.apply();
@@ -144,7 +149,7 @@ void screen_city_t::update_zoom_level(painter &ctx) {
 }
 
 void screen_city_t::scroll_map(const mouse* m) {
-    vec2i delta = g_scroll.get_delta(m, scroll_t::CITY);
+    vec2i delta = g_scroll.get_delta(m, scroll_t::type::city);
     if (delta.x || delta.y) {
         const screen_tile before = g_camera.tile_internal;
         g_camera.scroll(delta.x, delta.y);
@@ -179,13 +184,11 @@ static bool touch_build_preview_idle() {
     if (g_screen_city.selected_tile.grid_offset() > 0) {
         return false;
     }
-    return !get_earliest_touch_raw()->in_use;
+    return !g_touch.earliest_raw()->in_use;
 }
 
-// Runs before any render command of the frame, so the city draw only reads planner state.
-// An isolated-figure snapshot without overlay never drew the planner, so it skips the update too.
-static void city_planner_frame_update(int selected_figure_id) {
-    if ((selected_figure_id && !g_city.overlay()) || touch_build_preview_idle()) {
+static void city_planner_frame_update() {
+    if (touch_build_preview_idle()) {
         return;
     }
     g_city_planner.update(city_planner_cursor_tile_from_mouse());
@@ -265,7 +268,8 @@ void screen_city_t::draw_figures_on_flat_tiles(vec2i pixel, tile2i tile, painter
             continue;
         }
 
-        if (f.f->main_cached_pos.x < (pixel.x - TILE_WIDTH_PIXELS) || f.f->main_cached_pos.x >(pixel.x + TILE_WIDTH_PIXELS)) {
+        if (map_figure_draw_state(f.f->id).main_pos.x < (pixel.x - TILE_WIDTH_PIXELS)
+            || map_figure_draw_state(f.f->id).main_pos.x > (pixel.x + TILE_WIDTH_PIXELS)) {
             continue;
         }
 
@@ -342,7 +346,7 @@ void screen_city_t::draw_building_road_access_marker(painter &ctx) {
 
     const color mask = map_routing_distance(ports.tile) > 0 ? COLOR_MASK_AMBER : COLOR_MASK_AMBER_40;
     vec2i pixel = g_camera.lookup_tile_to_pixel(ports.tile);
-    build_planner::draw_building_ghost(ctx, image_id_from_group(GROUP_TERRAIN_OVERLAY_COLORED) + 23, pixel, mask);
+    ghost_draw::draw_building_ghost(ctx, image_id_from_group(GROUP_TERRAIN_OVERLAY_COLORED) + 23, pixel, mask);
 }
 
 void screen_city_t::draw_recorded_delivery_paths(painter &ctx) {
@@ -385,12 +389,12 @@ void screen_city_t::draw_figures(vec2i pixel, tile2i tile, painter &ctx, [[maybe
     static constexpr int k_figure_pair_x_pad = 48;
     const int row_x0 = pixel.x - TILE_WIDTH_PIXELS;
     const int row_x1 = pixel.x + TILE_WIDTH_PIXELS;
-    const auto figure_x_overlaps_tile_band = [row_x0, row_x1](const figure *fig) {
-        int lo = fig->main_cached_pos.x;
+    const auto figure_x_overlaps_tile_band = [row_x0, row_x1](const figure* fig) {
+        int lo = map_figure_draw_state(fig->id).main_pos.x;
         int hi = lo;
         if (fig->has_cart()) {
-            lo = std::min(lo, fig->cart_cached_pos.x);
-            hi = std::max(hi, fig->cart_cached_pos.x);
+            lo = std::min(lo, map_figure_draw_state(fig->id).cart_pos.x);
+            hi = std::max(hi, map_figure_draw_state(fig->id).cart_pos.x);
             lo -= k_figure_pair_x_pad;
             hi += k_figure_pair_x_pad;
         }
@@ -422,7 +426,7 @@ void screen_city_t::draw_figures(vec2i pixel, tile2i tile, painter &ctx, [[maybe
             if (!figure_x_overlaps_tile_band(f.f)) {
                 continue;
             }
-            f.f->draw_cart_sprite(ctx, f.f->cart_cached_pos, 0);
+            f.f->draw_cart_sprite(ctx, map_figure_draw_state(f.f->id).cart_pos, 0);
         }
     }
 }
@@ -441,11 +445,12 @@ void screen_city_t::draw_figures_overlay(vec2i pixel, tile2i tile, painter &ctx)
             continue;
         }
 
-        if (f.f->is_main_drawn != 0) {
+        if (map_figure_draw_state(f.f->id).main_drawn.load(std::memory_order_relaxed)) {
             continue;
         }
 
-        if (f.f->main_cached_pos.x < (pixel.x - TILE_WIDTH_PIXELS) || f.f->main_cached_pos.x >(pixel.x + TILE_WIDTH_PIXELS)) {
+        if (map_figure_draw_state(f.f->id).main_pos.x < (pixel.x - TILE_WIDTH_PIXELS)
+            || map_figure_draw_state(f.f->id).main_pos.x > (pixel.x + TILE_WIDTH_PIXELS)) {
             continue;
         }
 
@@ -468,16 +473,10 @@ void screen_city_t::draw_isometric_mark_sound(int building_id, int grid_offset, 
         }
 
         if (!game.redraw_read_only) {
-            sound_city_mark_building_view(b, direction);
-            if (!!game_features::gameplay_enhanced_city_ambient) {
-                if (const int channel = sound_city_building_channel(b)) {
-                    sound_city_ambient_note(channel, pixel);
-                }
-            }
+            g_sound_view_queue.push(building_id, grid_offset, direction, pixel);
         }
     } else if (!game.redraw_read_only) {
-        int terrain = map_terrain_get(grid_offset);
-        sound_city_mark_terrain_view(terrain, grid_offset, direction);
+        g_sound_view_queue.push(0, grid_offset, direction, pixel);
     }
 }
 
@@ -522,10 +521,6 @@ void screen_city_t::draw_without_overlay(painter &ctx, int selected_figure_id) {
 
     render_ctx.init();
 
-    // Mark tiles for deletion if the deletion tool is active at the current tile
-    // This ensures that buildings/tiles marked for deletion are visually indicated
-    g_city_planner.ghost_mark_deleting(current_tile);
-
     // Clear previous frame's rendering state
     // Reset all tile render flags and clear the command buffer for image drawing operations
     map_render_clear();
@@ -555,6 +550,7 @@ void screen_city_t::draw_without_overlay(painter &ctx, int selected_figure_id) {
             draw_ornaments_flat
         );
         g_water_frame_queue.apply();
+        g_sound_view_queue.apply();
         g_camera.foreach_valid_map_tile(ctx,
             [this](vec2i pixel, tile2i tile, painter& ctx) { draw_isometric_terrain_height(pixel, tile, ctx); }
         );
@@ -591,6 +587,7 @@ void screen_city_t::draw_without_overlay(painter &ctx, int selected_figure_id) {
 
         // The height pass reads these tiles back, as it did when the flat pass wrote in place.
         g_water_frame_queue.apply();
+        g_sound_view_queue.apply();
 
         for (size_t blk = 0; blk < num_blocks; blk++) {
             const int y_start = block_start(blk);
@@ -664,7 +661,7 @@ void screen_city_t::draw_without_overlay(painter &ctx, int selected_figure_id) {
     // Draw the city planner overlay (construction previews, ghost buildings) if no figure is selected
     // When a figure is selected, we skip the planner drawing to avoid visual clutter
     if (!selected_figure_id && !touch_build_preview_idle()) {
-        g_city_planner.draw(ctx);
+        placement_preview::draw(ctx);
     }
 
     draw_building_road_access_marker(ctx);
@@ -831,6 +828,11 @@ void screen_city_t::draw_isometric_flat(vec2i pixel, tile2i tile, painter &ctx) 
         color_mask = COLOR_MASK_GREEN;
     }
 
+    if (!flatten && render_ctx.is_raised_cliff_ground(image_id)) {
+        map_render_set(tile, RENDER_RAISED_TILE);
+        return;
+    }
+
     const image_t* img = image_get(image_id);
     if (!img) {
         return;
@@ -860,7 +862,7 @@ void screen_city_t::draw_isometric_flat(vec2i pixel, tile2i tile, painter &ctx) 
         }
     }
 
-    map_render_set(tile, (!flatten && img->isometric_top_height > 0) ? RENDER_TALL_TILE : 0);
+    map_render_set(tile, (!flatten && image_has_isometric_top_pixels(img)) ? RENDER_TALL_TILE : 0);
 }
 
 void screen_city_t::draw_isometric_nonterrain_height(vec2i pixel, tile2i tile, color mask, painter &ctx) {
@@ -914,6 +916,11 @@ void screen_city_t::draw_isometric_nonterrain_height(vec2i pixel, tile2i tile, p
 
     if (flatten) {
         // No RENDER_TALL_TILE / iso tops under flat view.
+        return;
+    }
+
+    if (map_render_isu(grid_offset, RENDER_RAISED_TILE)) {
+        draw_raised_cliff_ground(pixel, map_image_at(grid_offset), color_mask, ctx);
         return;
     }
 
@@ -1098,10 +1105,10 @@ void screen_city_t::draw_with_overlay(painter &ctx, int selected_figure_id) {
         return;
     }
 
+    render_ctx.init();
     map_render_clear();
     ImageDraw::clear_render_commands();
 
-    g_city_planner.ghost_mark_deleting(current_tile);
     g_camera.foreach_valid_map_tile(ctx, update_tile_coords);
 
     map_figure_sort_by_y();
@@ -1118,7 +1125,7 @@ void screen_city_t::draw_with_overlay(painter &ctx, int selected_figure_id) {
     ImageDraw::apply_render_commands(ctx, "draw_ornaments_figures_overlay");
 
     if (!touch_build_preview_idle()) {
-        g_city_planner.draw(ctx);
+        placement_preview::draw(ctx);
     }
 
     draw_building_road_access_marker(ctx);
@@ -1148,7 +1155,6 @@ void screen_city_t::draw(painter &ctx) {
     set_render_scale(ctx, g_zoom.get_scale());
     set_city_clip_rectangle(ctx);
 
-    city_planner_frame_update(0);
     if (g_city.overlay()) {
         draw_with_overlay(ctx, 0);
     } else {
@@ -1163,10 +1169,10 @@ void screen_city_t::draw(painter &ctx) {
 // figure-info icons. Follows draw() in honouring the active overlay, so a snapshot cannot show
 // a different city than the main view.
 void screen_city_t::draw_for_figure(painter &ctx, int figure_id) {
+    draw_phase::scope draw_scope;
     set_city_clip_rectangle(ctx);
     const bool was_read_only = std::exchange(game.redraw_read_only, true);
 
-    city_planner_frame_update(figure_id);
     if (g_city.overlay()) {
         draw_with_overlay(ctx, figure_id);
     } else {
@@ -1369,13 +1375,13 @@ void screen_city_t::handle_touch_scroll(const touch_t * t, bool fore_capture_inp
         return;
     }
 
-    int was_click = touch_was_click(get_latest_touch());
+    int was_click = g_touch.latest()->was_click();
     if (t->has_started || was_click) {
         g_scroll.drag_start(scroll_t::drag_source::touch);
         return;
     }
 
-    if (!touch_not_click(t)) {
+    if (!t->not_click()) {
         return;
     }
 
@@ -1385,7 +1391,7 @@ void screen_city_t::handle_touch_scroll(const touch_t * t, bool fore_capture_inp
 }
 
 static void handle_touch_zoom(const touch_t * first, const touch_t * last) {
-    if (touch_not_click(first))
+    if (first->not_click())
         g_zoom.handle_touch(first, last, g_zoom.get_percentage());
 
     if (first->has_ended || last->has_ended)
@@ -1393,10 +1399,10 @@ static void handle_touch_zoom(const touch_t * first, const touch_t * last) {
 }
 
 void screen_city_t::handle_first_touch(tile2i tile) {
-    const touch_t * first = get_earliest_touch();
+    const touch_t* first = g_touch.earliest();
     e_building_type type = g_city_planner.build_type;
 
-    if (touch_was_click(first)) {
+    if (first->was_click()) {
         if (type == BUILDING_NONE && handle_fort_tap(tile)) {
             return;
         }
@@ -1431,7 +1437,7 @@ void screen_city_t::handle_first_touch(tile2i tile) {
                     new_start_grid_offset = tile.grid_offset();
                 }
             }
-            if (touch_not_click(first) && new_start_grid_offset) {
+            if (first->not_click() && new_start_grid_offset) {
                 new_start_grid_offset = 0;
                 selected_tile.set(0);
                 g_city_planner.construction_cancel();
@@ -1471,7 +1477,7 @@ void screen_city_t::handle_first_touch(tile2i tile) {
                        ? vec2i{selected_tile.x() - landed.x(), selected_tile.y() - landed.y()}
                        : vec2i{0, 0};
     }
-    if (touch_not_click(first) && tile.valid()) {
+    if (first->not_click() && tile.valid()) {
         const tile2i carried = tile.shifted(ghost_grab.x, ghost_grab.y);
         selected_tile = carried.valid() ? carried : tile;
         if (first->has_ended) {
@@ -1479,7 +1485,7 @@ void screen_city_t::handle_first_touch(tile2i tile) {
         }
     }
 
-    if (touch_was_click(first) && first->has_ended && capture_input
+    if (first->was_click() && first->has_ended && capture_input
         && has_confirmed_construction(selected_tile, tile, size)) {
         g_city_planner.update_hover(selected_tile);
         // A red ghost can't be built, so a tap beside it moves it rather than confirming: picks
@@ -1498,12 +1504,12 @@ void screen_city_t::handle_first_touch(tile2i tile) {
 }
 
 static void handle_last_touch(void) {
-    const touch_t * last = get_latest_touch();
+    const touch_t* last = g_touch.latest();
     if (!last->in_use)
         return;
 
-    if (touch_not_click(last)) {
-        handle_touch_zoom(get_earliest_touch(), last);
+    if (last->not_click()) {
+        handle_touch_zoom(g_touch.earliest(), last);
     }
 }
 
@@ -1511,18 +1517,18 @@ static void handle_last_touch(void) {
 // Until every finger is up, neither finger may count as a tap, or the first finger
 // lifting would place or inspect.
 bool screen_city_t::handle_two_finger_gesture() {
-    if (!touch_multi_finger_gesture()) {
+    if (!g_touch.multi_finger_gesture()) {
         return false;
     }
 
     handle_last_touch();
-    const touch_t* visible_first = get_earliest_touch();
+    const touch_t* visible_first = g_touch.earliest();
     if (visible_first->in_use) {
         handle_touch_scroll(visible_first, false);
     }
 
-    if (touch_all_ended()) {
-        if (touch_multi_finger_tap()) {
+    if (g_touch.all_ended()) {
+        if (g_touch.multi_finger_tap()) {
             if (g_city_planner.in_progress) {
                 g_city_planner.construction_cancel();
             }
@@ -1540,7 +1546,7 @@ void screen_city_t::handle_touch() {
         return;
     }
 
-    const touch_t * first = get_earliest_touch();
+    const touch_t* first = g_touch.earliest();
     if (!first->in_use) {
         g_scroll.restore_margins();
         return;
@@ -1548,8 +1554,8 @@ void screen_city_t::handle_touch() {
 
     if (g_city_planner.build_type && (first->has_started || first->has_ended)) {
         logs::info("[build-btn] CITY touch leaked start=(%d,%d) cur=(%d,%d) started=%d ended=%d click=%d",
-                   first->start_point.x, first->start_point.y, first->current_point.x, first->current_point.y,
-                   first->has_started, first->has_ended, touch_was_click(first));
+          first->start_point.x, first->start_point.y, first->current_point.x, first->current_point.y,
+          first->has_started, first->has_ended, first->was_click());
     }
 
     if (!g_city_planner.in_progress || input_coords_in_city(first->current_point.x, first->current_point.y)) {
@@ -1608,8 +1614,8 @@ void screen_city_t::handle_input_military(const mouse *m, const hotkeys *h, int 
         return;
     }
 
-    if (m->is_touch) {
-        const touch_t *t = get_earliest_touch();
+    if (m->is_touch || h->escape_pressed) {
+        const touch_t* t = g_touch.earliest();
         if (!t->in_use) {
             return;
         }
@@ -1629,8 +1635,8 @@ void screen_city_t::handle_input_military(const mouse *m, const hotkeys *h, int 
     current_tile = update_city_view_coords(*m);
 
     const bool m_left_down = (!m->is_touch && m->left.went_down);
-    const auto *early_touch = get_earliest_touch();
-    const bool m_has_touch = (m->is_touch && m->left.went_up && touch_was_click(early_touch));
+    const auto* early_touch = g_touch.earliest();
+    const bool m_has_touch = (m->is_touch && m->left.went_up && early_touch->was_click());
 
     if (m_left_down || m_has_touch) {
         const tile2i tile = current_tile;
@@ -1829,8 +1835,8 @@ void screen_city_t::handle_input_transport(const mouse *m, const hotkeys *h, int
         return;
     }
 
-    if (m->is_touch) {
-        const touch_t *t = get_earliest_touch();
+    if (m->is_touch || h->escape_pressed) {
+        const touch_t* t = g_touch.earliest();
         if (!t->in_use) {
             return;
         }
@@ -1874,8 +1880,8 @@ void screen_city_t::handle_input_transport(const mouse *m, const hotkeys *h, int
     }
 
     const bool m_left_down = (!m->is_touch && m->left.went_down);
-    const auto *early_touch = get_earliest_touch();
-    const bool m_has_touch = (m->is_touch && m->left.went_up && touch_was_click(early_touch));
+    const auto* early_touch = g_touch.earliest();
+    const bool m_has_touch = (m->is_touch && m->left.went_up && early_touch->was_click());
 
     if (m_left_down || m_has_touch) {
         transport_map_click(transport_figure_id, pick_mode, current_tile);
@@ -1889,8 +1895,8 @@ void screen_city_t::handle_input_warship(const mouse *m, const hotkeys *h, int w
         return;
     }
 
-    if (m->is_touch) {
-        const touch_t *t = get_earliest_touch();
+    if (m->is_touch || h->escape_pressed) {
+        const touch_t* t = g_touch.earliest();
         if (!t->in_use) {
             return;
         }
@@ -1917,8 +1923,8 @@ void screen_city_t::handle_input_warship(const mouse *m, const hotkeys *h, int w
     current_tile = update_city_view_coords(*m);
 
     const bool m_left_down = (!m->is_touch && m->left.went_down);
-    const auto *early_touch = get_earliest_touch();
-    const bool m_has_touch = (m->is_touch && m->left.went_up && touch_was_click(early_touch));
+    const auto* early_touch = g_touch.earliest();
+    const bool m_has_touch = (m->is_touch && m->left.went_up && early_touch->was_click());
 
     if (m_left_down || m_has_touch) {
         const tile2i tile = current_tile;
@@ -1929,10 +1935,10 @@ void screen_city_t::handle_input_warship(const mouse *m, const hotkeys *h, int w
 void screen_city_t::handle_mouse(const mouse* m) {
     current_tile = update_city_view_coords(*m);
 
-    // After a finger lifts the last touch point acts as a hovering mouse, so hover must respect
+    // After a finger lifts the last touch point acts as a hovering mouse, so the preview must respect
     // a picked tile too.
-    if (g_city_planner.build_type && !g_city_planner.in_progress) {
-        g_city_planner.update_hover(city_planner_cursor_tile_from_mouse());
+    if (g_city_planner.build_type) {
+        g_city_planner.update(city_planner_cursor_tile_from_mouse());
     }
 
     const float old_zoom_target = g_zoom.ftarget();
@@ -1968,12 +1974,13 @@ void screen_city_t::handle_mouse(const mouse* m) {
         g_city_planner.construction_start(current_tile);
 
         build_move(current_tile);
-    } else if (m->left.is_down || g_city_planner.in_progress) {
+    } else if ((m->left.is_down || g_city_planner.in_progress) && !g_city_planner.draggable()) {
         build_move(current_tile);
     }
 
-    if (m->left.went_up) {
+    if (m->left.went_up && g_city_planner.in_progress) {
         build_end();
+        g_city_planner.update(current_tile);
     }
 
     if (!!game_features::gameopt_middle_mouse_camera_pan
@@ -1989,6 +1996,7 @@ void screen_city_t::handle_mouse(const mouse* m) {
     if (m->right.went_up && !action_in_warnings) {
         if (g_city_planner.construction_active()) {
             g_city_planner.construction_cancel();
+            g_city_planner.update(current_tile);
         } else {
             // Ctrl+RMB raises one building while flat view is On (no build tool).
             // Empty / invalid tile must fall through to building info.
@@ -2039,6 +2047,11 @@ void screen_city_t::handle_input(const mouse* m, const hotkeys* h) {
     }
 
     handle_escape(h);
+
+    if (m->is_touch || h->escape_pressed) {
+        city_planner_frame_update();
+    }
+    g_city_planner.ghost_mark_deleting(current_tile);
 }
 
 xstring screen_city_t::get_overlay_tooltip(tooltip_context *c, tile2i tile) {
@@ -2084,7 +2097,7 @@ static const figure* get_figure_at_mouse(vec2i mouse_pos) {
         while (figure_id > 0) {
             figure *f = figure_get(figure_id);
             if (f && f->state != FIGURE_STATE_DEAD && f->action_state != FIGURE_ACTION_149_CORPSE) {
-                float dist_sq = center_pos.dist_sq(f->main_cached_pos);
+                float dist_sq = center_pos.dist_sq(map_figure_draw_state(f->id).main_pos);
                 if (dist_sq < closest_dist_sq) {
                     closest_dist_sq = dist_sq;
                     closest_figure = f;

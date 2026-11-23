@@ -440,6 +440,12 @@ void monument_mastaba_engine::apply_block_placed(building *head, pyramid_main_st
         mon->sync_visuals();
     }
     building_mastaba::update_course_images(head);
+    // Each block raises its part's courses, which set the tile heights figures walk on.
+    if (building* main = head->main()) {
+        if (building_mastaba* m = main->dcast()->dcast_mastaba()) {
+            m->update_tile_heights();
+        }
+    }
 
     // Laborers bring blocks, not stock: the info windows read the phase's brick share from resources_pct.
     const int phase = mon->phase();

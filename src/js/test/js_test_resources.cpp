@@ -5,6 +5,7 @@
 #include "content/vfs.h"
 #include "graphics/image.h"
 #include "graphics/imagepak_holder.h"
+#include "graphics/render_stats.h"
 #include "grid/gardens.h"
 #include "grid/grid.h"
 #include "grid/image.h"
@@ -19,6 +20,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <filesystem>
 #include <string>
 #include <thread>
@@ -106,8 +108,8 @@ static bool __test_image_exists(int id) {
 ANK_FUNCTION_1(__test_image_exists);
 
 static bool __test_image_cached(int id) {
-    return id >= 0 && static_cast<size_t>(id) < g_image_data->image_cache.size()
-           && g_image_data->image_cache[id] != nullptr;
+    return id >= 0 && static_cast<size_t>(id) < g_image_data->image_cache_size
+           && g_image_data->image_cache[id].load() != nullptr;
 }
 ANK_FUNCTION_1(__test_image_cached);
 
@@ -250,6 +252,34 @@ pcstr __test_user_dir() {
 }
 ANK_FUNCTION(__test_user_dir);
 
+static pcstr __test_exe_dir_path(pcstr relative) {
+    static vfs::path result;
+    result = vfs::current_path(relative ? relative : "");
+    return result.c_str();
+}
+ANK_FUNCTION_1(__test_exe_dir_path);
+
+static bool __test_file_write_text(pcstr path, pcstr text) {
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path(), ec);
+    FILE* fp = fopen(path, "wb");
+    if (!fp) {
+        return false;
+    }
+    const size_t len = text ? std::strlen(text) : 0;
+    const bool ok = fwrite(text, 1, len, fp) == len;
+    fclose(fp);
+    return ok;
+}
+ANK_FUNCTION_2(__test_file_write_text);
+
+static pcstr __test_vfs_resolve(pcstr relative) {
+    static vfs::path result;
+    result = vfs::path(relative ? relative : "").resolve();
+    return result.c_str();
+}
+ANK_FUNCTION_1(__test_vfs_resolve);
+
 // Queues the event SDL sends after a lost device; the next frame takes the renderer's recovery path.
 static void __test_render_device_reset() {
     SDL_Event ev{};
@@ -257,6 +287,31 @@ static void __test_render_device_reset() {
     SDL_PushEvent(&ev);
 }
 ANK_FUNCTION(__test_render_device_reset);
+
+static int __test_render_draws() {
+    return (int)render_stats::last_frame().draws;
+}
+ANK_FUNCTION(__test_render_draws);
+
+static int __test_render_resident_draws() {
+    return (int)render_stats::last_frame().resident;
+}
+ANK_FUNCTION(__test_render_resident_draws);
+
+static int __test_render_batches() {
+    return (int)render_stats::last_frame().batches;
+}
+ANK_FUNCTION(__test_render_batches);
+
+static int __test_render_flushes() {
+    return (int)render_stats::last_frame().flushes;
+}
+ANK_FUNCTION(__test_render_flushes);
+
+static int __test_render_window_immediate_draws() {
+    return (int)render_stats::last_frame().window_immediate;
+}
+ANK_FUNCTION(__test_render_window_immediate_draws);
 
 // Renderer try order for a request and a comma-separated driver list, joined by ','; "-" stands for SDL's own pick.
 static xstring __test_render_backend_order(pcstr requested, pcstr available) {

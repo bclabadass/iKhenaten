@@ -52,6 +52,7 @@ localization_ru = [
     { key:"#TR_CONFIG_FIX_EDITOR_EVENTS", text:"Исправлять запросы Императора и время выживания в польз. миссиях"}
     { key:"#TR_CONFIG_DRAW_WALKER_WAYPOINTS", text:"Отображать маршрут ходоков по правому щелчку на здании"}
     { key:"#TR_CONFIG_ZOOM_STEPPED", text:"Включить функцию зума (возможно замедление)"}
+    { key:"#TR_CONFIG_HOUSE_INTERIOR", text:"Показывать интерьер объединённых домов под курсором"}
     { key:"#TR_CONFIG_COMPLETE_RATING_COLUMNS", text:"Исправить незавершенные колонны рейтинга"}
     { key:"#TR_CONFIG_GRANDFESTIVAL", text:"Великий фестиваль разрешает дополнительное благословение от божества"}
     { key:"#TR_CONFIG_JEALOUS_GODS", text:"Отключить ревность божеств"}
@@ -89,13 +90,16 @@ localization_ru = [
     { key:"#TR_CONFIG_RECRUIT_NEAREST_FORT", text:"Казармы-ремейк: рекрут идёт в ближайший форт, а не сначала к колесничим, потом к пехоте, потом к лучникам (не как в оригинале)"}
     { key:"#TR_CONFIG_DOCK_SMART_ROUTING", text:"Умный выбор причала: по заказам/товарам и смена на лучший свободный (не как в оригинале)"}
     { key:"#TR_CONFIG_SLED_PULLERS_FLEE", text:"Тянущие сани бросают их и убегают к выходу с карты, если рядом враги; сани остаются на месте (не как в оригинале)"}
+    { key:"#TR_CONFIG_SLED_RETURN_EMPTY", text:"Разгрузившись у памятника, рабочие тянут пустые сани обратно на склад, откуда их взяли (не как в оригинале)"}
     { key:"#TR_CONFIG_FOLLOWER_RUNAWAY", text:"Спутники убегают к выходу с карты, если лидер погиб (ослы каравана, разносчики; не как в оригинале)"}
     { key:"#TR_CONFIG_ROBBER_REMAKE", text:"Вор-ремейк: кража при появлении, всегда к дворцу, фоновые кражи из особняков (не как в оригинале)"}
     { key:"#TR_CONFIG_TOMB_ROBBER_REMAKE", text:"Расхититель гробниц-ремейк: месячный спавн, бегство/арест, фиксированный удар по рейтингу (не как в оригинале)"}
     { key:"#TR_CONFIG_POLICE_WEAPONS", text:"Полиция берёт оружие со складов, каждый констебль забирает одно (не как в оригинале)"}
     { key:"#TR_CONFIG_WALKER_PHRASES_REMAKE", text:"Фразы ходоков-ремейк: у каждого ходока свои реплики, говорят и солдаты с врагами (не как в оригинале)"}
     { key:"#TR_CONFIG_PROTESTOR_HUNT_NOBLES", text:"Протестующие охотятся на ноблей и их усадьбы (не как в оригинале)"}
+    { key:"#TR_CONFIG_PLAGUED_CITIZEN_REMAKE", text:"Чумной горожанин-ремейк: по одному из каждого больного дома, лечится рядом с травником, труп исчезает (не как в оригинале)"}
     { key:"#TR_CONFIG_FISHING_BOAT_REMAKE", text:"Рыбацкая лодка-ремейк: быстрее с рабочими, половинный улов, липкие точки, мягкая потеря пристани (не как в оригинале)"}
+    { key:"#TR_CONFIG_FERRY_REMAKE", text:"Паром-ремейк: пристань связывается с ближайшей соседней, а не с поставленной в паре (не как в оригинале)"}
     { key:"#TR_CONFIG_WOOD_CUTTER_SINGLE_GATHERER", text:"Лесорубы: один дровосек + любой TERRAIN_TREE (ремейк; в оригинале 1/2/3 по штату и только выросшие деревья)"}
     { key:"#TR_CONFIG_TRADER_CAPACITY_1600", text:"Большая вместимость торговцев (1600 за визит; не годовой лимит империи)"}
     { key:"#TR_CONFIG_TRADER_PER_GOOD_1600", text:"New Era: до 1600 каждого товара за визит (не годовой лимит; не только общий мешок)"}
@@ -350,7 +354,6 @@ localization_ru = [
     { key:"#TR_BUILDING_ROADBLOCK_DESC", text:"Блокирует проход бесцельно бродящим ходокам"}
     { key:"#display_options_title", text:"Настройки дисплея"}
     { key:"#display_options_ui_scale", text:"Масштаб интерфейса"}
-    { key:"#display_options_restart_required", text:"Перезапустите игру, чтобы масштаб интерфейса применился корректно."}
     { key:"#popup_dialog_quit", text:"Выход" }
     { key:"#popup_dialog_open_trade", text:"Открыть торговый путь" }
     { key:"#popup_dialog_send_goods", text:"Отправить товары?" }
@@ -1818,4 +1821,6 @@ localization_ru = [
     { key: "#causeway_needs_water", group:19, id:212 }
     { key: "#one_caesareum_only", group:19, id:243 }
     { key: "#abu_simbel_not_demolishable", text: "Абу-Симбел нельзя снести" }
+    { key: "#save_migration_title", text: "Сохранение преобразовано" }
+    { key: "#save_migration_message", text: "Ваше сохранение было в старом формате и автоматически преобразовано. Оригинальный файл вы найдёте под именем {0}, если он вам понадобится." }
 ]

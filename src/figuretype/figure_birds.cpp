@@ -1,4 +1,6 @@
 #include "figure_birds.h"
+#include "game/sound_effect.h"
+#include "game/game_events.h"
 
 #include "city/city.h"
 #include "core/random.h"
@@ -9,9 +11,8 @@
 #include "graphics/image_groups.h"
 #include "grid/grid.h"
 #include "grid/terrain.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "sound/effect.h"
-#include "sound/sound.h"
 
 #include <algorithm>
 
@@ -134,7 +135,6 @@ void figure_birds::figure_action() {
 
     switch (base.action_state) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_12_BIRDS_HUNTED:
@@ -246,7 +246,7 @@ void figure_birds::main_image_update() {
         if (base.wait_ticks < k_death_image_frames) {
             const animation_t &death = anim(animkeys().death);
             const int base_img = death.first_img();
-            if (base_img > 0 || base.force_valid_animation) {
+            if (base_img > 0) {
                 base.main_image_id = base_img + base.wait_ticks;
             } else {
                 base.main_image_id = 0;
@@ -260,7 +260,7 @@ void figure_birds::main_image_update() {
     // OG: image_id = (animation_frame >> 1) + IMAGE_GROUP_FIGURE_BIRDS — no direction.
     const animation_t &walk = anim(animkeys().walk);
     const int base_img = walk.first_img();
-    if (base_img > 0 || base.force_valid_animation) {
+    if (base_img > 0) {
         base.main_image_id = base_img + (d.flock_frame >> 1);
     }
 }
@@ -270,7 +270,7 @@ void figure_birds::before_poof() {
 
 bool figure_birds::play_die_sound() {
     // Match figure::play_die_sound FIGURE_BIRDS branch (SHEEP_DIE placeholder).
-    g_sound.play_effect(SOUND_EFFECT_SHEEP_DIE);
+    events::emit(event_sound_effect{SOUND_EFFECT_SHEEP_DIE});
     return true;
 }
 

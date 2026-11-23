@@ -4,6 +4,7 @@
 #include "io/og_save/og_load.h"
 
 #include "building/construction/build_planner.h"
+#include "building/building_ferry.h"
 #include "building/building_granary.h"
 #include "building/building_storage.h"
 #include "building/building_wall.h"
@@ -24,6 +25,7 @@
 #include "empire/type.h"
 #include "empire/trade_prices.h"
 #include "figure/enemy_army.h"
+#include "figure/figure.h"
 #include "figure/figure_names.h"
 #include "figure/route.h"
 #include "empire/trader_handler.h"
@@ -65,13 +67,11 @@
 #include "grid/gems.h"
 #include "game/game.h"
 #include "editor/editor.h"
-#include "platform/arguments.h"
 #include "scenario/criteria.h"
 #include "scenario/demand_change.h"
 #include "scenario/distant_battle.h"
 #include "scenario/earthquake.h"
 #include "scenario/editor_map_meta.h"
-#include "scenario/farao_change.h"
 #include "scenario/scenario_revolt.h"
 #include "scenario/scenario_invasion.h"
 #include "scenario/invasion_auto_resolve.h"
@@ -79,8 +79,7 @@
 #include "scenario/request.h"
 #include "scenario/scenario.h"
 #include "sound/sound_city.h"
-#include "sound/sound.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "window/window_city.h"
 #include "window/file_dialog_common.h"
 #include "game/game_events.h"
@@ -89,7 +88,6 @@
 #include "city/city_recorded_paths.h"
 #include "empire/empire_traders.h"
 
-#include "chunks.h"
 #include "file_schemas.h"
 #include "city/coverage.h"
 #include "city/city_floods.h"
@@ -97,7 +95,8 @@
 #include "core/profiler.h"
 #include "io/io.h"
 #include "io/chunk_serializer.h"
-#include "js/js_game.h"
+#include "graphics/elements/lang_text.h"
+#include "js/js_register.h"
 #include "dev/debug.h"
 #include "window/popup_dialog.h"
 
@@ -128,21 +127,26 @@ uint32_t svx_container_version() {
 }
 
 vfs::path fullpath_player_folder(pcstr player_name) {
-    return vfs::path(vfs::SAVE_FOLDER, "/", player_name ? player_name : "");
+    return vfs::path(vfs::save_folder().c_str(), "/", player_name ? player_name : "");
 }
 
-// Integral tests run with no family chosen, so their saves would land loose in Save/.
-// A family of their own keeps them together and lets the Load dialog list them.
-constexpr pcstr INTEGRAL_TESTS_FAMILY = "Integral Tests";
+static xstring g_fallback_family;
+
+void fullpath_saves_set_fallback_family(pcstr family) {
+    g_fallback_family = family;
+}
 
 vfs::path fullpath_saves(vfs::path filename) {
     if (strncasecmp(filename, "Save/", 5) == 0 || strncasecmp(filename, "Save\\", 5) == 0) {
         return vfs::path(filename);
     }
+    if (std::filesystem::path(filename.c_str()).is_absolute()) {
+        return filename;
+    }
 
     xstring family = game_features::gameopt_player_name.to_string();
-    if (family.empty() && g_args.is_integral_tests()) {
-        family = INTEGRAL_TESTS_FAMILY;
+    if (family.empty()) {
+        family = g_fallback_family;
     }
     const vfs::path folder = fullpath_player_folder(family.c_str());
     return vfs::path(folder.c_str(), "/", filename);
@@ -153,6 +157,12 @@ vfs::path fullpath_maps(vfs::path filename) {
         return filename;
     }
     return vfs::path(vfs::MAPS_FOLDER, "/", filename.c_str());
+}
+
+static bool g_replay_autosave = true;
+
+void GamestateIO::set_replay_autosave(bool enabled) {
+    g_replay_autosave = enabled;
 }
 
 bool GamestateIO::write_family_marker(pcstr filename_short) {
@@ -253,8 +263,10 @@ bool GamestateIO::load_mission(const int scenario_id, bool start_immediately) {
         start_loaded_file();
 
         // replay mission autosave file
-        bstring256 filename("autosave_replay.", saved_game_data_expanded.extension);
-        GamestateIO::write_savegame(filename);
+        if (g_replay_autosave) {
+            bstring256 filename("autosave_replay.", saved_game_data_expanded.extension);
+            GamestateIO::write_savegame(filename);
+        }
     }
 
     return true;
@@ -307,6 +319,158 @@ bool GamestateIO::load_og_savegame(pcstr full_path, bool start_immediately) {
     return true;
 }
 
+// Reads the save-data version out of an .svx file: from the container header when
+// sectioned, else from the legacy positional header (mirrors the loader).
+static int read_save_version(pcstr full_path) {
+    auto reader = vfs::file_open(full_path);
+    if (!reader) {
+        return -1;
+    }
+
+    svx::scan_header hdr = {};
+    svx::section_list sections;
+    if (svx::scan(reader, 0, hdr, sections) == svx::SCAN_OK) {
+        return (int)hdr.save_data_version;
+    }
+    return GamestateLoadDetail::read_file_version(full_path, 0);
+}
+
+// Fills a banner body from a localized template that embeds the filename via a
+// "{0}" placeholder; templates without the placeholder get the name appended.
+static void save_migration_message_body(bstring512 &body, pcstr text, pcstr filename) {
+    const pcstr placeholder = strstr(text, "{0}");
+    if (!placeholder) {
+        body.printf("%s %s", text, filename);
+        return;
+    }
+    body.printf("%.*s%s%s", (int)(placeholder - text), text, filename, placeholder + 3);
+}
+
+// An older-format .svx is silently converted to the current format. The loaded
+// file is renamed to "<name>_v<old_version>.svx" and the live (already converted)
+// city state is written to the canonical "<name>.svx"; the original is never
+// overwritten, it only changes name. Returns false when the rename or the write
+// fails, so the caller can abort the load before the city starts (fail-fast).
+static bool migrate_legacy_save_file(pcstr relative_name, int file_version) {
+    // "Save/<player>/name" without the extension
+    vfs::path rel_stem(relative_name);
+    rel_stem.remove_extension();
+
+    // Canonical target of the converted copy: "Save/<player>/name.svx"
+    vfs::path rel_target = rel_stem;
+    rel_target.append_extension("svx");
+    const vfs::path abs_loaded = fullpath_saves(relative_name).resolve();
+
+    if (strcmp(fullpath_saves(rel_target).resolve().c_str(), abs_loaded.c_str()) != 0
+        && vfs::file_exists(fullpath_saves(rel_target))) {
+        const int target_ver = read_save_version(fullpath_saves(rel_target).c_str());
+        if (target_ver >= (int)latest_save_version) {
+            // A current-format save already lives under the canonical name; the loaded
+            // file is an older leftover, so there is nothing to convert.
+            logs::info("[save-migration] %s: canonical %s is already current (v%d), skipping",
+                       relative_name, rel_target.c_str(), target_ver);
+            return true;
+        }
+        // The canonical name is held by another, still-old file — write the converted
+        // copy to a unique version-tagged name instead of overwriting it.
+        rel_target = rel_stem;
+        bstring32 ver_tag;
+        ver_tag.printf("_v%d", (int)latest_save_version);
+        rel_target.append(ver_tag.c_str());
+        rel_target.append_extension("svx");
+    }
+    const vfs::path abs_target = fullpath_saves(rel_target).resolve();
+
+    // Unique relative name for the backup of the original file.
+    vfs::path rel_backup;
+    for (int n = 1; ; ++n) {
+        bstring64 tag;
+        if (n == 1) {
+            tag.printf("_v%d", file_version);
+        } else {
+            tag.printf("_v%d_%d", file_version, n);
+        }
+        rel_backup = rel_stem;
+        rel_backup.append(tag.c_str());
+        rel_backup.append_extension("svx");
+
+        const vfs::path abs_candidate = fullpath_saves(rel_backup).resolve();
+        if (strcmp(abs_candidate.c_str(), abs_target.c_str()) == 0) {
+            continue;
+        }
+        if (!vfs::file_exists(abs_candidate)) {
+            break;
+        }
+    }
+    const vfs::path abs_backup = fullpath_saves(rel_backup).resolve();
+
+    logs::info("[save-migration] %s: converting v%d save, keeping original as %s, writing %s",
+               relative_name, file_version, rel_backup.c_str(), rel_target.c_str());
+
+    if (!vfs::file_rename_os(abs_loaded, abs_backup)) {
+        logs::error("[save-migration] %s: could not rename %s to %s, aborting load",
+                    relative_name, abs_loaded.c_str(), abs_backup.c_str());
+        return false;
+    }
+
+    const bool ok = g_chunk_io.serialize(abs_target.c_str(), 0, FILE_FORMAT_SAVE_FILE_EXT,
+                                         save_data_version(), file_schema);
+    if (!ok) {
+        vfs::file_rename_os(abs_backup, abs_loaded);
+        logs::error("[save-migration] %s: could not write %s, restored %s, aborting load",
+                    relative_name, abs_target.c_str(), abs_loaded.c_str());
+        return false;
+    }
+
+    if (!autosave_module_t::is_monthly_filename(relative_name)) {
+        game_features::gameopt_last_save_filename = abs_target.c_str();
+        game_features::gameopt_last_player = game_features::gameopt_player_name.to_string();
+        game_features::save();
+    }
+
+    // Inform (not ask): the converted copy is now the canonical file, the original
+    // is kept under the version-tagged backup name. Deferred to frame end so the
+    // dialog opens on top of the city window the load flow has just shown.
+    bstring512 body;
+    save_migration_message_body(body, lang_text_from_key("#save_migration_message"), rel_backup.basename().c_str());
+    xstring title = lang_text_from_key("#save_migration_title");
+    xstring message = body.c_str();
+    game.add_frame_end_event([title, message] {
+        popup_dialog::show_ok(title, message);
+    });
+
+    logs::info("[test-marker] save_migrated:%s:to=%s:backup=%s",
+               relative_name, rel_target.c_str(), rel_backup.c_str());
+    return true;
+}
+
+static bool load_savegame_reader(vfs::reader savegame, e_file_format file_format, pcstr name,
+                                 bool start_immediately, bool migrate = false) {
+    GamestateLoadDetail::pre_load();
+    if (!g_chunk_io.unserialize(savegame, 0, file_format, GamestateLoadDetail::read_file_version, file_schema)) {
+        return false;
+    }
+
+    game.session.last_loaded = e_session_save;
+    game.session.last_loaded_mission = name;
+    GamestateLoadDetail::post_load();
+
+    if (migrate) {
+        const int file_version = g_chunk_io.get_file_version();
+        if (file_version < (int)latest_save_version || legacy_figure_actions_remapped) {
+            if (!migrate_legacy_save_file(name, file_version)) {
+                return false;
+            }
+        }
+    }
+
+    if (start_immediately) {
+        GamestateIO::start_loaded_file();
+    }
+
+    return true;
+}
+
 bool GamestateIO::load_savegame(pcstr filename_short, bool start_immediately) {
     bstring256 full = fullpath_saves(filename_short).resolve();
 
@@ -319,24 +483,23 @@ bool GamestateIO::load_savegame(pcstr filename_short, bool start_immediately) {
         return load_og_savegame(full.c_str(), start_immediately);
     }
 
-    // read file
-    GamestateLoadDetail::pre_load();
-    e_file_format file_format = get_format_from_file(filename_short);
-    auto savegame = vfs::file_open(full);
-    if (!g_chunk_io.unserialize(savegame, 0, file_format, GamestateLoadDetail::read_file_version, file_schema)) {
+    return load_savegame_reader(vfs::file_open(full), get_format_from_file(filename_short), filename_short,
+      start_immediately, /*migrate=*/true);
+}
+
+bool GamestateIO::write_savegame_memory(std::vector<uint8_t>& out) {
+    return g_chunk_io.serialize_to_bytes(save_data_version(), file_schema, out);
+}
+
+bool GamestateIO::load_savegame_memory(const std::vector<uint8_t>& bytes, pcstr name, bool start_immediately) {
+    if (bytes.empty()) {
+        logs::error("Load game: empty memory save %s", name);
         return false;
     }
-
-    game.session.last_loaded = e_session_save;
-    game.session.last_loaded_mission = filename_short;
-    GamestateLoadDetail::post_load();
-
-    // finish loading and start
-    if (start_immediately) {
-        start_loaded_file();
-    }
-
-    return true;
+    void* copy = malloc(bytes.size());
+    memcpy(copy, bytes.data(), bytes.size());
+    auto reader = std::make_shared<vfs::data_reader>("memory save", copy, (int)bytes.size());
+    return load_savegame_reader(reader, FILE_FORMAT_SAVE_FILE_EXT, name, start_immediately);
 }
 
 bool GamestateIO::load_map(pcstr filename, bool relative, bool start_immediately) {
@@ -380,8 +543,10 @@ bool GamestateIO::load_map(pcstr filename, bool relative, bool start_immediately
 
     if (start_immediately) {
         start_loaded_file();
-        bstring256 filename("autosave_replay.", saved_game_data_expanded.extension);
-        GamestateIO::write_savegame(filename);
+        if (g_replay_autosave) {
+            bstring256 filename("autosave_replay.", saved_game_data_expanded.extension);
+            GamestateIO::write_savegame(filename);
+        }
     }
 
     return true;
@@ -421,7 +586,7 @@ void GamestateIO::start_loaded_file() {
         g_city.map.entry_point = scenario_map_entry();
         g_city.map.exit_point = scenario_map_exit();
 
-        game.time_init(g_scenario.start_year);
+        g_simulation.simtime.init(g_scenario.start_year);
 
         // traders / empire
         g_empire_map.init_scenario();
@@ -434,7 +599,6 @@ void GamestateIO::start_loaded_file() {
 
         // set up events
         scenario_revolt_init();
-        scenario_kingdome_change_init();
         scenario_criteria_init_max_year();
         g_invasions.init();
         g_distant_battle.determine_distant_battle_city();
@@ -461,7 +625,7 @@ void GamestateIO::start_loaded_file() {
     map_routing_update_all();
     figure_route_clean();
     g_city.map.update_road_network();
-    map_routing_update_ferry_routes();
+    building_ferry::update_routes();
     g_city.maintenance.check_kingdome_access();
 
     // tiles
@@ -496,7 +660,7 @@ void GamestateIO::start_loaded_file() {
     } else {
         game.paused = false;
         window_city_show();
-        g_sound.music_update(true);
+        events::emit(event_music_update{true});
     }
 
     events::process();

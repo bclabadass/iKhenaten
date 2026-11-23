@@ -1,7 +1,7 @@
 #include "autoconfig_window.h"
 
 #include "core/log.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "game/game_events.h"
 #include "window/message_dialog.h"
 #include "core/profiler.h"
@@ -279,6 +279,8 @@ void autoconfig_window::archive_load(archive arch) {
     help_id = arch.r_string("help_id");
     allow_rmb_goback = arch.r_bool("allow_rmb_goback");
     draw_underlying = arch.r_bool("draw_underlying", false);
+    defer_relayout = arch.r_bool("defer_relayout", false);
+    sim_time_runs = arch.r_bool("sim_time_runs");
 }
 
 void autoconfig_window::go_back() {
@@ -298,7 +300,7 @@ int autoconfig_window::ui_handle_mouse(const mouse *m) {
     bool handled = ui::handle_mouse(m);
 
     if (allow_rmb_goback && (is_modal() || !handled)) {
-        const hotkeys *h = hotkey_state();
+        const hotkeys* h = &g_hotkeys;
         if (input_go_back_requested(m, h)) {
             window_go_back();
             ui.end_widget();
@@ -306,7 +308,7 @@ int autoconfig_window::ui_handle_mouse(const mouse *m) {
         }
     }
 
-    const hotkeys *h = hotkey_state();
+    const hotkeys* h = &g_hotkeys;
     if (input_go_back_requested(m, h)) {
         go_back();
     }
@@ -368,6 +370,24 @@ static autoconfig_window* get_window_current(xstring name) {
     return (it != autoconfig_registry().end()) ? it->second : nullptr;
 }
 
+bool autoconfig_window::defers_relayout(xstring section) {
+    const autoconfig_window *w = get_window_current(section);
+    return w && w->defer_relayout;
+}
+
+bool autoconfig_window::draws_underlying(xstring section) {
+    const autoconfig_window *w = get_window_current(section);
+    return w && w->draw_underlying;
+}
+
+// A script window's pos is computed once from the screen size; this lets an open window follow a resize.
+static void __window_set_pos(xstring section, int x, int y) {
+    if (autoconfig_window *w = get_window_current(section)) {
+        w->pos = {x, y};
+    }
+}
+ANK_FUNCTION_3(__window_set_pos)
+
 void autoconfig_window::show(xstring section) {
     auto it = autoconfig_registry().find(section);
     if (it == autoconfig_registry().end()) {
@@ -382,6 +402,7 @@ void autoconfig_window::show(xstring section) {
        [section] (int flags) { auto *w = get_window_current(section); if (w) w->ui_draw_foreground(flags); },
        [section] (const mouse *m, const hotkeys *h) { auto *w = get_window_current(section); if (w) w->ui_handle_mouse(m); }
     };
+    s_script_window_type.sim_time_runs = w->sim_time_runs;
     {
         window_ui_scale_scope scaled(window_ui_scale_for(section));
         w->init();

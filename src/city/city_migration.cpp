@@ -6,9 +6,10 @@
 #include "city/city_warnings.h"
 #include "core/calc.h"
 #include "core/log.h"
-#include "game/game.h"
+#include "game/simulation.h"
+#include "game/game_config.h"
 #include "game/game_events.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 svector<city_migration_t::condition, 16> g_migration_conditions;
 city_migration_defaults_t ANK_VARIABLE(migration_defaults);
@@ -28,7 +29,7 @@ void city_migration_t::update_status() {
 
     const auto &sentiment = g_city.sentiment;
     auto sent_it = std::find_if(migration_sentiment_influence.begin(), migration_sentiment_influence.end(), [sentiment = sentiment.value] (const auto& t) {
-        return sentiment > t.s;
+        return sentiment >= t.s;
     });
 
     const int8_t unemployment_percentage = g_city.labor.unemployment_percentage;
@@ -42,7 +43,11 @@ void city_migration_t::update_status() {
         range_percentage_by_unemployments.first = std::max(range_percentage_by_unemployments.first, it.second.first);
         range_percentage_by_unemployments.second = std::min(range_percentage_by_unemployments.second, it.second.second);
     }
-    percentage_by_unemployments = std::clamp(want_percentage_by_unemployments, range_percentage_by_unemployments.first, range_percentage_by_unemployments.second);
+    if (!!game_features::gameplay_change_migration_unemployment) {
+        percentage_by_unemployments = std::clamp(want_percentage_by_unemployments, range_percentage_by_unemployments.first, range_percentage_by_unemployments.second);
+    } else {
+        percentage_by_unemployments = 0;
+    }
 
     percentage_by_sentiment = (sent_it != migration_sentiment_influence.end()) ? sent_it->i : 0;
     percentage = (percentage_by_sentiment + percentage_by_unemployments);
@@ -233,9 +238,9 @@ void city_migration_t::update_month() {
     });
 
     logs::info("[migration] %d.%02d pop=%d room=%d/%d reachable_room=%d sentiment=%d unemp=%d%%",
-               game.simtime.year, game.simtime.month + 1,
-               g_city.population.current, g_city.population.room_in_houses, g_city.population.total_capacity,
-               room_reachable, g_city.sentiment.value, g_city.labor.unemployment_percentage);
+      g_simulation.simtime.year, g_simulation.simtime.month + 1, g_city.population.current,
+      g_city.population.room_in_houses, g_city.population.total_capacity, room_reachable, g_city.sentiment.value,
+      g_city.labor.unemployment_percentage);
     logs::info("[migration] pct=%d (sent=%d unemp=%d) queue=%d/%d batch=%d/%d duration=%d/%d",
                percentage, percentage_by_sentiment, percentage_by_unemployments,
                immigration_queue_size, emigration_queue_size,

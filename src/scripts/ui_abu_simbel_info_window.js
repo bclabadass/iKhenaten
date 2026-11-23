@@ -1,84 +1,67 @@
-log_info("akhenaten: abu simbel info window started")
-
-abu_simbel_info_layout {
-    ui {
-        background    : outer_panel({size: [29, 16]}),
-        title         : text({pos: [0, 16], text:"${building.name}", size: [px(29), 20], font : FONT_LARGE_BLACK_ON_LIGHT, align:"center"}),
-        subtitle      : text({pos: [32, 46], text:"${text.12}", size: [px(27), -1], wrap:px(27), font : FONT_NORMAL_BLACK_ON_LIGHT, multiline:true }),
-        progress_text : text({pos: [32, 66], size:[px(20), 20], font : FONT_NORMAL_BLACK_ON_LIGHT }),
-        progress_pct  : text({pos: [200, 66], size:[px(8), 20], font : FONT_NORMAL_BLACK_ON_LIGHT }),
-        warning_text  : text({pos: [32, 96], size:[px(27), -1], wrap:px(27), multiline:true, font : FONT_NORMAL_BLACK_ON_LIGHT }),
-        timber_icon   : resource_icon({pos: [32, 200], resource: RESOURCE_TIMBER }),
-        timber_text   : text({pos: [70, 204], size:[px(15), 20], font : FONT_NORMAL_BLACK_ON_LIGHT }),
-        button_help   : help_button({}),
-        button_close  : close_button({}),
-    }
-}
+log_info("akhenaten: ui abu simbel info window")
 
 [es=building_info_window]
 info_window_abu_simbel {
     related_buildings [BUILDING_ABU_SIMBEL]
-    ui : baseui(abu_simbel_info_layout, {
-    })
+    ui {
+        background     : outer_panel({size: [29, 16]}),
+        title          : text({pos: [0, 16], text:"${building.name}", size: [px(29), 20], font : FONT_LARGE_BLACK_ON_LIGHT, align:"center"}),
+        warning_text   : text({pos: [32, 56], size:[px(27), -1], wrap:px(27), multiline:true, font : FONT_NORMAL_BLACK_ON_LIGHT }),
+        progress_text  : text({pos: [32, 136], size:[px(27), -1], wrap:px(27), multiline:true, font : FONT_NORMAL_BLACK_ON_LIGHT }),
+        button_help    : help_button({}),
+        button_close   : close_button({}),
+    }
 }
 
-function info_window_abu_simbel_fill_resource_slot(window, mon, resource, icon_key, text_key) {
-    var needed = mon.needs_resource(resource)
-    if (needed <= 0) {
-        window[text_key].text = ""
-        window[icon_key].enabled = false
-        return
+// OG guild_text: the stonemasons it reads belong to the Caesareum report, so they are always 0 here
+// and only the guild's own state counts.
+function info_window_abu_simbel_guild_text(mon) {
+    if (mon.has_free_spot(FIGURE_STONEMASON)) {
+        if (!city.count_total_buildings(BUILDING_STONEMASONS_GUILD)) { return 14 }
+        if (!city.count_active_buildings(BUILDING_STONEMASONS_GUILD)) { return 18 }
     }
-    window[icon_key].enabled = true
-    var pct = mon.resource_pct(resource)
-    var delivered = Math.min(Math.floor(needed * pct / 100), needed)
-    window[text_key].text = delivered + " / " + needed
+    if (mon.has_free_spot(FIGURE_CARPENTER)) {
+        if (!city.count_total_buildings(BUILDING_CARPENTERS_GUILD)) { return 16 }
+        if (!city.count_active_buildings(BUILDING_CARPENTERS_GUILD)) { return 20 }
+    }
+    return 0
 }
 
-function info_window_abu_simbel_progress_pct(mon) {
-    var min_pct = 100
-    var any_resource = false
-    var needed = mon.needs_resource(RESOURCE_TIMBER)
-    if (needed > 0) {
-        any_resource = true
-        min_pct = mon.resource_pct(RESOURCE_TIMBER)
+// The main record's phase is the stage; MONUMENT_FINISHED (-1) once all phases_total stages are done.
+function info_window_abu_simbel_stage(mon) {
+    var phase = mon.phase()
+    var total = mon.phases_total()
+    return (phase === -1 || phase >= total) ? total : Math.max(phase, 0)
+}
+
+// OG window_building_draw_abu_simbel status line.
+function info_window_abu_simbel_status_text(mon, part) {
+    if (__map_citizen_grid(mon.access_point()) < 0 || part.distance_from_entry == 0) {
+        return 149
     }
-    if (!any_resource) {
-        var art_phases = Math.max(1, mon.phases_total() - 1)
-        min_pct = Math.min(99, Math.floor(mon.phase() * 100 / art_phases))
+    var guild = info_window_abu_simbel_guild_text(mon)
+    if (guild) {
+        return guild
     }
-    return min_pct
+    return info_window_abu_simbel_stage(mon) < mon.phases_total() ? 141 : 142
 }
 
 [es=(info_window_abu_simbel, init)]
 function info_window_abu_simbel_on_init(window) {
     var mon = city.get_monument(window.bid)
-    if (!mon) {
+    var part = city.get_building(window.bid)
+    if (!mon || !part) {
         return
     }
 
-    if (mon.phase() !== -1) {
-        var reason = { group: 178, id: 141 }
-        var carpenters = city.count_active_buildings(BUILDING_CARPENTERS_GUILD)
-        var stonemasons = city.count_active_buildings(BUILDING_STONEMASONS_GUILD)
+    window.warning_text.text = __loc(178, info_window_abu_simbel_status_text(mon, part))
 
-        if (mon.phase() === 0 && carpenters === 0 && stonemasons === 0) {
-            reason = { group: 199, id: 71 }
-        } else if (mon.needs_resource(RESOURCE_TIMBER) > 0) {
-            reason = carpenters ? { group: 178, id: 141 } : { group: 178, id: 16 }
-        } else if (mon.need_stonemason()) {
-            reason = stonemasons ? { group: 178, id: 141 } : { group: 178, id: 14 }
-        }
-
-        window.warning_text.text = __loc(reason)
-        window.progress_text.text = __loc(199, 73)
-        window.progress_pct.text = info_window_abu_simbel_progress_pct(mon) + "%"
-        info_window_abu_simbel_fill_resource_slot(window, mon, RESOURCE_TIMBER, "timber_icon", "timber_text")
-    } else {
-        window.warning_text.text = __loc(178, 142)
-        window.progress_text.text = __loc(199, 74)
-        window.progress_pct.text = ""
-        window.timber_text.text = ""
-        window.timber_icon.enabled = false
+    var total = mon.phases_total()
+    var pct = Math.floor(info_window_abu_simbel_stage(mon) * 100 / total)
+    if (pct >= 100) {
+        window.progress_text.text = ""
+        return
     }
+    var line = __loc(178, 61).split("[monument_name]").join(__loc(178, 82))
+    window.progress_text.text = line.split("[percent_complete]").join(pct + "%")
 }

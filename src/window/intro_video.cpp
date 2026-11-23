@@ -3,11 +3,12 @@
 #include "core/log.h"
 #include "content/vfs.h"
 #include "graphics/graphics.h"
+#include "graphics/elements/ui.h"
 #include "graphics/screen.h"
 #include "graphics/video.h"
 #include "graphics/window.h"
 #include "js/js_game.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 #include "sound/sound.h"
 #include "window/autoconfig_window.h"
 
@@ -89,7 +90,7 @@ static void draw_background(int) {
 
 static void draw_foreground(int) {
     if (ensure_video_started()) {
-        video_draw_fullscreen();
+        ui::push(ui::cmd_t::video, ui::opt::Pos{vec2i{0, 0}}, ui::opt::Size{vec2i{screen_width(), screen_height()}});
     }
 }
 

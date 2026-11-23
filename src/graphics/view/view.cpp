@@ -19,8 +19,6 @@
 #include "widget/widget_sidebar.h"
 #include "widget/sidebar/common.h"
 #include "scenario/scenario.h"
-#include "platform/renderer.h"
-#include "platform/screen.h"
 #include "city/city.h"
 #include "figure/figure.h"
 #include "game/game.h"
@@ -31,29 +29,6 @@ viewport_t g_camera;
 
 static const int X_DIRECTION_FOR_ORIENTATION[] = {1, 1, -1, -1};
 static const int Y_DIRECTION_FOR_ORIENTATION[] = {1, -1, -1, 1};
-
-io_buffer* iob_camera_view_orientation = new io_buffer([](io_buffer* iob, size_t version) {
-    auto& data = g_camera;
-
-    iob->bind(BIND_SIGNATURE_INT32, &data.orientation);
-
-    if (data.orientation >= 0 && data.orientation <= 6)
-        data.orientation = 2 * (data.orientation / 2); // ensure even number
-    else
-        data.orientation = 0;
-});
-
-io_buffer* iob_city_view_camera = new io_buffer([](io_buffer* iob, size_t version) {
-    auto& data = g_camera;
-
-    iob->bind(BIND_SIGNATURE_INT32, &data.tile_internal.x);
-    iob->bind(BIND_SIGNATURE_INT32, &data.tile_internal.y);
-
-    //    city_view_go_to_position(x, y);
-    //    set_viewport_with_sidebar();
-    data.go_to_corner_tile(data.tile_internal, false);
-    data.update_derived_camera_state();
-});
 
 carera_scrollable viewport_t::get_scrollable_pixel_limits(float p) {
     carera_scrollable result;
@@ -430,14 +405,21 @@ void viewport_t::frame_begin() {
     update_derived_camera_state();
 }
 
+static float default_load_zoom() {
+    return 100.0f;
+}
+
+float (*g_viewport_load_zoom)() = default_load_zoom;
+
 void viewport_t::init() {
     screentile_lookup.calculate();
-    g_zoom.set_scale(g_ios_screen.city_zoom_for_load());
+    g_zoom.set_scale(g_viewport_load_zoom());
     widget_minimap_invalidate();
 }
 
 void viewport_t::reset_orientation() {
     orientation = 0;
+    map_view_orientation_set(orientation);
 }
 
 void viewport_t::rotate_left() {
@@ -446,6 +428,7 @@ void viewport_t::rotate_left() {
     if (orientation < 0) {
         orientation = DIR_6_TOP_LEFT;
     }
+    map_view_orientation_set(orientation);
 
     if (center.valid()) {
         vec2i screen = tile_to_screen(center);
@@ -462,6 +445,7 @@ void viewport_t::rotate_right() {
     if (orientation > 6) {
         orientation = DIR_0_TOP_RIGHT;
     }
+    map_view_orientation_set(orientation);
 
     if (center.valid()) {
         vec2i screen = tile_to_screen(center);

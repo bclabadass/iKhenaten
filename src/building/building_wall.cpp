@@ -1,4 +1,5 @@
 ﻿#include "building_wall.h"
+#include "grid/orientation.h"
 
 #include "game/undo.h"
 #include "grid/terrain.h"
@@ -7,12 +8,11 @@
 #include "grid/image.h"
 #include "grid/building.h"
 #include "grid/wall_material.h"
-#include "graphics/view/view.h"
 #include "construction/routed.h"
 #include "graphics/image.h"
 #include "grid/routing/routing_terrain.h"
 #include "game/game_events.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_mud_wall);
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_brick_wall);
@@ -206,7 +206,7 @@ void building_mud_wall::set_wall_gatehouse_image_manually(int grid_offset) {
     int gatehouse_down = get_gatehouse_building_id(grid_offset + GRID_OFFSET(0, 1));
     int gatehouse_right = get_gatehouse_building_id(grid_offset + GRID_OFFSET(1, 0));
     int image_offset = 0;
-    int map_orientation = g_camera.orientation;
+    int map_orientation = map_view_orientation();
     if (map_orientation == DIR_0_TOP_RIGHT) {
         if (gatehouse_up && !gatehouse_left) {
             int pos = get_gatehouse_position(grid_offset, DIR_0_TOP_RIGHT, gatehouse_up);

@@ -4,9 +4,33 @@
 #include "core/xstring.h"
 #include "game/game_events_history.h"
 
+struct event_sound_effect {
+    int effect;
+    pcstr source_file = __builtin_FILE();
+    int source_line = __builtin_LINE();
+};
+
 // Plays a music/ambient track by its music.js key.
 struct event_sound_track {
     xstring track;
+    pcstr source_file = __builtin_FILE();
+    int source_line = __builtin_LINE();
+};
+
+struct event_sound_speech {
+    xstring path;
+    int volume = 255;
+    pcstr source_file = __builtin_FILE();
+    int source_line = __builtin_LINE();
+};
+
+struct event_music_update {
+    bool force;
+};
+
+struct event_screen_resized {
+    int width;
+    int height;
 };
 
 extern events::typed_queue g_city_events;
@@ -75,6 +99,12 @@ namespace events {
         g_city_events.process();
         g_permanent_events.process();
     }
+
+    struct session_subscriber {
+        explicit session_subscriber(void (*subscribe)());
+    };
+
+    void start_session();
 } // namespace events
 
 #define ANK_PERMANENT_CALLBACK_IMPL(event, a, unique_id)                                                                               \

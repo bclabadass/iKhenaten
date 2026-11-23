@@ -23,10 +23,11 @@
 #include "grid/gardens.h"
 #include "grid/random.h"
 #include "grid/terrain.h"
+#include "grid/routing/routing_terrain.h"
 #include "game/game_config.h"
 #include "io/gamefiles/lang.h"
-#include "game/game.h"
-#include "js/js_game.h"
+#include "game/simulation.h"
+#include "js/js_register.h"
 #include "widget/widget_city.h"
 #include "dev/debug.h"
 #include "scenario/scenario.h"
@@ -136,10 +137,6 @@ void building_house::update_day() {
     building_impl::update_day();
 }
 
-void building_house::update_week() {
-    building_impl::update_week();
-}
-
 void building_house::update_count() const {
     g_city.buildings.increase_count(type(), house_population() > 0);
 }
@@ -201,11 +198,13 @@ void building_house::bind_dynamic(io_buffer *iob, size_t version) {
     iob->bind_u8(d.tax_coverage);
     iob->bind_u16((uint16_t&)d.tax_collector_id);
     // Legacy tax units (people * model tax) for saves without the OG int32 above.
-    int16_t legacy_tax_units
-      = (int16_t)std::min<int>(g_city.finance.house_tax_units_from_income(d.tax_income), INT16_MAX);
+    int16_t legacy_tax_units = (int16_t)std::min<int>(
+      finance_system::house_tax_units_from_income(g_city.finance, g_city.finance_ctx(), d.tax_income), INT16_MAX);
     iob->bind_i16(legacy_tax_units);
     if (iob->is_read_access()) {
-        d.tax_income = og_tax_income ? og_tax_income : g_city.finance.house_tax_income(legacy_tax_units);
+        d.tax_income = og_tax_income
+                         ? og_tax_income
+                         : finance_system::house_tax_income(g_city.finance, g_city.finance_ctx(), legacy_tax_units);
     }
     iob->bind_u8(d.days_without_food);
     iob->bind_u8(d.hsize);
@@ -369,7 +368,7 @@ void building_house::change_to(building &b, e_building_type new_type, bool force
     // OG has no delay between two evolutions; the 7-day one is a remake change.
     if (!force && new_type > b.type && game_features::gameplay_change_house_evolve_delay.to_bool()) {
         const int house_update_delay = std::min(house_up_delay(), 7);
-        const int absolute_day = game.simtime.absolute_day(true);
+        const int absolute_day = g_simulation.simtime.absolute_day(true);
         if (house_update_delay > 0 && absolute_day - d.last_update_day < house_update_delay) {
             return;
         }
@@ -382,7 +381,7 @@ void building_house::change_to(building &b, e_building_type new_type, bool force
     }
 
     b.clear_impl(); // clear old impl
-    b.type = new_type;
+    b.set_type(new_type);
 
     auto house = b.dcast_house();
     int image_id = house_image_group<false>(house->house_level());
@@ -417,7 +416,7 @@ void building_house::change_to(building &b, e_building_type new_type, bool force
     }
 
     map_building_tiles_add(b.id, b.tile, b.size, image_id, TERRAIN_BUILDING);
-    d.last_update_day = game.simtime.absolute_day(true);
+    d.last_update_day = g_simulation.simtime.absolute_day(true);
     d.image_id = image_id;
 }
 
@@ -435,7 +434,7 @@ int16_t building_house::population_room() const {
 
 void building_house::change_to_vacant_lot() {
     auto &d = runtime_data();
-    base.type = BUILDING_HOUSE_VACANT_LOT;
+    base.set_type(BUILDING_HOUSE_VACANT_LOT);
 
     d.population = 0;
     d.frog_infest_days = 0;
@@ -822,7 +821,7 @@ void building_house::decay_services() {
     const building_id complex_id = g_city.buildings.temple_complex_id(BUILDING_TEMPLE_COMPLEX_BAST);
     if (complex_id) {
         const auto &params = building_temple_complex_bast::current_params();
-        if (params.service_decay_skip_odd_months && (game.simtime.month & 1)) {
+        if (params.service_decay_skip_odd_months && (g_simulation.simtime.month & 1)) {
             decay_extended_services = false;
         }
     }
@@ -1030,7 +1029,7 @@ static void split_size2(building* b, e_building_type new_type) {
     map_building_tiles_remove(b->id, b->tile);
 
     // main tile
-    b->type = new_type;
+    b->set_type(new_type);
     b->size = 1;
     housed.hsize = 1;
     housed.is_merged = false;
@@ -1071,7 +1070,7 @@ static void split_size3(building* b) {
     map_building_tiles_remove(b->id, b->tile);
 
     // main tile
-    b->type = BUILDING_HOUSE_SPACIOUS_APARTMENT;
+    b->set_type(BUILDING_HOUSE_SPACIOUS_APARTMENT);
     b->size = 1;
     housed.hsize = 1;
     housed.is_merged = false;
@@ -1123,92 +1122,42 @@ const model_house &building_house::model() const {
     return get_model(house_level());
 }
 
-void building_house_common_manor::devolve_to_fancy_residence() {
-    int inventory_per_tile[INVENTORY_MAX];
-    int inventory_remainder[INVENTORY_MAX];
-    int foods_per_tile[INVENTORY_MAX];
-    int foods_remainder[INVENTORY_MAX];
-
+void building_house::devolve_to_smaller(e_building_type new_type, int new_size, int divisor, bool random_variant) {
     auto &housed = runtime_data();
-
-    for (int i = 0; i < INVENTORY_MAX; i++) {
-        inventory_per_tile[i] = housed.inventory[i] / 6;
-        inventory_remainder[i] = housed.inventory[i] % 6;
-        foods_per_tile[i] = housed.foods[i] / 6;
-        foods_remainder[i] = housed.foods[i] % 6;
-    }
-
-    int population_per_tile = house_population() / 6;
-    int population_remainder = house_population() % 6;
+    const int population = house_population();
 
     map_building_tiles_remove(id(), tile());
-
-    // main tile
-    base.type = BUILDING_HOUSE_FANCY_RESIDENCE;
-    base.size = 2;
-    housed.hsize = 2;
+    base.set_type(new_type);
+    base.size = new_size;
+    housed.hsize = new_size;
     housed.is_merged = false;
-    housed.population = population_per_tile + population_remainder;
+    housed.population = population / divisor + population % divisor;
     for (int i = 0; i < INVENTORY_MAX; i++) {
-        housed.inventory[i] = inventory_per_tile[i] + inventory_remainder[i];
-        housed.foods[i] = foods_per_tile[i] + foods_remainder[i];
+        housed.inventory[i] = housed.inventory[i] / divisor + housed.inventory[i] % divisor;
+        housed.foods[i] = housed.foods[i] / divisor + housed.foods[i] % divisor;
     }
     base.distance_from_entry = 0;
 
     int image_id = house_image_group<true>(house_level());
-    map_building_tiles_add(id(), tile(), size(), image_id + (map_random_get(tile()) & 1), TERRAIN_BUILDING);
+    if (random_variant) {
+        image_id += map_random_get(tile()) & 1;
+    }
+    map_building_tiles_add(id(), tile(), new_size, image_id, TERRAIN_BUILDING);
 
-    // the other tiles (new buildings)
-    image_id = house_image_group<true>(HOUSE_SPACIOUS_APARTMENT);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(2, 0), image_id, population_per_tile,inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(2, 1), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(0, 2), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(1, 2), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(2, 2), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
+    for (int i = 0; i <= new_size; i++) {
+        map_terrain_add(tile().shifted(new_size, i), TERRAIN_GARDEN);
+        map_terrain_add(tile().shifted(i, new_size), TERRAIN_GARDEN);
+    }
+    map_tiles_gardens_update_all();
+    map_routing_update_land();
+}
+
+void building_house_common_manor::devolve_to_fancy_residence() {
+    devolve_to_smaller(BUILDING_HOUSE_FANCY_RESIDENCE, 2, 6, true);
 }
 
 void building_house_modest_estate::devolve_to_statel_manor() {
-    int inventory_per_tile[INVENTORY_MAX];
-    int inventory_remainder[INVENTORY_MAX];
-    int foods_per_tile[INVENTORY_MAX];
-    int foods_remainder[INVENTORY_MAX];
-
-    auto &housed = runtime_data();
-
-    for (int i = 0; i < INVENTORY_MAX; i++) {
-        inventory_per_tile[i] = housed.inventory[i] / 8;
-        inventory_remainder[i] = housed.inventory[i] % 8;
-        foods_per_tile[i] = housed.foods[i] / 8;
-        foods_remainder[i] = housed.foods[i] % 8;
-    }
-    int population_per_tile = house_population() / 8;
-    int population_remainder = house_population() % 8;
-
-    map_building_tiles_remove(id(), tile());
-
-    // main tile
-    base.type = BUILDING_HOUSE_STATELY_MANOR;
-    base.size = 3;
-    housed.hsize = 3;
-    housed.is_merged = false;
-    housed.population = population_per_tile + population_remainder;
-    for (int i = 0; i < INVENTORY_MAX; i++) {
-        housed.inventory[i] = inventory_per_tile[i] + inventory_remainder[i];
-    }
-    base.distance_from_entry = 0;
-
-    int image_id = house_image_group<true>(house_level());
-    map_building_tiles_add(id(), tile(), size(), image_id, TERRAIN_BUILDING);
-
-    // the other tiles (new buildings)
-    image_id = house_image_group<true>(HOUSE_SPACIOUS_APARTMENT);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(3, 0), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(3, 1), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(3, 2), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(0, 3), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(1, 3), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(2, 3), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
-    create_house_tile(BUILDING_HOUSE_SPACIOUS_APARTMENT, tile().shifted(3, 3), image_id, population_per_tile, inventory_per_tile, foods_per_tile);
+    devolve_to_smaller(BUILDING_HOUSE_STATELY_MANOR, 3, 8, false);
 }
 
 void building_house::check_for_corruption() {
@@ -1403,7 +1352,7 @@ void building_house_spacious_apartment::expand_to_common_residence() {
 
     auto &housed = runtime_data();
 
-    base.type = BUILDING_HOUSE_COMMON_RESIDENCE;
+    base.set_type(BUILDING_HOUSE_COMMON_RESIDENCE);
     base.size = 2;
     housed.hsize = 2;
     housed.population += g_merge_data.population;
@@ -1422,7 +1371,7 @@ void building_house_fancy_residence::expand_to_common_manor() {
     prepare_for_merge(id(), 9);
 
     auto &housed = runtime_data();
-    base.type = BUILDING_HOUSE_COMMON_MANOR;
+    base.set_type(BUILDING_HOUSE_COMMON_MANOR);
     base.size = 3;
     housed.hsize = 3;
     housed.population += g_merge_data.population;
@@ -1459,7 +1408,7 @@ void building_house_stately_manor::expand_to_modest_estate() {
 
     auto &housed = runtime_data();
 
-    base.type = BUILDING_HOUSE_MODEST_ESTATE;
+    base.set_type(BUILDING_HOUSE_MODEST_ESTATE);
     base.size = 4;
     housed.hsize = 4;
     housed.population += g_merge_data.population;
@@ -1518,6 +1467,10 @@ void building_house::update_fade_alpha() {
 
 bool building_house::draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color color_mask) {
     building_impl::draw_ornaments_and_animations_height(ctx, point, tile, color_mask);
+
+    if (!game_features::gameui_house_interior) {
+        return true;
+    }
 
     update_fade_alpha();
 

@@ -1,4 +1,5 @@
 #include "monument_alexandria_library.h"
+#include "grid/orientation.h"
 
 #include "building/monuments.h"
 #include "building/rotation.h"
@@ -12,12 +13,11 @@
 #include "figuretype/figure_carpenter.h"
 #include "figuretype/figure_stonemason.h"
 #include "figuretype/figure_worker.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "game/resource.h"
 #include "game/undo.h"
 #include "graphics/color.h"
 #include "graphics/view/lookup.h"
-#include "graphics/view/view.h"
 #include "grid/building.h"
 #include "grid/building_tiles.h"
 #include "grid/figure.h"
@@ -28,7 +28,7 @@
 #include "grid/road_access.h"
 #include "grid/terrain.h"
 #include "io/io_buffer.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 
@@ -111,7 +111,7 @@ std::array<spot_anim, LIBRARY_WORK_SPOTS> g_spot_anims{};
 int g_spot_anim_tick = -1;
 
 int camera_view() {
-    return g_camera.orientation / 2;
+    return map_view_orientation() / 2;
 }
 
 const library_anim_script *anim_script(const xstring &name) {
@@ -191,17 +191,6 @@ bool tile_not_clear(tile2i t) {
         || (map_terrain_count_directly_adjacent_with_type(t, TERRAIN_FLOODPLAIN) > 0)
         || (map_terrain_count_diagonally_adjacent_with_type(t, TERRAIN_FLOODPLAIN) > 0)
         || map_has_figure_at(t);
-}
-
-void draw_area_mask(painter &ctx, tile2i origin, int w, int h, bool force_red) {
-    for (int dy = 0; dy < h; dy++) {
-        for (int dx = 0; dx < w; dx++) {
-            tile2i t = origin.shifted(dx, dy);
-            vec2i pixel = g_camera.lookup_tile_to_pixel(t);
-            const bool bad = force_red || !map_grid_is_inside(t, 1) || tile_not_clear(t);
-            build_planner::draw_flat_tile(ctx, pixel, bad ? COLOR_MASK_RED_30 : COLOR_MASK_GREEN_30);
-        }
-    }
 }
 
 constexpr int LIBRARY_VIEW_SOUTH_FIRST = 2;
@@ -328,18 +317,6 @@ vec2i building_alexandria_library::box_extent() {
         maxy = std::max(maxy, d.offset.y + d.size);
     }
     return {maxx - minx, maxy - miny};
-}
-
-bool building_alexandria_library::area_for_part_free(tile2i origin, const library_part_desc &desc) {
-    for (int dy = 0; dy < desc.size; ++dy) {
-        for (int dx = 0; dx < desc.size; ++dx) {
-            tile2i t = origin.shifted(desc.offset.x + dx, desc.offset.y + dy);
-            if (!map_grid_is_inside(t, 1) || tile_not_clear(t)) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 building_alexandria_library *building_alexandria_library::main_library() {
@@ -873,7 +850,7 @@ void building_alexandria_library::refresh_part_images() {
 }
 
 void building_alexandria_library::animate_spots() {
-    const int now = game.simtime.absolute_tick();
+    const int now = g_simulation.simtime.absolute_tick();
     int steps = (g_spot_anim_tick < 0) ? 1 : std::clamp(now - g_spot_anim_tick, 0, 64);
     g_spot_anim_tick = now;
     const int view = camera_view();
@@ -976,7 +953,7 @@ int building_alexandria_library::resolve_image(bool *is_front) const {
         return 0;
     }
 
-    const int view = g_camera.orientation / 2;
+    const int view = map_view_orientation() / 2;
     const bool south = view >= LIBRARY_VIEW_SOUTH_FIRST;
     const xstring &key = south ? step->south : step->north;
     const xstring &script = south ? step->south_script : step->north_script;
@@ -1071,10 +1048,8 @@ int building_alexandria_library::preview::can_place(build_planner &p, tile2i /*t
         p.set_warning("#one_library_only");
         return CAN_NOT_PLACE;
     }
-    for (int i = 0; i < parts_count(); ++i) {
-        if (!area_for_part_free(end, part_desc(i))) {
-            return CAN_NOT_PLACE;
-        }
+    if (p.site_blocked) {
+        return CAN_NOT_PLACE;
     }
     return CAN_PLACE;
 }
@@ -1107,25 +1082,35 @@ void building_alexandria_library::preview::ghost_preview(build_planner &planer, 
     const auto &params = building_static_params::get(planer.build_type);
     const int preview = params.first_img("preview");
     const int img_body = params.first_img("main_a5");
-    bool blocked = has_unfinished_alexandria_library();
-    if (!blocked) {
-        for (int i = 0; i < parts_count(); ++i) {
-            if (!area_for_part_free(end, part_desc(i))) {
-                blocked = true;
-                break;
-            }
-        }
-    }
-    for (int i = 0; i < parts_count(); ++i) {
+    const bool blocked = has_unfinished_alexandria_library() || planer.site_blocked;
+    const int parts = std::min(parts_count(), (int)planer.site_parts.size());
+    for (int i = 0; i < parts; ++i) {
         const auto &d = part_desc(i);
         tile2i t = end.shifted(d.offset.x, d.offset.y);
         if (blocked) {
-            draw_area_mask(ctx, t, d.size, d.size, true);
+            ghost_draw::draw_partially_blocked(ctx, true, planer.site_parts[i]);
         } else if (d.kind == 0) {
-            planer.draw_building_ghost(ctx, img_body > 0 ? img_body : preview, g_camera.lookup_tile_to_pixel(t));
+            ghost_draw::draw_building_ghost(ctx, img_body > 0 ? img_body : preview, g_camera.lookup_tile_to_pixel(t));
         } else {
-            draw_area_mask(ctx, t, d.size, d.size, false);
+            ghost_draw::draw_partially_blocked(ctx, false, planer.site_parts[i]);
         }
+    }
+}
+
+void building_alexandria_library::preview::collect_site(build_planner& planer, tile2i end) const {
+    for (int i = 0; i < parts_count(); ++i) {
+        const auto& d = part_desc(i);
+        tile2i origin = end.shifted(d.offset.x, d.offset.y);
+        std::vector<blocked_tile> tiles;
+        for (int dy = 0; dy < d.size; dy++) {
+            for (int dx = 0; dx < d.size; dx++) {
+                const tile2i t = origin.shifted(dx, dy);
+                const bool bad = !map_grid_is_inside(t, 1) || tile_not_clear(t);
+                tiles.push_back({t, bad});
+                planer.site_blocked |= bad;
+            }
+        }
+        planer.add_site_part(tiles);
     }
 }
 

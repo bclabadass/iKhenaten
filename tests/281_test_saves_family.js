@@ -1,7 +1,7 @@
 // The suite runs with no family chosen. Its saves go to a family of their own,
 // Save/Integral Tests/, instead of loose in Save/, and load back from there.
 // Markers:
-//   Save game: OK Save/Integral Tests/test_281_family.svx   (logged by the save itself)
+//   Save game: OK <user dir>/Save/Integral Tests/test_281_family.svx   (logged by the save itself)
 //   [test-marker] test_save_loads_from_family
 
 var SAVE_NAME = 'test_281_family.svx'
@@ -28,6 +28,6 @@ function run_test() {
 }
 
 function check_valid() {
-    return __test_find_inlog('Save game: OK Save/Integral Tests/' + SAVE_NAME)
+    return __test_find_inlog('Save/Integral Tests/' + SAVE_NAME)
         && __test_find_inlog('[test-marker] test_save_loads_from_family')
 }

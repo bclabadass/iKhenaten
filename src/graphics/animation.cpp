@@ -1,6 +1,6 @@
 #include "graphics/animation.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include "graphics/image_desc.h"
 #include "graphics/image.h"
@@ -74,11 +74,10 @@ void animation_context::setup(const animation_t &anim) {
     can_reverse = is_reverse || anim.can_reverse;
     hashtime = anim.hashtime;
     flags = anim.flags;
-    force_valid = false;
 }
 
 void animation_context::update(bool refresh_only) {
-    if (!valid()) {
+    if (!ticks()) {
         return;
     }
 

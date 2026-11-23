@@ -2,7 +2,7 @@
 
 #include "platform/platform.h"
 #include "platform/innoextract_util.h"
-#include "core/app.h"
+#include "app/app.h"
 #include "core/bstring.h"
 #include "core/log.h"
 #include "content/vfs.h"
@@ -170,6 +170,8 @@ ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--save_debug_texture", "save_debug_texture",
 ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--unpack_scripts", "unpack_scripts", true, "unpack embedded scripts to user directory");
 ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--log-resources", "log_resources", true, "log resource loading (textures, image packs, etc.)");
 ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--log-sound", "log_sound", true, "log sound file loading (city sounds, speech, music, effects)");
+ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--log-sound-events", "log_sound_events", true,
+  "log each sound effect / music event: where it is sent and when the sound manager plays it");
 ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--log-config-keys", "log_config_keys", true,
   "warn about config keys nothing reads and non-zero C++ defaults that a missing key resets to 0");
 ANK_REGISTER_BOOL_ARGUMENT_HANDLER("--config-keys-update", "config_keys_update", true,
@@ -197,10 +199,17 @@ ANK_REGISTER_STRING_ARGUMENT_HANDLER("--language", "language", "Option --languag
 ANK_REGISTER_STRING_ARGUMENT_HANDLER("--font", "custom_font", "Option --font must be followed by a font file path", "--font PATH", "use custom TTF font file (overrides font from localization.js)");
 ANK_REGISTER_STRING_ARGUMENT_HANDLER("--load-map", "load_map", "Option --load-map must be followed by a map file path", "--load-map PATH", "load arbitrary .map file straight into the city, bypassing the main menu (path may be absolute, relative to PWD/data dir, or a name inside Maps/)");
 ANK_REGISTER_STRING_ARGUMENT_HANDLER("--integraltest-only", "integraltest_only",
-  "Option --integraltest-only must be followed by a test name (e.g. 06 or 06_stonemason_guild_info_window)",
+  "Option --integraltest-only must be followed by a test name (e.g. 006 or 006_stonemason_guild_info_window)",
   "--integraltest-only NAME",
   "with --integraltests, run only the tests whose filename (stem) starts with NAME, or, if none does, every test whose "
   "stem contains NAME (case-insensitive)");
+ANK_REGISTER_STRING_ARGUMENT_HANDLER("--integraltest-shard", "integraltest_shard",
+  "Option --integraltest-shard must be followed by I/N (e.g. 0/4)", "--integraltest-shard I/N",
+  "with --integraltests, run only every N-th selected test starting at index I (0-based), for parallel runs");
+ANK_REGISTER_STRING_ARGUMENT_HANDLER("--integraltest-jobs", "integraltest_jobs",
+  "Option --integraltest-jobs must be followed by a number of processes", "--integraltest-jobs N",
+  "with --integraltests, run the suite in N child processes (shards with their own user dirs under --user-dir) and "
+  "print the combined result");
 ANK_REGISTER_STRING_ARGUMENT_HANDLER("--extract-installer", "extract_installer", "Option --extract-installer must be followed by a path to a Pharaoh installer (.exe)", "--extract-installer PATH", "extract Pharaoh data from Inno/GOG (innoextract) or InstallShield (7z+unshield) installer");
 ANK_REGISTER_STRING_ARGUMENT_HANDLER("--extract-dir", "extract_dir", "Option --extract-dir must be followed by an output directory path", "--extract-dir PATH", "output directory for --extract-installer (default: user config …/pharaoh-data)");
 ANK_REGISTER_STRING_ARGUMENT_HANDLER("--screenshot-dir", "screenshot_dir", "Option --screenshot-dir must be followed by a directory path", "--screenshot-dir PATH", "directory to save screenshots into (created if missing; default: working dir)");
@@ -341,6 +350,8 @@ void Arguments::parse(int argc, char** argv) {
     }
 
     parse_cli_(argc, argv);
+    args_["window_size_from_cli"]
+      = bvariant(std::any_of(argv + 1, argv + argc, [](pcstr a) { return a && std::strcmp(a, "--size") == 0; }));
 
     // Apply save_debug_texture from args to game
     if (is("save_debug_texture", false)) {
@@ -452,6 +463,10 @@ const xstring& Arguments::get_str(const xstring& name) const {
 
 void Arguments::set_custom_font(pcstr value) {
     args_["custom_font"] = bvariant(xstring(value));
+}
+
+bool Arguments::window_size_from_cli() const {
+    return is("window_size_from_cli", false);
 }
 
 vec2i Arguments::get_window_size() const {
@@ -582,6 +597,10 @@ bool load(Arguments& arguments) {
 }
 
 void store(Arguments const& arguments) {
+    // Integral tests never read akhenaten.cfg (it holds the developer's own setup); they must not write it either.
+    if (arguments.is_integral_tests()) {
+        return;
+    }
     std::ofstream output(get_configuration_path().c_str(), std::ios::trunc | std::ios::out);
 
     output << "data_directory" << '=' << arguments.get_data_directory().c_str() << '\n';

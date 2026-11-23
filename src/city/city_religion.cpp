@@ -30,7 +30,7 @@
 #include "city/city_warnings.h"
 #include "game/game.h"
 #include "core/stable_array.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 #include <array>
@@ -884,7 +884,7 @@ void city_religion_t::update() {
     //        BAST_houses_destruction();
 
     // at the start of every month
-    if (game.simtime.day == 0) {
+    if (g_simulation.simtime.day == 0) {
         update_monthly_data(randm_god);
     }
 }

@@ -23,7 +23,7 @@
 #include "city/city_buildings.h"
 #include "city/city_figures.h"
 #include "game/game_config.h"
-#include "game/game.h"
+#include "game/simulation.h"
 
 #include <algorithm>
 
@@ -151,7 +151,7 @@ void figure::set_next_tile_and_direction() {
 }
 
 void figure::advance_route_tile(int roaming_enabled) {
-    if (direction >= 8) {
+    if (direction >= 8 || terrain_usage == TERRAIN_USAGE_ANYWHERE) {
         return;
     }
 
@@ -186,7 +186,8 @@ void figure::advance_route_tile(int roaming_enabled) {
 
     if (is_ferry_route && !is_water_move && !is_deepwater_move && !is_amphibia_move && !can_cross_ferry()) {
         direction = DIR_FIGURE_REROUTE;
-    } else if (!is_deepwater_move && !is_water_move && !is_amphibia_move && !is_ferry_route && is_water_tile) {
+    } else if (!is_deepwater_move && !is_water_move && !is_amphibia_move && !is_ferry_route && is_water_tile
+               && !map_is_bridge(target_grid_offset)) {
         direction = DIR_FIGURE_REROUTE;
     } else if (is_water_move && !is_water_tile) { // boats can not travel on land
         direction = DIR_FIGURE_REROUTE;
@@ -218,7 +219,7 @@ void figure::advance_route_tile(int roaming_enabled) {
             if (cause_damage) {
                 attack_direction = direction;
                 direction = DIR_FIGURE_ATTACK;
-                if (!(game.simtime.tick & 3)) {
+                if (!(g_simulation.simtime.tick & 3)) {
                     building_destroy_increase_enemy_damage(target_grid_offset, max_damage);
                 }
             }

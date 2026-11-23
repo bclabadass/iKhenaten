@@ -1,4 +1,5 @@
 #include "building_water_lift.h"
+#include "grid/orientation.h"
 
 #include "grid/water.h"
 #include "city/city.h"
@@ -7,7 +8,7 @@
 #include "grid/canals.h"
 #include "grid/building.h"
 #include "graphics/elements/ui.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 BUILDING_RUNTIME_DATA_IMPL(building_water_lift)
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_water_lift);
@@ -75,7 +76,7 @@ void building_water_lift::update_map_orientation(int orientation) {
         base_image = first_img("base_floodplain");
     }
 
-    int image_offset = g_camera.relative_orientation(base.orientation);
+    int image_offset = map_view_relative_orientation(base.orientation);
     int image_id = base_image + image_offset;
     map_water_add_building(id(), tile(), 2, image_id);
 }
@@ -100,7 +101,7 @@ void building_water_lift::update_graphic() {
         return;
     }
 
-    int orientation_rel = g_camera.relative_orientation(base.orientation);
+    int orientation_rel = map_view_relative_orientation(base.orientation);
     xstring animkey;
     switch (orientation_rel) {
     case 0: animkey = animkeys().work_n; break;

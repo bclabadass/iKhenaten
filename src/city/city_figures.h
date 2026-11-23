@@ -5,6 +5,9 @@
 #include "core/custom_span.hpp"
 #include "core/archive.h"
 
+// Starts reading the figures chunk: the original save's per-figure fields, kept for on_post_load.
+figure_original_fields* city_figures_begin_read(size_t version);
+
 struct city_figures_t {
     uint8_t fish_number;
     uint8_t animals_number;

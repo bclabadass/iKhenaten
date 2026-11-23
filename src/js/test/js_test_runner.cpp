@@ -1,4 +1,5 @@
 #include "js/test/js_test_common.h"
+#include "core/main_thread.h"
 
 #include "building/building.h"
 #include "building/building_delivery_path.h"
@@ -7,8 +8,10 @@
 #include "city/city.h"
 #include "city/object_info.h"
 #include "content/mods.h"
-#include "core/app.h"
+#include "app/app.h"
+#include "platform/screen.h"
 #include "core/bstring.h"
+#include "core/buffer.h"
 #include "core/crc32.h"
 #include "core/system_time.h"
 #include "core/log.h"
@@ -45,9 +48,13 @@
 #include <SDL.h>
 #include <algorithm>
 #include <cstdlib>
+#include "window/popup_dialog.h"
+
 #include <cstring>
 #include <fstream>
+#include <map>
 #include <string>
+#include <vector>
 
 // SDL_main.h does `#define main SDL_main`; undo it here so building::main() etc.
 // are not macro-mangled (this TU is not the program entry point).
@@ -126,6 +133,34 @@ bool test_log_contains(pcstr marker) {
 
     const size_t marker_len = std::strlen(marker);
     return file_contains_marker(logs::output_path(), marker, marker_len, g_test_log_start);
+}
+
+std::vector<std::string> test_log_lines_with(std::initializer_list<const char*> needles, int max_lines) {
+    logs::flush();
+    std::vector<std::string> lines;
+    pcstr path = logs::output_path();
+    std::ifstream in(path, std::ios::binary);
+    if (!in) {
+        return lines;
+    }
+    std::streamoff start = g_test_log_start;
+    if (start > log_file_size(path)) {
+        start = 0;
+    }
+    in.seekg(start);
+    std::string line;
+    while ((int)lines.size() < max_lines && std::getline(in, line)) {
+        if (!line.empty() && line.back() == '\r') {
+            line.pop_back();
+        }
+        for (const char* needle : needles) {
+            if (line.find(needle) != std::string::npos) {
+                lines.push_back(line);
+                break;
+            }
+        }
+    }
+    return lines;
 }
 
 static bool __test_find_inlog(pcstr marker) {
@@ -211,6 +246,12 @@ void __test_mouse_right_click(int x, int y) {
 }
 ANK_FUNCTION_2(__test_mouse_right_click);
 
+void __test_mouse_move(int x, int y) {
+    push_mouse_motion(x, y);
+    test_pump(2);
+}
+ANK_FUNCTION_2(__test_mouse_move);
+
 void __test_signal_ready() {
     g_test_signal_ready = true;
 }
@@ -234,7 +275,6 @@ bool __test_start_city_session(pcstr map_path) {
         return false;
     }
 
-    GamestateIO::start_loaded_file();
     auto cities = g_empire.get_cities();
     cities[0].type = EMPIRE_CITY_OURS;
     cities[0].in_use = true;
@@ -243,7 +283,11 @@ bool __test_start_city_session(pcstr map_path) {
 }
 ANK_FUNCTION_1(__test_start_city_session);
 
+void test_drop_memory_saves();
+
 void test_reset_session_between_tests() {
+    main_thread::reset_reports();
+    test_drop_memory_saves();
     if (editor_is_active()) {
         editor_set_active(0);
     }
@@ -278,6 +322,18 @@ int __test_sound_play_effect(int effect) {
 }
 ANK_FUNCTION_1(__test_sound_play_effect);
 
+void __test_sound_emit_effect(int effect) {
+    events::emit(event_sound_effect{effect});
+    events::process();
+}
+ANK_FUNCTION_1(__test_sound_emit_effect);
+
+void __test_sound_emit_track(pcstr track) {
+    events::emit(event_sound_track{track ? track : ""});
+    events::process();
+}
+ANK_FUNCTION_1(__test_sound_emit_track);
+
 pcstr __test_sound_ambient_summary() {
     return sound_city_ambient_summary();
 }
@@ -293,6 +349,12 @@ void __test_set_campaign_scenario_id(int id) {
     g_scenario.scmode = e_scenario_normal;
 }
 ANK_FUNCTION_1(__test_set_campaign_scenario_id);
+
+// Resizes the window behind the game's back, as a drag on its frame does: only the SIZE_CHANGED event follows.
+static void __test_window_os_resize(int w, int h) {
+    SDL_SetWindowSize((SDL_Window *)g_platform_screen.sdl_window(), w, h);
+}
+ANK_FUNCTION_2(__test_window_os_resize);
 
 void __test_process_events() {
     events::process();
@@ -521,7 +583,7 @@ static int __test_run_ticks(int n) {
     }
     n = std::clamp(n, 0, 100000);
     for (int i = 0; i < n; ++i) {
-        game.update_tick(game.simtime.tick);
+        game.update_tick(g_simulation.simtime.tick);
         events::process();
     }
     return n;
@@ -645,6 +707,16 @@ static int __test_building_sprite_frame(int bid) {
 }
 ANK_FUNCTION_1(__test_building_sprite_frame);
 
+static int __test_building_sprite_frame_of(int bid, int sprite_id) {
+    building* b = building_get(bid);
+    if (!b || !b->is_valid()) {
+        return -1;
+    }
+    const animation_context* a = b->sprite_anim(sprite_id);
+    return a ? a->offset + a->current_frame() : 0;
+}
+ANK_FUNCTION_2(__test_building_sprite_frame_of);
+
 // Compares two chunk lists written through the same schema; logs every differing chunk and
 // returns their names joined by ',' (empty when identical).
 static std::string chunk_snapshots_diff(const chunk_snapshots& expected, const chunk_snapshots& actual, pcstr tag) {
@@ -713,20 +785,29 @@ static std::string chunk_snapshots_diff(const chunk_snapshots& expected, const c
 }
 
 // Our save -> load -> our save again; returns the chunks that changed, "" when none, "error:..." on failure.
-static std::string save_roundtrip(pcstr filename) {
+static std::string save_roundtrip(pcstr filename, bool via_file) {
     chunk_snapshots before;
     if (!g_chunk_io.write_to_memory(FILE_FORMAT_SAVE_FILE_EXT, save_data_version(), file_schema, before)) {
         return "error:write_before";
     }
 
-    if (!GamestateIO::write_savegame(filename)) {
-        return "error:write_file";
-    }
-
-    const bool loaded = GamestateIO::load_savegame(filename);
-    GamestateIO::delete_savegame(filename);
-    if (!loaded) {
-        return "error:load_file";
+    if (via_file) {
+        if (!GamestateIO::write_savegame(filename)) {
+            return "error:write_file";
+        }
+        const bool loaded = GamestateIO::load_savegame(filename);
+        GamestateIO::delete_savegame(filename);
+        if (!loaded) {
+            return "error:load_file";
+        }
+    } else {
+        std::vector<uint8_t> bytes;
+        if (!GamestateIO::write_savegame_memory(bytes)) {
+            return "error:write_memory";
+        }
+        if (!GamestateIO::load_savegame_memory(bytes, filename)) {
+            return "error:load_memory";
+        }
     }
 
     chunk_snapshots after;
@@ -755,10 +836,48 @@ ANK_FUNCTION(__test_mods_apply_saved);
 
 static pcstr __test_save_roundtrip(pcstr filename) {
     static std::string result;
-    result = save_roundtrip(filename);
+    result = save_roundtrip(filename, false);
     return result.c_str();
 }
 ANK_FUNCTION_1(__test_save_roundtrip);
+
+static pcstr __test_save_roundtrip_file(pcstr filename) {
+    static std::string result;
+    result = save_roundtrip(filename, true);
+    return result.c_str();
+}
+ANK_FUNCTION_1(__test_save_roundtrip_file);
+
+static std::map<std::string, std::vector<uint8_t>> g_memory_saves;
+
+void test_drop_memory_saves() {
+    g_memory_saves.clear();
+}
+
+static bool __test_save_memory(pcstr name) {
+    std::vector<uint8_t> bytes;
+    if (!GamestateIO::write_savegame_memory(bytes)) {
+        return false;
+    }
+    g_memory_saves[name ? name : ""] = std::move(bytes);
+    return true;
+}
+ANK_FUNCTION_1(__test_save_memory);
+
+static bool __test_load_memory(pcstr name) {
+    const auto it = g_memory_saves.find(name ? name : "");
+    if (it == g_memory_saves.end()) {
+        logs::error("[test] no memory save %s", name ? name : "");
+        return false;
+    }
+    return GamestateIO::load_savegame_memory(it->second, name);
+}
+ANK_FUNCTION_1(__test_load_memory);
+
+static bool __test_drop_memory_save(pcstr name) {
+    return g_memory_saves.erase(name ? name : "") > 0;
+}
+ANK_FUNCTION_1(__test_drop_memory_save);
 
 // Some simulation code still draws from libc rand() (figure names, houses, festivals); a test that
 // compares two runs must start both from the same libc state.
@@ -781,6 +900,26 @@ static bool state_snapshot_drawn(chunk_snapshots& out) {
     }
     return true;
 }
+
+static pcstr __test_state_digest() {
+    static bstring32 result;
+    result.clear();
+
+    chunk_snapshots chunks;
+    if (!state_snapshot_drawn(chunks)) {
+        logs::error("[state-digest] write_to_memory failed");
+        return result.c_str();
+    }
+
+    std::vector<uint32_t> crcs;
+    crcs.reserve(chunks.size());
+    for (const chunk_snapshot& chunk : chunks) {
+        crcs.push_back(crc32(chunk.raw.data(), (uint32_t)chunk.raw.size()));
+    }
+    result.printf("%08x", crc32(crcs.data(), (uint32_t)(crcs.size() * sizeof(uint32_t))));
+    return result.c_str();
+}
+ANK_FUNCTION(__test_state_digest);
 
 static bool __test_state_mark() {
     return state_snapshot_drawn(g_state_mark);
@@ -836,3 +975,22 @@ int __test_city_data_record_value(int offset, int size) {
     return -1;
 }
 ANK_FUNCTION_2(__test_city_data_record_value);
+
+static bool __test_popup_dialog_is_open() {
+    return popup_dialog::is_open();
+}
+ANK_FUNCTION(__test_popup_dialog_is_open);
+
+static pcstr __test_buffer_roundtrip_i64(pcstr decimal) {
+    static bstring64 out;
+    const int64_t value = std::strtoll(decimal ? decimal : "0", nullptr, 10);
+    buffer buf(sizeof(int64_t) * 2);
+    buf.write_i64(value);
+    buf.write_u64((uint64_t)value);
+    buf.reset_offset();
+    const int64_t signed_back = buf.read_i64();
+    const uint64_t unsigned_back = buf.read_u64();
+    out.printf("%lld/%llu", (long long)signed_back, (unsigned long long)unsigned_back);
+    return out.c_str();
+}
+ANK_FUNCTION_1(__test_buffer_roundtrip_i64);

@@ -1,6 +1,6 @@
 ﻿#include "figure/figure.h"
+#include "grid/orientation.h"
 
-#include "graphics/view/view.h"
 #include "graphics/image.h"
 #include "graphics/image_desc.h"
 #include "graphics/image_groups.h"
@@ -9,7 +9,7 @@
 #include "core/stable_array.h"
 #include "core/profiler.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 static const int CORPSE_IMAGE_OFFSETS[128] = {
     0, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
@@ -26,7 +26,7 @@ static const int MISSILE_LAUNCHER_OFFSETS[128] = {
 };
 
 static void cc_coords_to_pixel_offset(int cross_country_x, int cross_country_y, int* pixel_x, int* pixel_y) {
-    int dir = g_camera.orientation;
+    int dir = map_view_orientation();
     if (dir == DIR_0_TOP_RIGHT || dir == DIR_4_BOTTOM_LEFT) {
         int base_pixel_x = 2 * cross_country_x - 2 * cross_country_y;
         int base_pixel_y = cross_country_x + cross_country_y;
@@ -49,7 +49,7 @@ vec2i figure::tile_pixel_coords() {
         int prg_r = progress_on_tile > 7 ? progress_on_tile - 15 : progress_on_tile;
         int prg_x = 2 * (prg_r);
         int prg_y = (prg_r);
-        switch ((8 + direction - g_camera.orientation) % 8) {
+        switch ((8 + direction - map_view_orientation()) % 8) {
         case 0: return {prg_x, -prg_y};
         case 1: return {2 * prg_x, 0};
         case 2: return {prg_x, prg_y};
@@ -71,10 +71,8 @@ void figure::image_set_animation(const xstring &anim) {
 }
 
 void figure::image_set_animation(const animation_t &anim) {
-    const bool allow_empty_atlas = force_valid_animation && anim.max_frames > 0;
-    if (anim.pack > 0 || anim.id > 0 || allow_empty_atlas) {
+    if (anim.pack > 0 || anim.id > 0) {
         this->animctx = anim;
-        this->animctx.force_valid = allow_empty_atlas;
         return;
     }
 }
@@ -85,25 +83,18 @@ void figure::image_set_animation(int collection, int group, int offset, int max_
     animctx.max_frames = max_frames;
     animctx.frame_duration = std::max(1, duration);
     animctx.loop = loop;
-    animctx.force_valid = force_valid_animation && max_frames > 0 && animctx.base <= 0;
-}
-
-void figure::set_force_valid_animation(bool enabled) {
-    force_valid_animation = enabled;
-    if (force_valid_animation && animctx.max_frames > 0 && animctx.base <= 0) {
-        animctx.force_valid = true;
-    } else if (!force_valid_animation) {
-        animctx.force_valid = false;
-    }
 }
 
 void figure::figure_image_update(bool refresh_only) {
     OZZY_PROFILER_FUNCTION();
-    if (!animctx.valid()) {
+    if (!animctx.ticks()) {
         return;
     }
 
     animctx.update(refresh_only);
+    if (!animctx.valid()) {
+        return;
+    }
 
     dcast()->main_image_update();
     dcast()->cart_image_update();
@@ -179,7 +170,7 @@ int figure::figure_image_missile_launcher_offset() {
 int figure::figure_image_direction() {
     // A stopped figure's direction is DIR_FIGURE_NONE/REROUTE/CAN_NOT_REACH (8+): it faces the way it came.
     const int facing = direction < 8 ? direction : (previous_tile_direction < 8 ? previous_tile_direction : 0);
-    int dir = facing - g_camera.orientation;
+    int dir = facing - map_view_orientation();
     if (dir < 0) {
         dir += 8;
     }
@@ -187,7 +178,7 @@ int figure::figure_image_direction() {
 }
 
 int figure::figure_image_normalize_direction(int direction) {
-    int normalized_direction = direction - g_camera.orientation;
+    int normalized_direction = direction - map_view_orientation();
     if (normalized_direction < 0)
         normalized_direction += 8;
 

@@ -1,4 +1,5 @@
 #include "building_shipyard.h"
+#include "grid/orientation.h"
 BUILDING_RUNTIME_DATA_IMPL(building_shipyard)
 
 #include "building/building.h"
@@ -29,9 +30,10 @@ BUILDING_RUNTIME_DATA_IMPL(building_shipyard)
 #include "grid/road_access.h"
 #include "grid/building.h"
 #include "city/city_labor.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
+#include <cmath>
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_shipyard);
 
@@ -410,7 +412,7 @@ void building_shipyard::bind_dynamic(io_buffer *iob, size_t version) {
 }
 
 void building_shipyard::update_map_orientation(int orientation) {
-    int image_offset = g_camera.relative_orientation(base.orientation);
+    int image_offset = map_view_relative_orientation(base.orientation);
     int image_id = base_img() + image_offset;
     map_water_add_building(id(), tile(), current_params().building_size, image_id);
 }
@@ -439,7 +441,7 @@ void building_shipyard::on_place(int orientation, int variant) {
 }
 
 void building_shipyard::on_place_update_tiles(int orientation, int variant) {
-    int orientation_rel = g_camera.relative_orientation(orientation);
+    int orientation_rel = map_view_relative_orientation(orientation);
     map_water_add_building(id(), tile(), size(), base_img() + orientation_rel);
 }
 

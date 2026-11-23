@@ -816,6 +816,7 @@ file(GLOB PLATFORM_FILES ${PROJECT_SOURCE_DIR}/src/platform/*.cpp)
 file(GLOB CONFIG_FILES ${PROJECT_SOURCE_DIR}/src/config/*.cpp)
 file(GLOB CONTENT_FILES ${PROJECT_SOURCE_DIR}/src/content/*.cpp)
 file(GLOB CORE_FILES ${PROJECT_SOURCE_DIR}/src/core/*.cpp)
+file(GLOB APP_FILES ${PROJECT_SOURCE_DIR}/src/app/*.cpp)
 file(GLOB NET_FILES ${PROJECT_SOURCE_DIR}/src/net/*.cpp)
 file(GLOB CORE_ENCODING_FILES ${PROJECT_SOURCE_DIR}/src/core/encoding/*.cpp)
 file(GLOB BUILDING_FILES ${PROJECT_SOURCE_DIR}/src/building/*.cpp)
@@ -946,6 +947,7 @@ file(WRITE
 
 if(MSVC)
     file(GLOB CORE_HEADERS ${PROJECT_SOURCE_DIR}/src/core/*.h)
+    file(GLOB APP_HEADERS ${PROJECT_SOURCE_DIR}/src/app/*.h)
     file(GLOB IO_HEADERS ${PROJECT_SOURCE_DIR}/src/io/*.h)
     file(GLOB PLATFORM_HEADERS ${PROJECT_SOURCE_DIR}/src/platform/*.h)
     file(GLOB BUILDING_HEADERS ${PROJECT_SOURCE_DIR}/src/building/*.h)
@@ -974,6 +976,7 @@ if(MSVC)
     file(GLOB TRANSLATION_HEADERS ${PROJECT_SOURCE_DIR}/src/translation/*.h)
 
     source_group("core" FILES ${CORE_FILES})
+    source_group("app" FILES ${APP_FILES})
     source_group("net" FILES ${NET_FILES})
     source_group("core/encoding" FILES ${CORE_ENCODING_FILES})
     source_group("platform" FILES ${PLATFORM_FILES} )
@@ -1011,7 +1014,7 @@ if(MSVC)
     source_group("config" FILES ${CONFIG_FILES})
     source_group("resource" FILES ${RESOURCE_FILES} ${SCRIPTS_FILES})
     source_group("graphics" FILES ${GRAPHICS_FILES})
-    source_group("fontgen" FILE ${GRAPHICS_FONTGEN_FILES})
+    source_group("fontgen" FILES ${GRAPHICS_FONTGEN_FILES})
     source_group("js" FILES ${JS_FILES})
     source_group("js/test" FILES ${JS_TEST_FILES})
     source_group("lzma" FILES ${LZMA_FILES})
@@ -1029,6 +1032,7 @@ set(SOURCE_FILES
     ${CONTENT_FILES}
     ${CONFIG_FILES}
     ${CORE_FILES} ${CORE_HEADERS}
+    ${APP_FILES} ${APP_HEADERS}
     ${NET_FILES}
     ${IO_FILES} ${IO_HEADERS}
     ${IO_GAMEFILES_FILES}
@@ -1598,4 +1602,9 @@ endif()
 if(UNIX AND NOT APPLE AND NOT ANDROID AND NOT EMSCRIPTEN)
     install(FILES ${AKHENATEN_DATA_FILES} DESTINATION bin/data)
     install(DIRECTORY "${CMAKE_SOURCE_DIR}/data/maps" DESTINATION bin/data)
+endif()
+
+if(NOT ANDROID AND NOT EMSCRIPTEN)
+    add_executable(check_layers EXCLUDE_FROM_ALL tools/check_layers.cpp)
+    set_target_properties(check_layers PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 endif()

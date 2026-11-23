@@ -9,6 +9,7 @@
 #include "widget/widget_figure_follow.h"
 #include "graphics/window.h"
 #include "js/js_game.h"
+#include "js/js_register.h"
 #include "grid/point.h"
 
 static int selected_warship_figure_id;
@@ -42,6 +43,8 @@ void window_city_warship_show(int warship_figure_id) {
         },
         [] (auto c) { g_screen_city.draw_tooltip(c); }
     };
+    window.sim_time_runs = true;
+    window.city_sounds = true;
 
     window_show(&window);
 }

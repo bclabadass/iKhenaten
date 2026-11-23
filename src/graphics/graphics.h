@@ -12,10 +12,6 @@ struct painter;
 struct image_t;
 struct image_desc;
 
-void graphics_set_to_dialog();
-void graphics_in_dialog_with_size(int width, int height);
-void graphics_reset_dialog();
-
 void graphics_set_clip_rectangle(vec2i pos, vec2i size);
 bool graphics_inside_clip_rectangle(vec2i pos);
 rect graphics_clip_rectangle();
@@ -26,7 +22,6 @@ void graphics_draw_vertical_line(vec2i start, int ny, color color);
 void graphics_draw_horizontal_line(vec2i start, int nx, color color);
 void graphics_draw_pixel(vec2i pixel, color color);
 void graphics_draw_rect(vec2i start, vec2i size, color color);
-void graphics_draw_inset_rect(vec2i start, vec2i size);
 void graphics_fill_rect(vec2i start, vec2i size, color color);
 
 void graphics_shade_rect(vec2i start, vec2i size, int darkness);
@@ -68,8 +63,13 @@ struct render_command_t {
         ert_from_below = 7,
         ert_draw_rect = 8,
     };
+    enum e_layer : uint8_t {
+        layer_ground = 0,
+        layer_scene = 1,
+    };
     e_render_type rtype = ert_none;
     bool use_sort_pixel = false;
+    e_layer layer = layer_scene;
     int32_t image_id = 0;
     int32_t base_id = 0;
     vec2i size = {};

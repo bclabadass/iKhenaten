@@ -1,7 +1,7 @@
 ﻿#include "monument_mastaba.h"
+#include "grid/orientation.h"
 
 #include "building/monument_mastaba_engine.h"
-#include "graphics/view/view.h"
 #include "monuments.h"
 #include "core/direction.h"
 #include "core/custom_span.hpp"
@@ -31,7 +31,7 @@
 #include "figuretype/figure_worker.h"
 #include "grid/routing/routing_grids.h"
 #include "widget/widget_city.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <numeric>
 #include <string>
@@ -127,7 +127,7 @@ static tile2i mastaba_footprint_end(building *main) {
 
 void map_mastaba_tiles_add(int building_id, tile2i tile, int size, int image_id, int terrain) {
     int x_leftmost, y_leftmost;
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_0_TOP_RIGHT: x_leftmost = 0; y_leftmost = 1; break;
     case DIR_2_BOTTOM_RIGHT: x_leftmost = y_leftmost = 0; break;
     case DIR_4_BOTTOM_LEFT: x_leftmost = 1; y_leftmost = 0; break;
@@ -341,6 +341,7 @@ void building_mastaba::sync_visuals() {
         map_grid_area_foreach(tiles, [](tile2i t) { map_monuments_set_progress(t, 200); });
         part = part->has_next() ? part->next() : nullptr;
     }
+    update_tile_heights();
 }
 
 bool building_mastaba::need_workers() const {
@@ -362,6 +363,9 @@ void building_mastaba::finalize(building *b, const vec2i size_b) {
         monument->runtime_data().phase = MONUMENT_FINISHED;
         part = part->has_next() ? part->next() : nullptr;
     }
+    if (building_mastaba *m = main ? main->dcast()->dcast_mastaba() : nullptr) {
+        m->update_tile_heights();
+    }
 }
 
 void building_mastaba::update_day() {
@@ -373,6 +377,12 @@ void building_mastaba::update_day() {
 
     // south/west placement can retarget base.type to *_SIDE (no init_tiles on part params).
     update_construction_day(get_params(type()).init_tiles);
+    update_tile_heights();
+}
+
+void building_mastaba::on_post_load() {
+    building_monument::on_post_load();
+    update_tile_heights();
 }
 
 bool building_mastaba::draw_ornaments_and_animations_flat(painter &ctx, vec2i point, tile2i tile, color mask) {
@@ -422,7 +432,7 @@ int building_mastaba::get_image(int orientation, tile2i tile, tile2i start, tile
 
     if (result < random) {
         int offset = result - base_image_id;
-        result = (base_image_id + (offset + (8 - g_camera.orientation)) % 8);
+        result = (base_image_id + (offset + (8 - map_view_orientation())) % 8);
         return result;
     }
 
@@ -440,7 +450,7 @@ int building_small_mastabe_get_bricks_image(int orientation, e_building_type typ
     int result = random;
     if (building_type_any_of(type, { BUILDING_SMALL_MASTABA_ENTRANCE, BUILDING_MEDIUM_MASTABA_ENTRANCE, BUILDING_LARGE_MASTABA_ENTRANCE })) {
         int ids[4] = {image_base_bricks + 110, image_base_bricks + 104, image_base_bricks + 104, image_base_bricks + 109};
-        int i = (orientation + (g_camera.orientation / 2)) % 4;
+        int i = (orientation + (map_view_orientation() / 2)) % 4;
         return ids[i];
     } else if (building_type_any_of(type, { BUILDING_SMALL_MASTABA_WALL, BUILDING_MEDIUM_MASTABA_WALL, BUILDING_LARGE_MASTABA_WALL })) {
         return random;
@@ -454,7 +464,7 @@ int building_small_mastabe_get_bricks_image(int orientation, e_building_type typ
 
     if (result < random) {
         int offset = result - image_id;
-        result = (image_id + (offset + (g_camera.orientation/2)) % 4);
+        result = (image_id + (offset + (map_view_orientation() / 2)) % 4);
         return result;
     }
 
@@ -516,12 +526,12 @@ void building_mastaba::on_place(int orientation, int variant) {
     case 1: parts = bparams.config_east; break;
     case 2:
         parts = bparams.config_south;
-        base.type = mastaba_side_type(main_type);
+        base.set_type(mastaba_side_type(main_type));
         break;
 
     case 3:
         parts = bparams.config_west;
-        base.type = mastaba_side_type(main_type);
+        base.set_type(mastaba_side_type(main_type));
         break;
     }
 
@@ -704,7 +714,7 @@ bool building_mastaba::draw_ornaments_and_animations_flat_impl(painter &ctx, vec
 }
 
 static vec2i mastaba_height_city_offset() {
-    switch (g_camera.orientation / 2) {
+    switch (map_view_orientation() / 2) {
     case 0: return vec2i(-30, +15);
     case 1: return vec2i(0, 0);
     case 2: return vec2i(-30, -15);
@@ -713,61 +723,71 @@ static vec2i mastaba_height_city_offset() {
     }
 }
 
-static void mastaba_fill_tiles_height(tile2i tile, int img) {
-    const image_t *image = image_get(img);
-    if (!image) {
+int building_mastaba::height_tile_image(tile2i tile) const {
+    building *main = base.main();
+    const vec2i tiles_size = get_params(type()).init_tiles;
+    const tile2i end = main->tile.shifted(tiles_size.y - 1, tiles_size.x - 1);
+    // Block engine: each part shows its own courses, so the mastaba rises block by block.
+    const int courses = courses_on_part();
+    if (courses >= 0) {
+        return courses > 0
+                 ? building_small_mastabe_get_bricks_image(base.orientation, base.type, tile, main->tile, end, courses)
+                 : 0;
+    }
+    const int phase = runtime_data().phase;
+    int layer = 0;
+    if (is_finished() || phase == MASTABA_PHASE_COMPLETE) {
+        layer = MASTABA_PHASE_COMPLETE - MASTABA_PHASE_BRICKS;
+    } else if (phase == MASTABA_PHASE_BRICKS) {
+        if (map_monuments_get_progress(tile) < 200) {
+            return 0;
+        }
+        layer = 1;
+    } else if (phase > MASTABA_PHASE_BRICKS && phase < MASTABA_PHASE_COMPLETE) {
+        const bool done = map_monuments_get_progress(tile) >= 200;
+        layer = done ? (phase - MASTABA_PHASE_BRICKS + 1) : (phase - MASTABA_PHASE_BRICKS);
+    } else {
+        return 0;
+    }
+    return building_small_mastabe_get_bricks_image(base.orientation, base.type, tile, main->tile, end, layer);
+}
+
+void building_mastaba::update_tile_heights() {
+    if (!is_main()) {
         return;
     }
-    int iso_size = image->isometric_size() - 1;
-    grid_tiles tiles = map_grid_get_tiles(tile, tile.shifted(iso_size, iso_size));
-    for (auto &t : tiles) {
-        map_building_height_set(t.grid_offset(), image->isometric_top_height);
-    }
-}
-
-static void mastaba_draw_height_brick(painter &ctx, tile2i tile, int img, vec2i city_offset, color color_mask) {
-    vec2i offset = g_camera.lookup_tile_to_pixel(tile);
-    auto &command = ImageDraw::create_subcommand(ctx, render_command_t::ert_drawtile_full);
-    command.image_id = img;
-    command.pixel = offset + city_offset;
-    command.mask = color_mask;
-    mastaba_fill_tiles_height(tile, img);
-}
-
-void building_mastaba::draw_height_phase_bricks(painter &ctx, color color_mask, const vec2i tiles_size, const vec2i city_offset, const height_tiles &tiles2draw) {
-    building *main = base.main();
-    tile2i end = main->tile.shifted(tiles_size.y - 1, tiles_size.x - 1);
-
-    for (auto &tile : tiles2draw) {
-        if (map_monuments_get_progress(tile) < 200) {
+    for (building* part = &base; part; part = part->has_next() ? part->next() : nullptr) {
+        building_mastaba* m = part->dcast()->dcast_mastaba();
+        if (!m) {
             continue;
         }
-        int img = building_small_mastabe_get_bricks_image(base.orientation, base.type, tile, main->tile, end, 1);
-        mastaba_draw_height_brick(ctx, tile, img, city_offset, color_mask);
+        for (int dy = 0; dy < part->size; dy += 2) {
+            for (int dx = 0; dx < part->size; dx += 2) {
+                tile2i tile = part->tile.shifted(dx, dy);
+                const int img = m->height_tile_image(tile);
+                const image_t* image = img > 0 ? image_get(img) : nullptr;
+                const int iso_size = image ? image->isometric_size() - 1 : 1;
+                const int8_t height = image ? (int8_t)image->isometric_top_height : 0;
+                grid_tiles tiles = map_grid_get_tiles(tile, tile.shifted(iso_size, iso_size));
+                for (auto& t : tiles) {
+                    map_building_height_set(t.grid_offset(), height);
+                }
+            }
+        }
     }
 }
 
-void building_mastaba::draw_height_phase_layers(painter &ctx, color color_mask, const vec2i tiles_size, const vec2i city_offset, const height_tiles &tiles2draw) {
-    building *main = base.main();
-    tile2i end = main->tile.shifted(tiles_size.y - 1, tiles_size.x - 1);
-    const int phase = runtime_data().phase;
-
+void building_mastaba::draw_height_bricks(painter& ctx, color color_mask, const vec2i city_offset,
+  const height_tiles& tiles2draw) {
     for (auto &tile : tiles2draw) {
-        uint32_t progress = map_monuments_get_progress(tile);
-        int layer = (progress >= 200) ? (phase - MASTABA_PHASE_BRICKS + 1) : (phase - MASTABA_PHASE_BRICKS);
-        int img = building_small_mastabe_get_bricks_image(base.orientation, base.type, tile, main->tile, end, layer);
-        mastaba_draw_height_brick(ctx, tile, img, city_offset, color_mask);
-    }
-}
-
-void building_mastaba::draw_height_phase_complete(painter &ctx, color color_mask, const vec2i tiles_size, const vec2i city_offset, const height_tiles &tiles2draw) {
-    building *main = base.main();
-    tile2i end = main->tile.shifted(tiles_size.y - 1, tiles_size.x - 1);
-    const int layer = MASTABA_PHASE_COMPLETE - MASTABA_PHASE_BRICKS;
-
-    for (auto &tile : tiles2draw) {
-        int img = building_small_mastabe_get_bricks_image(base.orientation, base.type, tile, main->tile, end, layer);
-        mastaba_draw_height_brick(ctx, tile, img, city_offset, color_mask);
+        const int img = height_tile_image(tile);
+        if (img <= 0) {
+            continue;
+        }
+        auto& command = ImageDraw::create_subcommand(ctx, render_command_t::ert_drawtile_full);
+        command.image_id = img;
+        command.pixel = g_camera.lookup_tile_to_pixel(tile) + city_offset;
+        command.mask = color_mask;
     }
 }
 
@@ -804,27 +824,9 @@ bool building_mastaba::draw_ornaments_and_animations_hight_impl(painter &ctx, ve
 
     const int phase = runtime_data().phase;
     const int courses = courses_on_part();
-    if (courses >= 0) {
-        // Block engine: each part shows its own courses, so the mastaba rises block by block.
-        building* main = base.main();
-        const tile2i end = main->tile.shifted(tiles_size.y - 1, tiles_size.x - 1);
-        if (courses > 0) {
-            for (auto& t : tiles2draw) {
-                const int img
-                  = building_small_mastabe_get_bricks_image(base.orientation, base.type, t, main->tile, end, courses);
-                mastaba_draw_height_brick(ctx, t, img, city_offset, color_mask);
-            }
-        }
-        draw_height_side_figures(ctx);
-    } else if (is_finished() || phase == MASTABA_PHASE_COMPLETE) {
-        draw_height_phase_complete(ctx, color_mask, tiles_size, city_offset, tiles2draw);
-    } else if (phase == MASTABA_PHASE_BRICKS) {
-        draw_height_phase_bricks(ctx, color_mask, tiles_size, city_offset, tiles2draw);
-    } else if (phase > MASTABA_PHASE_BRICKS && phase < MASTABA_PHASE_COMPLETE) {
-        draw_height_phase_layers(ctx, color_mask, tiles_size, city_offset, tiles2draw);
-    }
+    draw_height_bricks(ctx, color_mask, city_offset, tiles2draw);
 
-    if (courses < 0 && (is_finished() || phase > MASTABA_PHASE_BRICKS)) {
+    if (courses >= 0 || is_finished() || phase > MASTABA_PHASE_BRICKS) {
         draw_height_side_figures(ctx);
     }
 

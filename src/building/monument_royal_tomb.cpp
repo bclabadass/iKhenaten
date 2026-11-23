@@ -1,4 +1,5 @@
 #include "monument_royal_tomb.h"
+#include "grid/orientation.h"
 
 #include "building/monuments.h"
 #include "city/city.h"
@@ -13,7 +14,6 @@
 #include "graphics/color.h"
 #include "graphics/image.h"
 #include "graphics/view/lookup.h"
-#include "graphics/view/view.h"
 #include "grid/building.h"
 #include "grid/building_tiles.h"
 #include "grid/figure.h"
@@ -23,7 +23,7 @@
 #include "grid/random.h"
 #include "grid/terrain.h"
 #include "io/io_buffer.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "scenario/scenario.h"
 
 #include <algorithm>
@@ -45,7 +45,7 @@ namespace {
 
     // OG TERRAIN_BLOCKS_MONUMENT; 0x20000000 is OG TERRAIN_ROCK_NEAR_MONUMENT (the Valley cliffs).
     constexpr uint32_t k_blocks_monument = 0xFEFFD76F;
-    constexpr uint32_t k_rock_near_monument = TERRAIN_UNK_08;
+    constexpr uint32_t k_rock_near_monument = TERRAIN_ROCK_NEAR_MONUMENT;
     constexpr uint32_t k_tomb_rock = TERRAIN_ROCK | k_rock_near_monument;
 
     constexpr int k_spots_per_table = 3;
@@ -80,7 +80,7 @@ namespace {
     }
 
     int camera_view() {
-        return (g_camera.orientation / 2) & 3;
+        return (map_view_orientation() / 2) & 3;
     }
 
     bool tile_outside_site(tile2i t) {
@@ -213,6 +213,10 @@ int building_royal_tomb::spot_table() const {
     return g_royal_tomb_spot_tables[kind];
 }
 
+bool building_royal_tomb::continues_cliff() const {
+    return is_sealed() && part_init().kind != ROYAL_TOMB_KIND_ENTRANCE_A;
+}
+
 bool building_royal_tomb::part_has_active_worker() const {
     auto& d = const_cast<building_royal_tomb*>(this)->runtime_data();
     if (!d.worker_figure_id) {
@@ -225,9 +229,7 @@ bool building_royal_tomb::part_has_active_worker() const {
             && (a == ACTION_0_MASON_CREATED || a == ACTION_1_MASON_GOING || a == ACTION_9_MASON_WORK_OBELISK)) {
             return true;
         }
-        if (f->type == FIGURE_TOMB_ARTISAN
-            && (a == ACTION_10_TOMB_ARTISAN_CREATED || a == ACTION_11_TOMB_ARTISAN_GOING
-                || a == ACTION_14_TOMB_ARTISAN_WORK)) {
+        if (f->type == FIGURE_TOMB_ARTISAN && (a == ACTION_11_TOMB_ARTISAN_GOING || a == ACTION_14_TOMB_ARTISAN_WORK)) {
             return true;
         }
     }
@@ -269,7 +271,7 @@ bool building_royal_tomb::check_work_for_figure(e_figure_type type, figure_id fi
     return true;
 }
 
-building_royal_tomb* building_royal_tomb::find_work(e_figure_type type, figure_id fid, bool assign, int only_stage) {
+building_royal_tomb* building_royal_tomb::find_work(e_figure_type type, figure_id fid, bool assign) {
     // OG searches the tomb types small, medium, large, grand in turn, every part in id order.
     static const e_building_type order[]
       = {BUILDING_SMALL_ROYAL_TOMB, BUILDING_MEDIUM_ROYAL_TOMB, BUILDING_LARGE_ROYAL_TOMB, BUILDING_GRAND_ROYAL_TOMB};
@@ -284,7 +286,7 @@ building_royal_tomb* building_royal_tomb::find_work(e_figure_type type, figure_i
             }
             for (building* pb = &m->base; pb; pb = pb->has_next() ? pb->next() : nullptr) {
                 auto* tomb = pb->dcast_royal_tomb();
-                if (!tomb || (only_stage >= 0 && tomb->stage() != only_stage)) {
+                if (!tomb) {
                     continue;
                 }
                 if (bt == BUILDING_GRAND_ROYAL_TOMB && tomb->stage() >= ROYAL_TOMB_STAGE_DONE) {
@@ -297,6 +299,14 @@ building_royal_tomb* building_royal_tomb::find_work(e_figure_type type, figure_i
         }
     }
     return nullptr;
+}
+
+building_royal_tomb* building_royal_tomb::find_artisan_work(int stage) {
+    building* found = buildings_valid_first([stage](building& b) {
+        auto* tomb = b.dcast_royal_tomb();
+        return tomb && tomb->stage() == stage && tomb->check_work_for_figure(FIGURE_TOMB_ARTISAN, 0, false);
+    });
+    return found ? found->dcast_royal_tomb() : nullptr;
 }
 
 bool building_royal_tomb::work_tick(figure& f) {
@@ -953,7 +963,7 @@ void building_royal_tomb::preview::ghost_preview(build_planner &planer, painter 
                     continue;
                 }
                 const bool ok = connected && part_tile_allowed(l, i, t);
-                build_planner::draw_flat_tile(ctx, g_camera.lookup_tile_to_pixel(t),
+                ghost_draw::draw_ground_tile(ctx, g_camera.lookup_tile_to_pixel(t),
                   ok ? COLOR_MASK_GREEN_30 : COLOR_MASK_RED_30);
             }
         }

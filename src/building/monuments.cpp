@@ -1,4 +1,5 @@
 #include "monuments.h"
+#include "building/monuments_chunks.h"
 
 #include "building/building.h"
 #include "building/monument_pyramid.h"
@@ -28,7 +29,7 @@
 #include "io/io_buffer.h"
 #include "scenario/scenario.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 
@@ -44,12 +45,7 @@ const e_pyramid_style_tokens_t ANK_CONFIG_ENUM(e_pyramid_style_tokens);
 #define NOTHING 0
 #define INFINITE 10000
 
-grid_xx g_monuments_progress_grid(FS_UINT32);
 BUILDING_RUNTIME_DATA_IMPL(building_monument)
-
-io_buffer* iob_monuments_progress_grid = new io_buffer([](io_buffer* iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &g_monuments_progress_grid);
-});
 
 bool building_monument::deliver_resource(e_resource resource, int amount) {
     // Always credit the chain head — yard/sled destination may be a corner/wall
@@ -72,15 +68,15 @@ bool building_monument::deliver_resource(e_resource resource, int amount) {
 }
 
 uint32_t map_monuments_get_progress(tile2i tile) {
-    return map_grid_get(g_monuments_progress_grid, tile.grid_offset());
+    return map_grid_get(monuments_progress_chunk::grid, tile.grid_offset());
 }
 
 void map_monuments_set_progress(tile2i tile, uint32_t progress) {
-    map_grid_set(g_monuments_progress_grid, tile.grid_offset(), progress);
+    map_grid_set(monuments_progress_chunk::grid, tile.grid_offset(), progress);
 }
 
 void map_monuments_clear() {
-    map_grid_fill(g_monuments_progress_grid, 0);
+    map_grid_fill(monuments_progress_chunk::grid, 0);
 }
 
 tile2i building_monument_mason_waiting_tile(building *b) {
@@ -573,16 +569,6 @@ int building_monument::module_type() {
 }
 
 // Former storage-yard sled delivery table: no longer used, its slots are kept so saves keep their layout.
-io_buffer* iob_city_building_monuments = new io_buffer([](io_buffer* iob, size_t version) {
-    enum { UNUSED_DELIVERY_SLOTS = 32, UNUSED_DELIVERY_FIELDS = 4 };
-    int unused = 0;
-    iob->bind(BIND_SIGNATURE_INT32, &unused);
-    for (int i = 0; i < UNUSED_DELIVERY_SLOTS * UNUSED_DELIVERY_FIELDS; ++i) {
-        unused = 0;
-        iob->bind(BIND_SIGNATURE_INT32, &unused);
-    }
-});
-
 bool building_monument::need_workers() const {
     return has_free_worker_slot();
 }
@@ -1037,5 +1023,3 @@ void burial_provisions_migrate_city_pool_to_tombs() {
         m->add_burial_stock((e_resource)r, city);
     }
 }
-
-

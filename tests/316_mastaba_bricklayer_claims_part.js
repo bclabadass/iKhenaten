@@ -1,13 +1,13 @@
 // Bricklayers at a mastaba climbed onto the site, found no part to work on and walked back to their guild, so no
-// block was ever placed (Men-nefer, Duo save "Duoaoh/MenNefer 11"). The part search took the monument's style from
+// block was ever placed (Men-nefer, Duo save "DuoSaves/MenNefer 11"). The part search took the monument's style from
 // the pyramid table, where a mastaba has none, and skipped every part; a mastaba now uses its own style.
-// The second half needs the Duo save in Save/Duoaoh/ (real Pharaoh data); without it that half logs a skip.
+// The second half needs the Duo save in the Pharaoh folder's Save/DuoSaves/ (real Pharaoh data); without it that half logs a skip.
 // Markers:
 //   [test-marker] mastaba_bricklayer_claims_part
 //   [test-marker] mastaba_save_blocks_placed
 //   [test-marker] mastaba_save_skipped
 
-var T316_SAVE = '../Duoaoh/MenNefer 11.svx'
+var T316_SAVE = __test_data_dir() + '/Save/DuoSaves/MenNefer 11.svx'
 
 function t316_synthetic() {
     test_reload_city_session('data/default.map')

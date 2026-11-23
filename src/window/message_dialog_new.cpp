@@ -41,7 +41,7 @@
 #include "window/window_advisors.h"
 #include "window/window_city.h"
 #include "scenario/scenario_invasion.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "game/game.h"
 #include "message_dialog.h"
 #include "core/log.h"
@@ -450,7 +450,7 @@ void ui::message_dialog_base::draw_content(const lang_message& msg) {
         ui["content_text"] = text;
     }
 
-    graphics_reset_clip_rectangle();
+    ui::push_cmd(ui::cmd_t(ui::cmd_t::clip_reset));
 }
 
 void ui::message_dialog_base::draw_background_content() {
@@ -463,12 +463,11 @@ void ui::message_dialog_base::draw_background_content() {
 void ui::message_dialog_base::draw_background_video() {
     const vec2i video_pos = pos + ui["video_area"].pos;
     const vec2i video_size = ui["video_area"].pxsize();
-    graphics_draw_rect(video_pos + vec2i{-1, -1}, video_size + vec2i{2, 2}, COLOR_BLACK);
+    ui::push(ui::cmd_t::draw_rect, ui::opt::Pos{video_pos + vec2i{-1, -1}}, ui::opt::Size{video_size + vec2i{2, 2}},
+      ui::opt::TextColor{COLOR_BLACK});
 }
 
 int ui::message_dialog_base::draw_background(UiFlags flags) {
-    autoconfig_window::draw_background(flags);
-
     if (background_callback) {
         window_ui_canvas_scope canvas;
         background_callback();
@@ -477,6 +476,8 @@ int ui::message_dialog_base::draw_background(UiFlags flags) {
     } else {
         window_draw_underlying_window(0);
     }
+
+    autoconfig_window::draw_background(flags);
 
     if (show_video) {
         draw_background_video();
@@ -493,7 +494,7 @@ void ui::message_dialog_base::draw_foreground_content() {
 void ui::message_dialog_base::draw_foreground_video() {
     const vec2i video_pos = pos + ui["video_area"].pos;
     const vec2i video_size = ui["video_area"].pxsize();
-    video_draw_in_rect(video_pos.x, video_pos.y, video_size.x, video_size.y);
+    ui::push(ui::cmd_t::video, ui::opt::Pos{video_pos}, ui::opt::Size{video_size});
 }
 
 bool ui::message_dialog_base::handle_input_normal(const mouse* m_dialog, const lang_message& msg) {
@@ -505,8 +506,8 @@ bool ui::message_dialog_base::handle_input_video(const mouse* m_dialog, const la
 }
 
 int ui::message_dialog_base::ui_handle_mouse(const mouse *m) {
-    const hotkeys *h = hotkey_state();
-    const mouse* m_dialog = mouse_in_dialog(m);
+    const hotkeys* h = &g_hotkeys;
+    const mouse* m_dialog = m->in_dialog();
     const lang_message& msg = lang_get_message(text_id);
 
     bool handled = false;

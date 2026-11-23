@@ -1,6 +1,6 @@
 #include "monument_pyramid.h"
+#include "grid/orientation.h"
 
-#include "graphics/view/view.h"
 #include "monuments.h"
 #include "core/direction.h"
 #include "core/custom_span.hpp"
@@ -34,7 +34,7 @@
 #include "widget/widget_city.h"
 #include "grid/routing/routing_grids.h"
 #include "dev/debug.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "grid/canals.h"
 #include "grid/water.h"
 #include "building/monument_mastaba.h"
@@ -72,10 +72,12 @@ bool building_type_is_grand_pyramid_complex(e_building_type t) {
         || t == BUILDING_GRAND_MUDBRICK_PYRAMID_COMPLEX;
 }
 
-// OG pyramid_part_update_image (finished stays blocks==0 on CASING):
-//   half  -> IMAGE_GROUP_BENT_PYRAMID (Bent_pyramid_00112+) row (blocks-1) / (5-blocks)
-//   else  -> IMAGE_GROUP_PYRAMID (Bent_pyramid_00001+, same art as Pyramid) row (blocks-1) / (11-blocks)
-int bent_og_part_image(building& part, const pyramid_part_state& ps, bool finished) {
+static bool pyramid_style_draws_og_parts(e_pyramid_style style) {
+    return style == PYRAMID_STYLE_BENT || style == PYRAMID_STYLE_TRUE || style == PYRAMID_STYLE_MUDBRICK;
+}
+
+static int og_pyramid_part_image(building& part, const pyramid_part_state& ps, bool finished, e_pyramid_style style,
+  int view) {
     building* head = part.main();
     const e_building_type t = head ? head->type : part.type;
     const auto& params = building_static_params::get(t);
@@ -86,16 +88,21 @@ int bent_og_part_image(building& part, const pyramid_part_state& ps, bool finish
     const int half_first = params.first_img("half_bricks");
     const int bent0 = half_first > 0 ? half_first : pyramid0 + 111;
     int kind = g_monument_pyramid_engine.layout_kind(head, ps.subtype);
-    kind = g_monument_pyramid_engine.rotated_kind(kind, g_camera.orientation / 2);
-    const bool half = g_monument_pyramid_engine.bent_is_half_layer((int)ps.size_variant, (int)ps.layer);
+    kind = g_monument_pyramid_engine.rotated_kind(kind, view);
+    const bool half = style == PYRAMID_STYLE_BENT
+                      && g_monument_pyramid_engine.bent_is_half_layer((int)ps.size_variant, (int)ps.layer);
     if (finished || ps.stage == PYRAMID_STAGE_CASING) {
         const int blocks = finished ? 0 : (int)ps.blocks;
         return half ? bent0 + (5 - blocks) * 8 + kind : pyramid0 + (11 - blocks) * 8 + kind;
     }
-    if (ps.blocks > 0) {
-        return (half ? bent0 : pyramid0) + (ps.blocks - 1) * 8 + kind;
+    if (ps.blocks == 0) {
+        return 0;
     }
-    return 0;
+    if (ps.layer < ps.target_layers || kind == PYRAMID_PART_INNER) {
+        const int variant = (map_random_get(part.tile) & 1) * pyramid_engine_config.blocks_per_layer;
+        return pyramid0 + 95 + ps.blocks + variant;
+    }
+    return (half ? bent0 : pyramid0) + (ps.blocks - 1) * 8 + kind;
 }
 
 struct pyramid_causeway_probe {
@@ -110,7 +117,7 @@ struct pyramid_causeway_probe {
 tile2i pyramid_place_nw_from_cursor(tile2i end, vec2i init_tiles) {
     const int sx = init_tiles.x;
     const int sy = init_tiles.y;
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_2_BOTTOM_RIGHT:
         return end.shifted(-sx + 1, 0);
     case DIR_4_BOTTOM_LEFT:
@@ -211,7 +218,7 @@ void draw_causeway_ghost(build_planner &planer, painter &ctx, const pyramid_caus
             if (!map_grid_is_inside(t, 1)) {
                 continue;
             }
-            planer.draw_flat_tile(ctx, g_camera.lookup_tile_to_pixel(t), mask);
+            ghost_draw::draw_ground_tile(ctx, g_camera.lookup_tile_to_pixel(t), mask);
         }
     }
 }
@@ -266,7 +273,7 @@ int annex_building_image(e_building_type complex_type, e_building_type annex_typ
     if (base <= 0) {
         return 0;
     }
-    const int ori2 = (g_camera.orientation / 2) & 3;
+    const int ori2 = (map_view_orientation() / 2) & 3;
     if (annex_type == BUILDING_VALLEY_TEMPLE) {
         return base + ori2;
     }
@@ -1029,6 +1036,11 @@ void building_stepped_pyramid::sync_footprint_layers(int done_blocks, int total_
 
 void building_stepped_pyramid::sync_visuals() {
     building_pyramid::sync_visuals();
+    sync_ring_layers();
+    update_tile_heights();
+}
+
+void building_stepped_pyramid::sync_ring_layers() {
     if (pyramid_params().pyramide_type == PYRAMID_STYLE_NONE || !is_main() || is_finished()) {
         return;
     }
@@ -1038,7 +1050,7 @@ void building_stepped_pyramid::sync_visuals() {
     }
     // OG bent draws per-part via layout kind + bent_pixel_heights — remake rings
     // lift the tip twice and hollow the polish base.
-    if (ms->style == PYRAMID_STYLE_BENT || pyramid_params().pyramide_type == PYRAMID_STYLE_BENT) {
+    if (pyramid_style_draws_og_parts(ms->style) || pyramid_style_draws_og_parts(pyramid_params().pyramide_type)) {
         return;
     }
     const int total = g_monument_pyramid_engine.block_total(&base);
@@ -1126,7 +1138,7 @@ void building_stepped_pyramid::finish_block_construction() {
     auto *ms = pyramid_main_state_get(id());
     const e_pyramid_style finish_style = ms ? ms->style : pyramid_params().pyramide_type;
     const int total = ms ? g_monument_pyramid_engine.block_total(&base) : 0;
-    if (total > 0 && finish_style != PYRAMID_STYLE_BENT) {
+    if (total > 0 && !pyramid_style_draws_og_parts(finish_style)) {
         sync_footprint_layers(total, total);
     }
 
@@ -1139,9 +1151,9 @@ void building_stepped_pyramid::finish_block_construction() {
             int img = 0;
             // OG: map_building_tiles_add(casing face) — footprint draws the base;
             // empty_land leaves a grey well under raised bent half-layers.
-            if (finish_style == PYRAMID_STYLE_BENT) {
+            if (pyramid_style_draws_og_parts(finish_style)) {
                 if (auto* ps = pyramid_part_state_get(part->id)) {
-                    img = bent_og_part_image(*part, *ps, true);
+                    img = og_pyramid_part_image(*part, *ps, true, finish_style, map_view_orientation() / 2);
                 }
             }
             if (img <= 0) {
@@ -1164,6 +1176,7 @@ void building_stepped_pyramid::finish_block_construction() {
     }
 
     building_pyramid::finish_block_construction();
+    update_tile_heights();
 }
 
 bool building_pyramid::need_bricklayers() {
@@ -1375,7 +1388,7 @@ void building_stepped_pyramid::preview_renderer::setup_preview_graphics(build_pl
 
     const vec2i init_tiles = base_params.init_tiles;
 
-    switch (g_camera.orientation / 2) {
+    switch (map_view_orientation() / 2) {
     case 0: planer.init_tiles(init_tiles.y, init_tiles.x); break;
     case 1: planer.init_tiles(init_tiles.x, init_tiles.y); break;
     case 2: planer.init_tiles(init_tiles.y, init_tiles.x); break;
@@ -1485,7 +1498,7 @@ int building_stepped_pyramid::preview_renderer::construction_place(build_planner
 
 void map_pyramid_tiles_add(int building_id, tile2i tile, int size, int image_id, int terrain) {
     int x_leftmost, y_leftmost;
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_0_TOP_RIGHT: x_leftmost = 0; y_leftmost = 1; break;
     case DIR_2_BOTTOM_RIGHT: x_leftmost = y_leftmost = 0; break;
     case DIR_4_BOTTOM_LEFT: x_leftmost = 1; y_leftmost = 0; break;
@@ -1594,7 +1607,7 @@ int building_stepped_pyramid::get_image(const building_static_params& params, in
 
     if (result < random) {
         int offset = result - base_image_id;
-        result = (base_image_id + (offset + (8 - g_camera.orientation)) % 8);
+        result = (base_image_id + (offset + (8 - map_view_orientation())) % 8);
         return result;
     }
 
@@ -1616,7 +1629,7 @@ int building_stepped_pyramid::get_channel_image(int orientation, tile2i tile, ti
     // 8 - cross
 
     int variant = 0;
-    int orientation_offset = (g_camera.orientation / 2) % 4;
+    int orientation_offset = (map_view_orientation() / 2) % 4;
 
     if (neighbors_count == 0) {
         variant = 0;
@@ -1675,6 +1688,7 @@ void building_stepped_pyramid::on_post_load() {
     building_monument::on_post_load();
 
     assign_stair();
+    update_tile_heights();
 }
 
 void building_stepped_pyramid::on_destroy() {
@@ -2072,7 +2086,7 @@ int building_stepped_pyramid::get_masonry_image(int orientation, tile2i tile, ti
         BUILDING_LARGE_MUDBRICK_PYRAMID_CORNER
     });
     // OG pyramid_images.rotated_kind: face index += view (orientation/2), wrap in 0..3.
-    const int view = (g_camera.orientation / 2) & 3;
+    const int view = (map_view_orientation() / 2) & 3;
 
     if (is_corner || is_nw_origin) {
         const xstring corner_key = polished && current_params().first_img("corner_polish") > 0
@@ -2152,18 +2166,6 @@ bool building_stepped_pyramid::draw_ornaments_and_animations_hight_impl(painter 
     // Last schedule index = RESOURCE_NONE terminal (stepped S24/M32/L36; true adds polish first).
     const int terminal_phase = phases() - 1;
 
-    auto fill_tiles_height = [](painter & /*ctx*/, tile2i tile, int img) {
-        const image_t *image = image_get(img);
-        if (!image) {
-            return;
-        }
-        int iso_size = image->isometric_size() - 1;
-        grid_tiles tiles = map_grid_get_tiles(tile, tile.shifted(iso_size, iso_size));
-        for (auto &t : tiles) {
-            map_building_height_set(t.grid_offset(), image->isometric_top_height);
-        }
-    };
-
     // Finished / terminal marker — not mid-band phase numbers (24 on large is L3 work).
     if (is_finished() || ph == terminal_phase) {
         return draw_completed_height_ornaments(ctx, point, tile, color_mask, tiles_size);
@@ -2180,7 +2182,7 @@ bool building_stepped_pyramid::draw_ornaments_and_animations_hight_impl(painter 
     const int L = d.layer;
 
     tile2i anchor = base.tile;
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_0_TOP_RIGHT: anchor = base.tile.shifted(0, 1); break;
     case DIR_4_BOTTOM_LEFT: anchor = base.tile.shifted(1, 0); break;
     case DIR_6_TOP_LEFT: anchor = base.tile.shifted(1, 1); break;
@@ -2196,7 +2198,6 @@ bool building_stepped_pyramid::draw_ornaments_and_animations_hight_impl(painter 
             command.image_id = img;
             command.pixel = anchor_px - vec2i{0, TILE_HEIGHT_PIXELS * 3 * L};
             command.mask = color_mask;
-            fill_tiles_height(ctx, anchor, img);
         }
     } else if (building_L >= 0 && building_L < nlayers) {
         uint32_t progress = map_monuments_get_progress(tile);
@@ -2221,7 +2222,6 @@ bool building_stepped_pyramid::draw_ornaments_and_animations_hight_impl(painter 
             command.image_id = img;
             command.pixel = anchor_px - vec2i{0, TILE_HEIGHT_PIXELS * 3 * building_L};
             command.mask = color_mask;
-            fill_tiles_height(ctx, anchor, img);
         }
     }
 
@@ -2230,6 +2230,67 @@ bool building_stepped_pyramid::draw_ornaments_and_animations_hight_impl(painter 
     }
 
     return true;
+}
+
+int building_stepped_pyramid::remake_part_course(int layer, bool polished) const {
+    if (pyramid_params().pyramide_type == PYRAMID_STYLE_NONE) {
+        return 5;
+    }
+    building* head = base.main();
+    auto* ms = pyramid_main_state_get(head ? head->id : 0);
+    if (!ms || ms->style == PYRAMID_STYLE_NONE || ms->style == PYRAMID_STYLE_MASTABA) {
+        return 5;
+    }
+    const int total = g_monument_pyramid_engine.block_total(&base);
+    if (polished) {
+        if (!is_finished() && ms->block_phase_active && ms->remaining_blocks > 0) {
+            const int done = total - (int)ms->remaining_blocks;
+            return std::clamp(done * 6 / std::max(1, total), 0, 5);
+        }
+        return 5;
+    }
+    const int nlayers = std::max(1, footprint_params().init_tiles.x / 4);
+    const int done = is_finished() ? total : (total - (int)ms->remaining_blocks);
+    const int blocks_per_ring = std::max(1, total / nlayers);
+    const int ring_done = std::clamp(done - layer * blocks_per_ring, 0, blocks_per_ring);
+    return std::clamp(ring_done * 6 / blocks_per_ring, 0, 5);
+}
+
+int building_stepped_pyramid::height_part_image(tile2i tile, int view) {
+    const e_pyramid_style style = pyramid_params().pyramide_type;
+    auto* ps = pyramid_part_state_get(base.id);
+    if (pyramid_style_draws_og_parts(style) && ps) {
+        return og_pyramid_part_image(base, *ps, is_finished(), style, view);
+    }
+    const int L = runtime_data().layer;
+    const int nlayers = std::max(1, footprint_params().init_tiles.x / 4);
+    if (L < 0 || L >= nlayers) {
+        return 0;
+    }
+    const bool polished = use_polish_sprites_for_layer(L);
+    auto layer_area = get_layer_area(L);
+    return get_masonry_image(base.orientation, tile, layer_area.begin, layer_area.end, remake_part_course(L, polished),
+      polished);
+}
+
+void building_stepped_pyramid::update_tile_heights() {
+    if (!is_main()) {
+        return;
+    }
+    const bool built = is_finished() || phase() >= 2;
+    for (building* part = &base; part; part = part->has_next() ? part->next() : nullptr) {
+        building_pyramid* pyr = part->dcast_pyramid();
+        if (!pyr) {
+            continue;
+        }
+        const int img = built ? static_cast<building_stepped_pyramid*>(pyr)->height_part_image(part->tile, 0) : 0;
+        const image_t* image = img > 0 ? image_get(img) : nullptr;
+        const int8_t height = image ? (int8_t)image->isometric_top_height : 0;
+        grid_tiles tiles = map_grid_get_tiles(part, 0);
+        for (tile2i t : tiles) {
+            map_building_height_set(t.grid_offset(), height);
+        }
+    }
 }
 
 bool building_stepped_pyramid::draw_completed_height_ornaments(painter &ctx, vec2i point, tile2i tile, color color_mask, const vec2i tiles_size) {
@@ -2245,26 +2306,11 @@ bool building_stepped_pyramid::draw_completed_height_ornaments(painter &ctx, vec
     const vec2i footprint = footprint_params().init_tiles;
     const int nlayers = std::max(1, footprint.x / 4);
 
-    building* head = base.main();
-    auto* ms = pyramid_main_state_get(head ? head->id : 0);
     auto* ps = pyramid_part_state_get(base.id);
 
-    auto fill_tiles_height = [](painter & /*ctx*/, tile2i tile, int img) {
-        const image_t *image = image_get(img);
-        if (!image) {
-            return;
-        }
-        int iso_size = image->isometric_size() - 1;
-        grid_tiles tiles = map_grid_get_tiles(tile, tile.shifted(iso_size, iso_size));
-        for (auto &t : tiles) {
-            map_building_height_set(t.grid_offset(), image->isometric_top_height);
-        }
-    };
-
-    // Anchor to the orientation draw-tile of this 2×2 part (same as map_building_tiles_add),
     // not whatever city pass `point` is — keeps casing joined across rotates.
     tile2i anchor = base.tile;
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_0_TOP_RIGHT: anchor = base.tile.shifted(0, 1); break;
     case DIR_4_BOTTOM_LEFT: anchor = base.tile.shifted(1, 0); break;
     case DIR_6_TOP_LEFT: anchor = base.tile.shifted(1, 1); break;
@@ -2272,63 +2318,28 @@ bool building_stepped_pyramid::draw_completed_height_ornaments(painter &ctx, vec
     }
     const vec2i anchor_px = g_camera.lookup_tile_to_pixel(anchor);
 
-    // OG bent pyramid_part_draw (city_without_overlay draws pyramids only here):
-    //   height = bent_pixel_heights[layer]
-    //   draw_x/y = city tile + (half_w+1, -half_h) - height
-    //   height!=0 → image_draw + isometric_top; height==0 → isometric_top only
-    //   (footprint pass already drew the map image base — set on finish).
-    if (style == PYRAMID_STYLE_BENT && ps) {
-        const int img = bent_og_part_image(base, *ps, is_finished());
+    if (pyramid_style_draws_og_parts(style) && ps) {
+        const bool bent = style == PYRAMID_STYLE_BENT;
+        const int img = height_part_image(tile, map_view_orientation() / 2);
         if (img <= 0) {
             return true;
         }
         const int size_variant = (int)ps->size_variant;
-        const int lift = g_monument_pyramid_engine.bent_layer_pixel_height(size_variant, (int)ps->layer);
+        const int lift = bent ? g_monument_pyramid_engine.bent_layer_pixel_height(size_variant, (int)ps->layer)
+                              : (int)ps->layer * TILE_HEIGHT_PIXELS * 3;
         // OG's (+half_w+1, -half_h) draw shift is already folded into drawtile here.
         const vec2i pixel = anchor_px - vec2i{0, lift};
-        if (lift != 0) {
-            auto& full = ImageDraw::create_subcommand(ctx, render_command_t::ert_drawtile_full);
-            full.image_id = img;
-            full.pixel = pixel;
-            full.mask = color_mask;
-        } else {
-            // Map footprint already drew ert_drawtile base — only the top here.
-            auto& top = ImageDraw::create_subcommand(ctx, render_command_t::ert_drawtile_top);
-            top.image_id = img;
-            const image_t* im = image_get(img);
-            const int offset_y = im ? image_iso_top_offset_y(im) : 0;
-            top.pixel = pixel - vec2i{0, offset_y};
-            top.mask = color_mask;
-        }
-        fill_tiles_height(ctx, anchor, img);
-        pyramid_engine_update_part_ramp_image(base.id);
+        auto& full = ImageDraw::create_subcommand(ctx, render_command_t::ert_drawtile_full);
+        full.image_id = img;
+        full.pixel = pixel;
+        full.mask = color_mask;
         const vec2i ramp_origin = pixel + vec2i{HALF_TILE_WIDTH_PIXELS + 1, -HALF_TILE_HEIGHT_PIXELS};
         pyramid_ramp_draw_part(ctx, base, ramp_origin, color_mask);
         return true;
     }
 
-    bool polished = use_polish_sprites_for_layer(L);
-
-    int course = 5;
-    if (style != PYRAMID_STYLE_NONE) {
-        if (ms && ms->style != PYRAMID_STYLE_NONE && ms->style != PYRAMID_STYLE_MASTABA) {
-            const int total = g_monument_pyramid_engine.block_total(&base);
-            if (polished) {
-                if (!is_finished() && ms->block_phase_active && ms->remaining_blocks > 0) {
-                    const int done = total - (int)ms->remaining_blocks;
-                    course = std::clamp(done * 6 / std::max(1, total), 0, 5);
-                } else {
-                    course = 5;
-                }
-            } else {
-                const int done = is_finished() ? total : (total - (int)ms->remaining_blocks);
-                const int blocks_per_ring = std::max(1, total / nlayers);
-                const int ring_start = L * blocks_per_ring;
-                const int ring_done = std::clamp(done - ring_start, 0, blocks_per_ring);
-                course = std::clamp(ring_done * 6 / blocks_per_ring, 0, 5);
-            }
-        }
-    }
+    const bool polished = use_polish_sprites_for_layer(L);
+    const int course = remake_part_course(L, polished);
 
     if (L < 0 || L >= nlayers) {
         return true;
@@ -2346,8 +2357,7 @@ bool building_stepped_pyramid::draw_completed_height_ornaments(painter &ctx, vec
         }
     }
 
-    auto layer_area = get_layer_area(L);
-    int img = get_masonry_image(base.orientation, tile, layer_area.begin, layer_area.end, course, polished);
+    const int img = height_part_image(tile, map_view_orientation() / 2);
     if (img <= 0) {
         return true;
     }
@@ -2360,8 +2370,6 @@ bool building_stepped_pyramid::draw_completed_height_ornaments(painter &ctx, vec
     command.pixel = pixel;
     command.mask = color_mask;
 
-    fill_tiles_height(ctx, anchor, img);
-    pyramid_engine_update_part_ramp_image(base.id);
     // pyramid_part_draw: draw_x = x + tile_half_width+1, draw_y = y - tile_half_height - layer.
     // Akhenaten tile pixel + layer lift maps to (x, y - layer); add the half-tile shift so
     // ramp_base/ramp_offsets land on the same origin image_draw used.
@@ -2668,7 +2676,7 @@ void building_stepped_pyramid::change_parts_types_in_layer(tile2i begin, const v
 
     for (auto &part : parts) {
         part.b->clear_impl();
-        part.b->type = part.type;
+        part.b->set_type(part.type);
         auto *mon = part.b->dcast_monument();
         mon->runtime_data().layer = layer;
         mon->runtime_data().stair_index = 0xff;

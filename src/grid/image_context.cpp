@@ -1,8 +1,8 @@
 ﻿#include "image_context.h"
+#include "grid/orientation.h"
 
 #include "city/city_buildings.h"
 #include "core/core.h"
-#include "graphics/view/view.h"
 #include "grid/building.h"
 #include "grid/elevation.h"
 #include "grid/grid.h"
@@ -11,7 +11,7 @@
 #include "grid/tiles.h"
 #include "grid/canals.h"
 #include "building/building_wall.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "moisture.h"
 #include "scenario/earthquake.h"
 
@@ -184,7 +184,7 @@ terrain_image map_image_context_get_terrain_image(e_terrain_image_context group,
                 context.current_item_offset = 0;
 
             result.is_valid = 1;
-            result.group_offset = context.offset_for_orientation[g_camera.orientation / 2];
+            result.group_offset = context.offset_for_orientation[map_view_orientation() / 2];
             result.item_offset = context.current_item_offset;
             result.canal_offset = context.canal_offset;
             break;

@@ -35,6 +35,11 @@ struct animation_t;
 constexpr int MAX_FIGURES = 2000;
 constexpr int MAX_CLOUD_IMAGE_OFFSETS = 19;
 
+// Set while loading a save when figure action states were converted from their legacy
+// (pre-linearisation) numbering; the save loader uses it to detect an older save that
+// should be migrated to the current format.
+extern bool legacy_figure_actions_remapped;
+
 enum e_nearby {
     NEARBY_ANY,
     NEARBY_ANIMAL,
@@ -98,7 +103,6 @@ public:
     uint16_t cart_image_id;
     bool use_cart;
     animation_context animctx;
-    bool force_valid_animation;
 
     uint8_t alternative_location_index;
     figure_id next_figure;
@@ -152,9 +156,6 @@ public:
     short formation_id;
     uint8_t index_in_formation;
     uint8_t formation_at_rest;
-    bool is_main_drawn;
-    bool is_cart_drawn;
-    volatile bool mt_render_worker;
     uint8_t min_max_seen;
     uint8_t movement_ticks_watchdog;
     short leading_figure_id;
@@ -183,9 +184,6 @@ public:
     short attacker_id1;
     short attacker_id2;
     short opponent_id;
-    vec2i main_cached_pos;
-    vec2i main_sort_pixel;
-    vec2i cart_cached_pos;
 
     uint8_t routing_try_reroute_counter;
     uint16_t collecting_item_max;
@@ -331,8 +329,8 @@ public:
     // image.c
     void image_set_animation(const animation_t &anim);
     void image_set_animation(const xstring &anim);
-    void image_set_animation(int collection, int group, int offset = 0, int max_frames = 12, int duration = 1, bool loop = true);
-    void set_force_valid_animation(bool enabled);
+    void image_set_animation(int collection, int group, int offset = 0, int max_frames = 12, int duration = 1,
+      bool loop = true);
     void figure_image_update(bool refresh_only);
     void refresh_image_for_orientation();
     int figure_image_corpse_offset();
@@ -414,8 +412,8 @@ public:
     int figure_image_normalize_direction(int dir);
 
     // sound.c
-    void play_attack_sound();
     void play_die_sound();
+    void play_sound_file(const xstring& file);
     void play_hit_sound();
 
     // service.c
@@ -437,9 +435,12 @@ public:
     static constexpr pcstr CLSID = #clsid;                      \
     static constexpr e_figure_type TYPE = type;
 
+#define FIGURE_RUNTIME_DATA_CHECKS(type)                                                                \
+    static_assert(sizeof(type) <= sizeof(figure::runtime_data), #type " does not fit figure::runtime_data")
+
 #define FIGURE_RUNTIME_DATA(type) ;                                                                   \
-    type& runtime_data() { return *(type*)this->base.runtime_data; }                                  \
-    const type& runtime_data() const { static_assert(sizeof(type) < sizeof(figure::runtime_data)); return *(type*)this->base.runtime_data; }
+    type& runtime_data() { FIGURE_RUNTIME_DATA_CHECKS(type); return *(type*)this->base.runtime_data; } \
+    const type& runtime_data() const { FIGURE_RUNTIME_DATA_CHECKS(type); return *(type*)this->base.runtime_data; }
 
 #define FIGURE_RUNTIME_DATA_T FIGURE_RUNTIME_DATA(runtime_data_t)
 

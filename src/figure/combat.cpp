@@ -6,6 +6,7 @@
 #include "figure/movement.h"
 #include "figure/route.h"
 #include "figuretype/figure_enemy_transport.h"
+#include "figuretype/figure_plagued_citizen.h"
 #include "figuretype/figure_soldier.h"
 #include "figuretype/figure_robber.h" // ACTION_10_ROBBER_FLEEING
 #include "game/difficulty.h"
@@ -153,7 +154,7 @@ static bool figure_is_enemy_transport_ship(e_figure_type type) {
 static bool figure_is_enemy_warship(e_figure_type type) {
     switch (type) {
     case FIGURE_ENEMY_WARSHIP:
-    case FIGURE_ENEMY_EGYPTIAN_WAR_SHIP:
+    case FIGURE_ENEMY_EGYPTIAN_WARSHIP:
     case FIGURE_ENEMY_EGYPTIAN_GALERA:
     case FIGURE_ENEMY_CANAANITE_WAR_SHIP:
     case FIGURE_ENEMY_KUSHITE_WAR_SHIP:
@@ -569,6 +570,10 @@ void figure::figure_combat_attack_figure_at(int grid_offset) {
             attack = true;
         else if (my_category == figure_category_hostile && opponent_category == figure_category_animal)
             attack = true;
+
+        if (figure_plagued_citizen::cure_on_meeting(*this, *opponent)) {
+            return;
+        }
 
         // Troops aboard a transport share its tile unseen; an animal leaves alone what it does not hunt.
         if (attack && (!opponent->is_visible() || dcast()->refuses_fight_with(*opponent))) {

@@ -4,7 +4,11 @@
 #include "game/game.h"
 #include "graphics/elements/lang_text.h"
 #include "graphics/font.h"
-#include "platform/renderer.h"
+#include "graphics/render_stats.h"
+#include "graphics/video.h"
+#include "graphics/render_device.h"
+
+#include <algorithm>
 
 namespace ui {
 
@@ -89,6 +93,7 @@ void execute_ui_command(painter& ctx, const ui::cmd_t& cmd) {
     case cmd_t::text_rich: {
         rich_text_t rich_text;
         rich_text.set_fonts(cmd.font, FONT_NORMAL_YELLOW);
+        rich_text.set_margin(cmd.margin);
         const bool centered = !!(cmd.flags & UiFlags_AlignCentered);
         rich_text.draw(cmd.str.c_str(), cmd.pos, cmd.box_width, cmd.size.y, false, centered);
         break;
@@ -164,6 +169,34 @@ void execute_ui_command(painter& ctx, const ui::cmd_t& cmd) {
         graphics_draw_from_texture(cmd.image_id, cmd.pos, cmd.size);
         break;
 
+    case cmd_t::background:
+        graphics_draw_background(ctx, cmd.image_id, cmd.scale, cmd.pos, cmd.box_width != 0);
+        break;
+
+    case cmd_t::line:
+        graphics_draw_line(cmd.pos, cmd.size, cmd.clr);
+        break;
+
+    case cmd_t::pixel:
+        graphics_draw_pixel(cmd.pos, cmd.clr);
+        break;
+
+    case cmd_t::panel_outer_exact:
+        outer_panel_draw_exact(cmd.pos, cmd.size);
+        break;
+
+    case cmd_t::video:
+        if (cmd.size.x > 0) {
+            video_draw_in_rect(cmd.pos.x, cmd.pos.y, cmd.size.x, cmd.size.y);
+        } else {
+            video_draw(cmd.pos.x, cmd.pos.y);
+        }
+        break;
+
+    case cmd_t::panel_unbordered:
+        unbordered_panel_draw(cmd.pos.x, cmd.pos.y, cmd.size.x, cmd.size.y);
+        break;
+
     case cmd_t::texture_icon:
         if (cmd.sdl_texture) {
             painter tex_ctx = game.painter();
@@ -177,37 +210,33 @@ void execute_ui_command(painter& ctx, const ui::cmd_t& cmd) {
     }
 }
 
-namespace {
-    float g_queue_tail_scale = 1.0f;
-    bool g_flushing = false;
-} // namespace
-
 void push_cmd(cmd_t&& cmd) {
-    if (cmd.type == cmd_t::ui_scale) {
-        g_queue_tail_scale = cmd.scale;
-    } else if (g_flushing && g_render.ui_scale() != g_queue_tail_scale) {
-        // Commands queued during the flush (a text's scrollbar) run after the rest of the queue;
-        // keep the window scale they were queued under.
-        push_ui_scale(g_render.ui_scale());
-    }
     g_ui_commands.push_back(std::move(cmd));
 }
 
+size_t command_mark() {
+    return g_ui_commands.size();
+}
+
+void move_commands_below(size_t from, size_t below) {
+    std::rotate(g_ui_commands.begin() + below, g_ui_commands.begin() + from, g_ui_commands.end());
+}
+
 void flush_commands() {
+    render_stats::recorded_scope recorded;
     painter ctx = game.painter();
-    g_flushing = true;
     for (size_t i = 0; i < g_ui_commands.size(); ++i) {
-        execute_ui_command(ctx, g_ui_commands[i]);
+        const size_t queued = g_ui_commands.size();
+        const cmd_t cmd = std::move(g_ui_commands[i]);
+        execute_ui_command(ctx, cmd);
+        std::rotate(g_ui_commands.begin() + i + 1, g_ui_commands.begin() + queued, g_ui_commands.end());
     }
-    g_flushing = false;
     g_render.set_ui_scale(1.0f);
-    g_queue_tail_scale = 1.0f;
     g_ui_commands.clear();
 }
 
 void reset_ui_command_queue() {
     g_ui_commands.clear();
-    g_queue_tail_scale = 1.0f;
 }
 
 } // namespace ui

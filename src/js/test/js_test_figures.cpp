@@ -16,6 +16,7 @@
 #include "figuretype/figure_mummy.h"
 #include "figuretype/figure_plagued_citizen.h"
 #include "game/game_events.h"
+#include "graphics/animkeys.h"
 #include "game/resource.h"
 #include "grid/grid.h"
 #include "grid/road_access.h"
@@ -150,6 +151,15 @@ static void __test_figure_set_wait_ticks(int fid, int ticks) {
 }
 ANK_FUNCTION_2(__test_figure_set_wait_ticks);
 
+static void __test_figure_set_roam_length(int fid, int length) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_alive()) {
+        return;
+    }
+    f->roam_length = (int16_t)length;
+}
+ANK_FUNCTION_2(__test_figure_set_roam_length);
+
 static int __test_figure_get_action(int fid) {
     figure* f = figure_get(fid);
     if (!f || !f->is_alive()) {
@@ -195,6 +205,18 @@ static int __test_figure_main_image_id(int fid) {
 }
 ANK_FUNCTION_1(__test_figure_main_image_id);
 
+// Frame of the death strip the figure draws now (main image minus the death animation's first image).
+static int __test_figure_death_frame(int fid) {
+    figure* f = figure_get(fid);
+    if (!f || (f->state != FIGURE_STATE_ALIVE && f->state != FIGURE_STATE_DYING)) {
+        return -1;
+    }
+    f->dcast()->main_image_update();
+    // main_image_id is 16 bits; without resources the first image id is a negative sentinel.
+    return (uint16_t)(f->main_image_id - f->dcast()->anim(animkeys().death).first_img());
+}
+ANK_FUNCTION_1(__test_figure_death_frame);
+
 // Ferry action id a landing assigns to this figure: 0 wait, 1 ride, 2 reroute. -1 when missing.
 static int __test_figure_ferry_action(int fid, int which) {
     figure* f = figure_get(fid);
@@ -228,15 +250,6 @@ static int __test_create_immigrant(int bid, int num_people) {
     return f->id;
 }
 ANK_FUNCTION_2(__test_create_immigrant);
-
-static void __test_figure_set_force_valid_animation(int fid, int enabled) {
-    figure* f = figure_get(fid);
-    if (!f || !f->is_valid()) {
-        return;
-    }
-    f->set_force_valid_animation(enabled != 0);
-}
-ANK_FUNCTION_2(__test_figure_set_force_valid_animation);
 
 static int __test_figure_get_damage(int fid) {
     figure* f = figure_get(fid);
@@ -478,19 +491,41 @@ static int __test_figure_current_height(int fid) {
 }
 ANK_FUNCTION_1(__test_figure_current_height);
 
-static int __test_plagued_spawn_from_house(int bid) {
+static int __test_figure_target_height(int fid) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_alive()) {
+        return -1;
+    }
+    return f->target_height;
+}
+ANK_FUNCTION_1(__test_figure_target_height);
+
+static int __test_figure_height_adjusted_ticks(int fid) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_alive()) {
+        return -1;
+    }
+    return f->height_adjusted_ticks;
+}
+ANK_FUNCTION_1(__test_figure_height_adjusted_ticks);
+
+static void __test_figure_set_progress_on_tile(int fid, int progress) {
+    figure* f = figure_get(fid);
+    if (!f || !f->is_alive()) {
+        return;
+    }
+    f->progress_on_tile = (uint8_t)progress;
+}
+ANK_FUNCTION_2(__test_figure_set_progress_on_tile);
+
+static int __test_plagued_create_at_house(int bid) {
     building* b = building_get(bid);
     if (!b || !b->is_valid()) {
         return 0;
     }
-    return figure_plagued_citizen::spawn_from_house(*b);
+    return figure_plagued_citizen::create_at_house(*b);
 }
-ANK_FUNCTION_1(__test_plagued_spawn_from_house);
-
-static int __test_plagued_cure_nearby(int x, int y) {
-    return figure_plagued_citizen::cure_nearby(tile2i(x, y), 1);
-}
-ANK_FUNCTION_2(__test_plagued_cure_nearby);
+ANK_FUNCTION_1(__test_plagued_create_at_house);
 
 static int __test_figure_provide_service(int fid) {
     figure* f = figure_get(fid);

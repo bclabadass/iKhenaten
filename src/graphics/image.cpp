@@ -1,4 +1,5 @@
 #include "image.h"
+#include "core/main_thread.h"
 #include "font.h"
 #include "image_groups.h"
 #include "content/imagepak.h"
@@ -17,7 +18,7 @@
 #include <algorithm>
 #include <array>
 
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 
 int image_copy_to_atlas(const image_t &img) {
     int pixels_count = 0;
@@ -156,7 +157,7 @@ bool image_ensure_pak_loaded(int pak_id) {
         return false;
     }
 
-    if (std::this_thread::get_id() != g_image_data->main_thread) {
+    if (!main_thread::is()) {
         std::scoped_lock lock(g_image_data->worker_requests_mutex);
         auto& requests = g_image_data->worker_requests;
         if (std::find(requests.begin(), requests.end(), pak_id) == requests.end()) {
@@ -522,8 +523,8 @@ void image_invalidate_pak_cache(int pak_id) {
     }
 
     const int end = begin + count;
-    for (int id = begin; id < end && static_cast<size_t>(id) < data.image_cache.size(); ++id) {
-        data.image_cache[id] = nullptr;
+    for (int id = begin; id < end && static_cast<size_t>(id) < data.image_cache_size; ++id) {
+        data.image_cache[id].store(nullptr, std::memory_order_release);
     }
 }
 
@@ -535,7 +536,7 @@ void image_recreate_all_textures() {
                 if (atlas.temp.pixel_buffer) {
                     if (atlas.texture) {
                         res_atlas::forget_source(atlas.texture);
-                        SDL_DestroyTexture(atlas.texture);
+                        g_render.destroy_texture(atlas.texture);
                         atlas.texture = nullptr;
                     }
                     atlas.texture = g_render.create_texture_from_buffer(atlas.temp.pixel_buffer, atlas.width, atlas.height);
@@ -553,12 +554,12 @@ const image_t* image_get(int id) {
     }
 
     auto& data = *g_image_data;
-    if (static_cast<size_t>(id) >= data.image_cache.size()) {
+    if (static_cast<size_t>(id) >= data.image_cache_size) {
         return nullptr;
     }
 
-    if (data.image_cache[id]) {
-        return data.image_cache[id];
+    if (const image_t* cached = data.image_cache[id].load(std::memory_order_acquire)) {
+        return cached;
     }
 
     const image_t* img = nullptr;
@@ -579,7 +580,7 @@ const image_t* image_get(int id) {
 
         img = pak.handle->get_image(id);
         if (img != nullptr) {
-            data.image_cache[id] = img;
+            data.image_cache[id].store(img, std::memory_order_release);
             return img;
         }
     }

@@ -1,4 +1,5 @@
 #include "js/test/js_test_common.h"
+#include "widget/city/placement_preview.h"
 
 #include "building/building.h"
 #include "building/building_delivery_path.h"
@@ -6,6 +7,7 @@
 #include "building/building_house.h"
 #include "building/building_mansion.h"
 #include "building/building_static_params.h"
+#include "building/construction/build_planner.h"
 #include "building/building_temple_complex.h"
 #include "building/monument_obelisk.h"
 #include "building/monument_pyramid.h"
@@ -25,9 +27,12 @@
 #include "figuretype/figure_cartpusher.h"
 #include "figuretype/figure_plagued_citizen.h"
 #include "game/game.h"
+#include "game/simulation.h"
 #include "game/game_events.h"
 #include "game/resource.h"
+#include "graphics/graphics.h"
 #include "graphics/image.h"
+#include "graphics/painter.h"
 #include "grid/grid.h"
 #include "grid/road_access.h"
 #include "grid/routing/routing.h"
@@ -373,6 +378,15 @@ static xstring __test_building_slot_anim_key(int bid, int slot) {
     return b->anims[slot].key;
 }
 ANK_FUNCTION_2(__test_building_slot_anim_key);
+
+static int __test_building_slot_anim_frame(int bid, int slot) {
+    building* b = building_get(bid);
+    if (!b || !b->is_valid() || slot < 0 || slot >= (int)b->anims.size()) {
+        return -1;
+    }
+    return b->anims[slot].current_frame();
+}
+ANK_FUNCTION_2(__test_building_slot_anim_frame);
 
 static xstring __test_building_anim_key(int bid) {
     building* b = building_get(bid);
@@ -755,10 +769,10 @@ ANK_FUNCTION_2(__test_house_consume_goods);
 
 // The daily evolve-and-consume pass of every house, as if it ran on `day` of the month.
 static void __test_city_house_process_evolve_on_day(int day) {
-    const int saved_day = game.simtime.day;
-    game.simtime.day = day;
+    const int saved_day = g_simulation.simtime.day;
+    g_simulation.simtime.day = day;
     g_city.house_process_evolve();
-    game.simtime.day = saved_day;
+    g_simulation.simtime.day = saved_day;
 }
 ANK_FUNCTION_1(__test_city_house_process_evolve_on_day);
 
@@ -775,3 +789,115 @@ static int __test_house_image_id(int bid) {
     return house ? house->runtime_data().image_id : 0;
 }
 ANK_FUNCTION_1(__test_house_image_id);
+
+static int __test_planner_preview_red_tiles() {
+    ImageDraw::render_command_vec commands;
+    ImageDraw::render_command_vec subcommands;
+    painter ctx = game.painter();
+    ctx.command_buffer = &commands;
+    ctx.subcommand_buffer = &subcommands;
+    placement_preview::draw(ctx);
+    int red = 0;
+    for (const render_command_t& c : commands) {
+        if (c.mask == COLOR_MASK_RED || c.mask == COLOR_MASK_RED_30) {
+            ++red;
+        }
+    }
+    return red;
+}
+ANK_FUNCTION(__test_planner_preview_red_tiles);
+
+static int __test_house_expand(int bid) {
+    building* b = building_get(bid);
+    auto* house = b ? b->dcast_house() : nullptr;
+    if (!house) {
+        return -1;
+    }
+    const e_building_type before = b->type;
+    const bool expanded = house->evolve_expand();
+    if (b->type != before) {
+        b->clear_impl();
+    }
+    return expanded ? b->type : -1;
+}
+ANK_FUNCTION_1(__test_house_expand);
+
+static int __test_house_devolve(int bid) {
+    building* b = building_get(bid);
+    auto* house = b ? b->dcast_house() : nullptr;
+    if (!house) {
+        return -1;
+    }
+    const e_building_type before = b->type;
+    house->devolve_special();
+    if (b->type != before) {
+        b->clear_impl();
+    }
+    return b->type;
+}
+ANK_FUNCTION_1(__test_house_devolve);
+
+static void __test_house_set_goods(int bid, int food, int good) {
+    building* b = building_get(bid);
+    auto* house = b ? b->dcast_house() : nullptr;
+    if (!house) {
+        return;
+    }
+    house->runtime_data().foods[0] = (uint16_t)std::max(0, food);
+    house->runtime_data().inventory[INVENTORY_GOOD1] = (uint16_t)std::max(0, good);
+}
+ANK_FUNCTION_3(__test_house_set_goods);
+
+static pcstr __test_houses_in_area(int x0, int y0, int x1, int y1) {
+    static bstring1024 out;
+    out.clear();
+    for (int y = y0; y <= y1; ++y) {
+        for (int x = x0; x <= x1; ++x) {
+            building* b = building_at(tile2i(x, y));
+            auto* house = b ? b->dcast_house() : nullptr;
+            if (!house || !b->is_valid() || b->tile != tile2i(x, y)) {
+                continue;
+            }
+            const auto& d = house->runtime_data();
+            out.append_fmt("%d,%d:%d:%d:%d:%d:%d;", x, y, (int)b->type, (int)b->size, (int)d.population, (int)d.foods[0],
+              (int)d.inventory[INVENTORY_GOOD1]);
+        }
+    }
+    return out.c_str();
+}
+ANK_FUNCTION_4(__test_houses_in_area);
+
+static pcstr __test_building_index_matches_scan() {
+    static std::string out;
+    out.clear();
+    for (int t = BUILDING_NONE + 1; t < BUILDING_MAX; ++t) {
+        const e_building_type type = (e_building_type)t;
+        std::vector<int> by_index;
+        buildings_valid_do([&](building& b) { by_index.push_back(b.id); }, type);
+        std::vector<int> by_scan;
+        for (int i = 1; i < MAX_BUILDINGS; ++i) {
+            building* b = building_get(i);
+            if (b->is_valid() && b->type == type) {
+                by_scan.push_back(i);
+            }
+        }
+        if (by_index != by_scan) {
+            out = "type " + std::to_string(t) + ": index " + std::to_string(by_index.size()) + " scan "
+                  + std::to_string(by_scan.size());
+            return out.c_str();
+        }
+    }
+    int houses_index = 0;
+    buildings_house_do([&](building_house*) { ++houses_index; });
+    int houses_scan = 0;
+    for (int i = 1; i < MAX_BUILDINGS; ++i) {
+        if (building_get(i)->dcast_house()) {
+            ++houses_scan;
+        }
+    }
+    if (houses_index != houses_scan) {
+        out = "houses: index " + std::to_string(houses_index) + " scan " + std::to_string(houses_scan);
+    }
+    return out.c_str();
+}
+ANK_FUNCTION(__test_building_index_matches_scan);

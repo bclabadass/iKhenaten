@@ -1,13 +1,13 @@
 #include "random.h"
+#include "grid/random_chunks.h"
 #include "io/io_buffer.h"
 
 #include "core/random.h"
 #include "grid/grid.h"
 
-static grid_xx random_xx(FS_UINT8);
 
 void map_random_clear() {
-    map_grid_clear(random_xx);
+    map_grid_clear(random_grid_chunk::grid);
 }
 
 void map_random_init() {
@@ -15,19 +15,15 @@ void map_random_init() {
     for (int y = 0; y < GRID_LENGTH; y++) {
         for (int x = 0; x < GRID_LENGTH; x++, grid_offset++) {
             random_generate_next();
-            map_grid_set(random_xx, grid_offset, (uint8_t)random_short());
+            map_grid_set(random_grid_chunk::grid, grid_offset, (uint8_t)random_short());
         }
     }
 }
 
 int map_random_get(int grid_offset) {
-    return map_grid_get(random_xx, grid_offset);
+    return map_grid_get(random_grid_chunk::grid, grid_offset);
 }
 
 void map_random_set(int grid_offset, int value) {
-    map_grid_set(random_xx, grid_offset, value);
+    map_grid_set(random_grid_chunk::grid, grid_offset, value);
 }
-
-io_buffer* iob_random_grid = new io_buffer([](io_buffer* iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &random_xx);
-});

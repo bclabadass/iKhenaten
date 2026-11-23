@@ -1,4 +1,5 @@
 #include "gems.h"
+#include "grid/gems_chunks.h"
 
 #include "core/log.h"
 #include "dev/debug.h"
@@ -11,7 +12,6 @@
 #include <algorithm>
 #include <vector>
 
-grid_xx g_terrain_gems(FS_UINT16);
 
 namespace {
 constexpr int GEMS_MAX = 65000;
@@ -41,7 +41,7 @@ void seed_gems_box(tile2i origin, int size) {
             }
             int offset = t.grid_offset();
             if (offset >= 0 && offset < GRID_SIZE_TOTAL) {
-                map_grid_set(g_terrain_gems, offset, GEMS_MAX);
+                map_grid_set(gems_grid_chunk::grid, offset, GEMS_MAX);
             }
         }
     }
@@ -49,14 +49,14 @@ void seed_gems_box(tile2i origin, int size) {
 }
 
 int map_get_gems(int grid_offset) {
-    return map_grid_get(g_terrain_gems, grid_offset);
+    return map_grid_get(gems_grid_chunk::grid, grid_offset);
 }
 
 void map_gems_deplete(int grid_offset, int amount) {
-    int current = map_grid_get(g_terrain_gems, grid_offset);
+    int current = map_grid_get(gems_grid_chunk::grid, grid_offset);
     if (current > 0) {
         int new_value = std::max(0, current - amount);
-        map_grid_set(g_terrain_gems, grid_offset, new_value);
+        map_grid_set(gems_grid_chunk::grid, grid_offset, new_value);
     }
 }
 
@@ -66,7 +66,7 @@ declare_console_command_p(recalc_gems) {
 }
 
 void map_gems_init() {
-    map_grid_clear(g_terrain_gems);
+    map_grid_clear(gems_grid_chunk::grid);
 
     std::vector<uint8_t> used(GRID_SIZE_TOTAL, 0);
 
@@ -101,8 +101,3 @@ void map_gems_init() {
         }
     }
 }
-
-io_buffer *iob_gems = new io_buffer(
-    [] (io_buffer *iob, size_t version) { iob->bind(BIND_SIGNATURE_GRID, &g_terrain_gems); },
-    [] (size_t version) { map_grid_clear(g_terrain_gems); }
-);

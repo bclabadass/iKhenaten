@@ -5,9 +5,13 @@
 #include "building/building.h"
 
 #include <string.h>
+#include <algorithm>
 #include <cassert>
 #include <stdlib.h>
 #include <mutex>
+
+constexpr size_t gr_sizes[]
+  = {0, sizeof(uint8_t), sizeof(int8_t), sizeof(uint16_t), sizeof(int16_t), sizeof(uint32_t), sizeof(int32_t)};
 
 static const int DIRECTION_DELTA_PH[] = {-GRID_OFFSET(0, 1),
                                          GRID_OFFSET(1, -1),
@@ -21,7 +25,7 @@ static const int DIRECTION_DELTA_PH[] = {-GRID_OFFSET(0, 1),
 void map_grid_init(grid_xx& grid) {
     grid.size_field = gr_sizes[grid.datatype];
     grid.size_total = grid.size_field * GRID_SIZE_TOTAL;
-    grid.items_xx = malloc(grid.size_total);
+    grid.items_xx = calloc(1, grid.size_total);
     grid.initialized = 1;
 }
 
@@ -47,6 +51,15 @@ void grid_xx::init_all_grids() {
     for (grid_xx *p : detail::registered_grids()) {
         if (!p->initialized) {
             map_grid_init(*p);
+        }
+    }
+}
+
+void grid_xx::clear_all_grids() {
+    std::scoped_lock lock(detail::registered_grids_mutex());
+    for (grid_xx* p : detail::registered_grids()) {
+        if (p->initialized) {
+            map_grid_clear(*p);
         }
     }
 }
@@ -301,6 +314,55 @@ void map_grid_bound_area(tile2i &tmin, tile2i &tmax) {
     if (tmax.y() < 0) { tmax.set_y(0); }
     if (tmin.x() >= scenario_map_data()->width) { tmin.set_x(scenario_map_data()->width - 1); }
     if (tmin.y() >= scenario_map_data()->height) { tmin.set_y(scenario_map_data()->height - 1); }
+}
+
+std::vector<uint8_t> map_grid_king_distance(const std::function<bool(int grid_offset)>& is_source, int cap) {
+    const int w = scenario_map_data()->width;
+    const int h = scenario_map_data()->height;
+    const uint8_t far = (uint8_t)std::min(cap + 1, 255);
+    std::vector<uint8_t> d((size_t)w * h, far);
+    auto at = [&](int x, int y) -> uint8_t& { return d[(size_t)y * w + x]; };
+    auto relax = [&](uint8_t& v, int x, int y) {
+        if (x >= 0 && x < w && y >= 0 && y < h && at(x, y) + 1 < v) {
+            v = at(x, y) + 1;
+        }
+    };
+
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            uint8_t& v = at(x, y);
+            if (is_source(MAP_OFFSET(x, y))) {
+                v = 0;
+                continue;
+            }
+            relax(v, x - 1, y);
+            relax(v, x - 1, y - 1);
+            relax(v, x, y - 1);
+            relax(v, x + 1, y - 1);
+        }
+    }
+    for (int y = h - 1; y >= 0; --y) {
+        for (int x = w - 1; x >= 0; --x) {
+            uint8_t& v = at(x, y);
+            relax(v, x + 1, y);
+            relax(v, x + 1, y + 1);
+            relax(v, x, y + 1);
+            relax(v, x - 1, y + 1);
+        }
+    }
+    return d;
+}
+
+void map_grid_mark_near(grid_xx& grid, const std::function<bool(int grid_offset)>& is_source, int radius, int value) {
+    const int w = scenario_map_data()->width;
+    const int h = scenario_map_data()->height;
+    const std::vector<uint8_t> d = map_grid_king_distance(is_source, radius);
+    map_grid_clear(grid);
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            map_grid_set(grid, MAP_OFFSET(x, y), d[(size_t)y * w + x] <= radius ? value : 0);
+        }
+    }
 }
 
 grid_area map_grid_get_area(tile2i tile, int size, int radius) {

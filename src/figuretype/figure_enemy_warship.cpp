@@ -13,16 +13,17 @@
 #include "figuretype/figure_missile.h"
 #include "figuretype/figure_transport_ship.h"
 #include "figuretype/figure_war_ship.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "game/game_events.h"
 #include "grid/grid.h"
 #include "grid/routing/routing.h"
 #include "grid/water.h"
 #include "input/mouse.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "scenario/invasion_auto_resolve.h"
 #include "scenario/map.h"
 #include "scenario/scenario.h"
+#include "scenario/scenario_invasion.h"
 #include "sound/sound.h"
 #include "widget/widget_city.h"
 
@@ -123,23 +124,8 @@ namespace {
 } // namespace
 
 e_figure_type enemy_warship_type_for(e_enemy_type enemy) {
-    switch (enemy) {
-    case ENEMY_1_ASSYRIAN: return FIGURE_ENEMY_ASSYRIAN_WAR_SHIP;
-    case ENEMY_2_CANAANITE: return FIGURE_ENEMY_CANAANITE_WAR_SHIP;
-    case ENEMY_3_EGYPTIAN: return FIGURE_ENEMY_EGYPTIAN_WAR_SHIP;
-    case ENEMY_4_HITTITE: return FIGURE_ENEMY_HITTITE_WAR_SHIP;
-    case ENEMY_5_HYKSOS: return FIGURE_ENEMY_HYKSOS_WAR_SHIP;
-    case ENEMY_6_KUSHITE: return FIGURE_ENEMY_KUSHITE_WAR_SHIP;
-    case ENEMY_7_LIBIAN: return FIGURE_ENEMY_LIBIAN_WAR_SHIP;
-    case ENEMY_8_NUBIAN: return FIGURE_ENEMY_NUBIAN_WAR_SHIP;
-    case ENEMY_9_PERSIAN: return FIGURE_ENEMY_PERSIAN_WAR_SHIP;
-    case ENEMY_10_PHOENICIAN: return FIGURE_ENEMY_PHOENICIAN_WAR_SHIP;
-    case ENEMY_11_ROMAN: return FIGURE_ENEMY_ROMAN_WAR_SHIP;
-    case ENEMY_12_SEAPEOPLE: return FIGURE_ENEMY_SEAPEOPLE_WAR_SHIP;
-    case ENEMY_0_BARBARIAN:
-    default:
-        return FIGURE_ENEMY_WARSHIP;
-    }
+    const e_figure_type type = (enemy >= 0 && enemy < ENEMY_COUNT) ? g_invasions.get_prop(enemy).warship : FIGURE_NONE;
+    return type != FIGURE_NONE ? type : FIGURE_ENEMY_WARSHIP;
 }
 
 void figure_enemy_warship::on_create() {
@@ -147,7 +133,7 @@ void figure_enemy_warship::on_create() {
     base.allow_move_type = EMOVE_WATER;
     base.terrain_usage = TERRAIN_USAGE_ANY;
     runtime_data() = {};
-    runtime_data().leave_month = (uint8_t)game.simtime.month;
+    runtime_data().leave_month = (uint8_t)g_simulation.simtime.month;
     advance_action(ACTION_8_ENEMY_WARSHIP_WAITING);
 }
 
@@ -159,7 +145,7 @@ void figure_enemy_warship::launch(int wait_ticks, int invasion_sequence) {
     base.name = figure_name_get(base.type);
     base.damage = 0;
     d.invasion_sequence = (int16_t)invasion_sequence;
-    d.leave_month = (uint8_t)game.simtime.month;
+    d.leave_month = (uint8_t)g_simulation.simtime.month;
     advance_action(ACTION_8_ENEMY_WARSHIP_WAITING);
 }
 
@@ -439,7 +425,7 @@ void figure_enemy_warship::action_attack() {
         const bool on_land = map_water_grid(target->tile.grid_offset()) < 0;
         if (is_land_troop(target->type) || target->type == FIGURE_TRANSPORT_SHIP || target->type == FIGURE_WARSHIP) {
             if (anti_scum_random_15bit() & 1) {
-                d.leave_month = (uint8_t)((game.simtime.month + 1) % ENEMY_WARSHIP_MONTHS_PER_YEAR);
+                d.leave_month = (uint8_t)((g_simulation.simtime.month + 1) % ENEMY_WARSHIP_MONTHS_PER_YEAR);
             }
         }
         if (is_land_troop(target->type)) {
@@ -567,7 +553,7 @@ void figure_enemy_warship::figure_action() {
         advance_action(ACTION_12_ENEMY_WARSHIP_EVADING);
         d.secondary_action = ENEMY_WARSHIP_SECONDARY_WAITING;
     }
-    if ((d.leave_month + rules.stay_months) % ENEMY_WARSHIP_MONTHS_PER_YEAR == game.simtime.month) {
+    if ((d.leave_month + rules.stay_months) % ENEMY_WARSHIP_MONTHS_PER_YEAR == g_simulation.simtime.month) {
         advance_action(ACTION_18_ENEMY_WARSHIP_LEAVING);
         base.destination_tile = scenario_map_river_exit();
     }

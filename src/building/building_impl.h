@@ -23,6 +23,8 @@ struct event_building_place_checks { building_id bid; };
 
 class building_impl {
 public:
+    static void draw_colored_tile(painter& ctx, vec2i pixel, color mask);
+
     using preview = building_planer_renderer;
 
     building_impl(building &b) : base(b) {}
@@ -37,6 +39,7 @@ public:
     virtual void on_post_load();
     virtual xstring demolish_blocked_message() const { return {}; }
     virtual bool allow_demolish() const { return true; }
+    virtual bool continues_cliff() const { return false; }
     virtual void spawn_figure();
     virtual void update_animation();
     virtual void update_graphic();

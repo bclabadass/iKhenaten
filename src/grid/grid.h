@@ -9,7 +9,9 @@
 #include "map_geometry.h"
 #include "core/core_utility.h"
 
+#include <functional>
 #include <utility>
+#include <vector>
 #include <stdint.h>
 
 class building;
@@ -40,10 +42,6 @@ enum e_grid_data_type {
     FS_INT32 = 6
 };
 
-static size_t gr_sizes[] = {
-    0, sizeof(uint8_t), sizeof(int8_t), sizeof(uint16_t), sizeof(int16_t), sizeof(uint32_t), sizeof(int32_t)
-};
-
 struct grid_xx {
     int initialized = false;
     e_grid_data_type datatype;
@@ -57,6 +55,7 @@ struct grid_xx {
     }
     static void register_grid_init(grid_xx* p);
     static void init_all_grids();
+    static void clear_all_grids();
 
     inline int32_t get(uint32_t grid_offset);
 };
@@ -109,6 +108,8 @@ int map_grid_height();
 void map_grid_bound(int* x, int* y);
 void map_grid_bound_area(tile2i &tmin, tile2i &tmax);
 grid_area map_grid_get_area(tile2i tile, int size, int radius);
+std::vector<uint8_t> map_grid_king_distance(const std::function<bool(int grid_offset)>& is_source, int cap);
+void map_grid_mark_near(grid_xx& grid, const std::function<bool(int grid_offset)>& is_source, int radius, int value);
 grid_tiles map_grid_get_tiles(building *b, int radius);
 grid_tiles_sm map_grid_get_tiles_sm(building *b, int radius);
 grid_tiles_sm map_grid_get_adjacent_tiles_sm(building *b, int radius);

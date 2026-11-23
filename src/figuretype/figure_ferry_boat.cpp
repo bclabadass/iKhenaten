@@ -13,7 +13,7 @@
 #include "graphics/elements/ui.h"
 #include "game/game.h"
 #include "game/game_events.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "figuretype/figure_cartpusher.h"
 #include "figuretype/figure_caravan_donkey.h"
 #include "figuretype/figure_deliveryboy.h"
@@ -292,7 +292,7 @@ void figure_ferry_boat::figure_action() {
     }
 
     auto *home_b = home_ferry->dcast_ferry();
-    building *partner = map_routing_ferry_partner(home_ferry);
+    building* partner = home_b->partner();
     auto *partner_b = partner ? partner->dcast_ferry() : nullptr;
 
     assert(base.allow_move_type == EMOVE_WATER);

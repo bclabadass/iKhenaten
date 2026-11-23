@@ -8,7 +8,8 @@
 //   [test-marker] troops_request_amount_kept
 //   [test-marker] selima_companies_recover
 
-var T384_SAVE = '../DuoSaves/Selima 7.svx'
+// Saves live under --user-dir in tests; the Duo saves stay in the Pharaoh folder's Save/DuoSaves/.
+var T384_SAVE = __test_data_dir() + '/Save/DuoSaves/Selima 7.svx'
 var __test384_ok = false
 
 function test384_fail(msg) {

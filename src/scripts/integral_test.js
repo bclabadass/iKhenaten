@@ -52,31 +52,53 @@ function test_planner_exit_build_mode() {
     __test_process_events()
 }
 
-function test_find_buildable_tile(type) {
+function test_find_buildable_tile(type, step) {
     if (!test_planner_enter_build_mode(type)) {
         return null
     }
 
+    step = step || 1
     var footprint = __building_static_building_size(type)
     var w = __scenario_map.width
     var h = __scenario_map.height
     var cx = (w / 2) | 0
     var cy = (h / 2) | 0
     var best = null
-    var best_dist_sq = 999999999
+    var best_dist_sq = 0
 
-    for (var y = footprint; y < h - footprint; y++) {
-        for (var x = footprint; x < w - footprint; x++) {
-            var dx = x - cx
-            var dy = y - cy
-            var dist_sq = dx * dx + dy * dy
-            if (best && dist_sq >= best_dist_sq) {
-                continue
-            }
-            city_planner.update(x, y)
-            if (city_planner.can_be_placed() == CAN_PLACE) {
-                best = { x: x, y: y }
-                best_dist_sq = dist_sq
+    var try_tile = function (x, y) {
+        if (x < footprint || x >= w - footprint || y < footprint || y >= h - footprint) {
+            return
+        }
+        if (step > 1 && (x % step || y % step)) {
+            return
+        }
+        var dx = x - cx
+        var dy = y - cy
+        var dist_sq = dx * dx + dy * dy
+        if (best && (dist_sq > best_dist_sq || (dist_sq == best_dist_sq && (y > best.y || (y == best.y && x > best.x))))) {
+            return
+        }
+        city_planner.update(x, y)
+        if (city_planner.can_be_placed() == CAN_PLACE) {
+            best = { x: x, y: y }
+            best_dist_sq = dist_sq
+        }
+    }
+
+    var max_r = Math.max(cx, cy, w - cx, h - cy)
+    for (var r = 0; r <= max_r; r++) {
+        if (best && r * r > best_dist_sq) {
+            break
+        }
+        for (var y = cy - r; y <= cy + r; y++) {
+            if (r == 0 || y == cy - r || y == cy + r) {
+                for (var x = cx - r; x <= cx + r; x++) {
+                    try_tile(x, y)
+                }
+            } else {
+                try_tile(cx - r, y)
+                try_tile(cx + r, y)
             }
         }
     }
@@ -130,12 +152,12 @@ function test_win_criteria_restore(snap) {
     __test_scenario_init_max_year()
 }
 
-function test_building_place(type, x, y) {
+function test_building_place(type, x, y, step) {
     var place = null
     if (x >= 0 && y >= 0) {
         place = { x: x, y: y }
     } else {
-        place = test_find_buildable_tile(type)
+        place = test_find_buildable_tile(type, step)
     }
 
     if (!place) {
@@ -365,10 +387,6 @@ function test_figure_set_speed(fid, speed) {
     __test_figure_set_speed(fid, speed)
 }
 
-function test_figure_set_force_valid_animation(fid, enabled) {
-    __test_figure_set_force_valid_animation(fid, enabled ? 1 : 0)
-}
-
 function test_figure_get_damage(fid) {
     return __test_figure_get_damage(fid)
 }
@@ -499,6 +517,60 @@ function test_shoreline_building_place(type, building_size) {
     __log_info_native('[test_planner] no valid shoreline tile for type ' + type)
     test_planner_exit_build_mode()
     return 0
+}
+
+function test_ferry_try_place(x, y) {
+    city_planner.update(x, y)
+    if (city_planner.can_be_placed() != CAN_PLACE) {
+        return 0
+    }
+    city_planner.construction_start(x, y)
+    city_planner.construction_update(x, y)
+    city_planner.construction_finalize()
+    var bid = city_planner.last_created_building_id()
+    city_planner.validate_last_created()
+    if (bid && __building_type(bid) == BUILDING_FERRY) {
+        return bid
+    }
+    return 0
+}
+
+function test_ferry_pair_place() {
+    var cx = (__scenario_map.width / 2) | 0
+    var cy = (__scenario_map.height / 2) | 0
+    var river_len = 5
+    var start = test_prepare_bridge_channel(cx, cy, 5, river_len)
+    __test_set_scenario_river_points(start.x, start.y + 2, start.x, start.y + 2)
+    __test_map_routing_update_water()
+
+    if (!test_planner_enter_build_mode(BUILDING_FERRY)) {
+        return null
+    }
+
+    var north = 0
+    var north_cands = [{ x: cx - 1, y: cy - 1 }, { x: cx - 2, y: cy - 1 }, { x: cx, y: cy - 1 }]
+    for (var i = 0; i < north_cands.length && !north; i++) {
+        north = test_ferry_try_place(north_cands[i].x, north_cands[i].y)
+    }
+
+    var south_y = cy + river_len - 1
+    var south = 0
+    var south_cands = [
+        { x: cx - 1, y: south_y }, { x: cx - 2, y: south_y }, { x: cx, y: south_y },
+        { x: cx - 1, y: south_y + 1 }, { x: cx - 2, y: south_y + 1 }
+    ]
+    for (var j = 0; j < south_cands.length && north && !south; j++) {
+        south = test_ferry_try_place(south_cands[j].x, south_cands[j].y)
+    }
+
+    test_planner_exit_build_mode()
+    if (!north || !south) {
+        __log_info_native('[test_planner] ferry pair place failed north=' + north + ' south=' + south)
+        return null
+    }
+    test_log_building_placed(north)
+    test_log_building_placed(south)
+    return { first: north, second: south }
 }
 
 // OG mudbrick block engine: place → phase 2 → boost one masonry course per

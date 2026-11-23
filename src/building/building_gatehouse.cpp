@@ -21,7 +21,7 @@
 #include "grid/routing/routing_terrain.h"
 #include "building/building_wall.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 
@@ -39,7 +39,7 @@ inline void reader<building_decorative_gatehouse::static_params>(archive arch, b
 }
 } // namespace archive_helper
 
-building_gatehouse::back_tile_orientation building_gatehouse::second_part_tile(build_planner &planer, tile2i end, int city_orientation) {
+building_gatehouse::back_tile_orientation building_gatehouse::second_part_tile(tile2i end, int city_orientation) {
     struct candidate_t {
         tile2i tile;
         int orientation = -1;
@@ -53,7 +53,7 @@ building_gatehouse::back_tile_orientation building_gatehouse::second_part_tile(b
         c.tile = tile;
         c.orientation = orientation;
         blocked_tile_vec tmp_tiles;
-        c.ok = !planer.is_blocked_for_building(tile, 1, tmp_tiles, restricted_terrain);
+        c.ok = !build_planner::is_blocked_for_building(tile, 1, tmp_tiles, restricted_terrain);
         c.road = c.ok && map_terrain_is(tile, TERRAIN_ROAD);
         return c;
     };
@@ -194,7 +194,7 @@ static void apply_gatehouse_footprint_images(tile2i main_tile, tile2i back_tile,
 }
 
 static void apply_gatehouse_tile_images(tile2i main_tile, tile2i back_tile, const building_static_params &bparams) {
-    const int city_orientation = g_camera.orientation / 2;
+    const int city_orientation = map_view_orientation() / 2;
     const int building_rotation = calc_general_direction(main_tile, back_tile) / 2;
 
     static const xstring txs[6] = {
@@ -320,19 +320,19 @@ void building_gatehouse::update_map_orientation(int orientation) {
 
     update_image_set(base);
 
-    //if (orientation_index == 0 || orientation_index == 3) {
-    //    // draw fort first, then ground
-    //    int image_id = this->anim["base_n"].first_img();
-    //    int image_sec_id = this->anim["base_second_n"].first_img();
-    //    planer.draw_building_ghost(ctx, image_sec_id, ground_pixel);
-    //    planer.draw_building_ghost(ctx, image_id, main_pixel);
-    //} else {
-    //    // draw ground first, then fort
-    //    int image_id = this->anim["base_w"].first_img();
-    //    int image_sec_id = this->anim["base_second_w"].first_img();
-    //    planer.draw_building_ghost(ctx, image_sec_id, main_pixel);
-    //    planer.draw_building_ghost(ctx, image_id, ground_pixel);
-    //}
+    // if (orientation_index == 0 || orientation_index == 3) {
+    //     // draw fort first, then ground
+    //     int image_id = this->anim["base_n"].first_img();
+    //     int image_sec_id = this->anim["base_second_n"].first_img();
+    //     ghost_draw::draw_building_ghost(ctx, image_sec_id, ground_pixel);
+    //     ghost_draw::draw_building_ghost(ctx, image_id, main_pixel);
+    // } else {
+    //     // draw ground first, then fort
+    //     int image_id = this->anim["base_w"].first_img();
+    //     int image_sec_id = this->anim["base_second_w"].first_img();
+    //     ghost_draw::draw_building_ghost(ctx, image_sec_id, main_pixel);
+    //     ghost_draw::draw_building_ghost(ctx, image_id, ground_pixel);
+    // }
 }
 
 void building_gatehouse::on_place_update_tiles(int orientation, int variant) {
@@ -342,8 +342,8 @@ void building_gatehouse::on_place_update_tiles(int orientation, int variant) {
 void building_gatehouse::on_place(int orientation, int variant) {
     building_impl::on_place(orientation, variant);
 
-    const int city_orientation = g_camera.orientation / 2;
-    back_tile_orientation back_tile = building_gatehouse::second_part_tile(g_city_planner, tile(), city_orientation);
+    const int city_orientation = map_view_orientation() / 2;
+    back_tile_orientation back_tile = building_gatehouse::second_part_tile(tile(), city_orientation);
 
     building *backside, *mainside;
     bool bactile_is_main = false;
@@ -584,7 +584,7 @@ tile2i building_decorative_gatehouse::footprint_anchor(tile2i end, int layout_or
     const int height = layout_orientation == 0 ? 2 : 5;
     tile2i anchor = end;
 
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_2_BOTTOM_RIGHT:
         anchor.set_x(anchor.x() - width + 1);
         break;

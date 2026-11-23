@@ -17,6 +17,7 @@
 #include "graphics/screen.h"
 #include "graphics/text.h"
 #include "graphics/window.h"
+#include "js/js_register.h"
 #include "graphics/view/lookup.h"
 #include "grid/grid.h"
 #include "scenario/scenario.h"
@@ -184,27 +185,28 @@ void window_city_draw_time_left_panel() {
     if (scenario_criteria_time_limit_enabled() && !g_scenario.has_won) {
         const int end_year = city_victory_end_year();
         int years;
-        if (end_year <= game.simtime.year + 1) {
+        if (end_year <= g_simulation.simtime.year + 1) {
             years = 0;
         } else {
-            years = end_year - game.simtime.year - 1;
+            years = end_year - g_simulation.simtime.year - 1;
         }
-        int total_months = 12 - game.simtime.month + simulation_time_t::months_in_year * years;
-        small_panel_draw({ 1, 25 }, 15, 1);
-        int width = lang_text_draw(6, 2, 6, 29, FONT_NORMAL_BLACK_ON_LIGHT);
-        text_draw_number(total_months, '@', " ", 6 + width, 29, FONT_NORMAL_BLACK_ON_LIGHT);
+        int total_months = 12 - g_simulation.simtime.month + simulation_time_t::months_in_year * years;
+        ui::push(ui::cmd_t::small_panel, ui::opt::Pos{vec2i{1, 25}}, ui::opt::BoxWidth{15}, ui::opt::ImageId{1});
+        const int width = ui::text_abs(ui::str(6, 2), {6, 29}, FONT_NORMAL_BLACK_ON_LIGHT);
+        ui::number_abs(total_months, '@', " ", {6 + width, 29}, FONT_NORMAL_BLACK_ON_LIGHT);
         //        city_view_dirty = 1;
     } else if (scenario_criteria_survival_enabled() && !g_scenario.has_won) {
         int years;
-        if (scenario_criteria_max_year() <= game.simtime.year + 1) {
+        if (scenario_criteria_max_year() <= g_simulation.simtime.year + 1) {
             years = 0;
         } else {
-            years = scenario_criteria_max_year() - game.simtime.year - 1;
+            years = scenario_criteria_max_year() - g_simulation.simtime.year - 1;
         }
-        int total_months = simulation_time_t::months_in_year - game.simtime.month + simulation_time_t::months_in_year * years;
-        small_panel_draw({ 1, 25 }, 15, 1);
-        int width = lang_text_draw(6, 3, 6, 29, FONT_NORMAL_BLACK_ON_LIGHT);
-        text_draw_number(total_months, '@', " ", 6 + width, 29, FONT_NORMAL_BLACK_ON_LIGHT);
+        int total_months
+          = simulation_time_t::months_in_year - g_simulation.simtime.month + simulation_time_t::months_in_year * years;
+        ui::push(ui::cmd_t::small_panel, ui::opt::Pos{vec2i{1, 25}}, ui::opt::BoxWidth{15}, ui::opt::ImageId{1});
+        const int width = ui::text_abs(ui::str(6, 3), {6, 29}, FONT_NORMAL_BLACK_ON_LIGHT);
+        ui::number_abs(total_months, '@', " ", {6 + width, 29}, FONT_NORMAL_BLACK_ON_LIGHT);
     }
 }
 
@@ -216,21 +218,22 @@ static void draw_construction_buttons() {
     const vec2i base = construction_buttons_base_pos();
     const int count = construction_buttons_count();
     if (count > 0) {
-        inner_panel_draw({base.x - 4, base.y - 4}, {3, 2});
+        ui::push(ui::cmd_t::panel_inner, ui::opt::Pos{vec2i{base.x - 4, base.y - 4}}, ui::opt::Size{vec2i{3, 2}});
     }
     if (count > 1) {
-        inner_panel_draw({base.x - 4, base.y + 32}, {3, 2});
+        ui::push(ui::cmd_t::panel_inner, ui::opt::Pos{vec2i{base.x - 4, base.y + 32}}, ui::opt::Size{vec2i{3, 2}});
     }
-    image_buttons_draw(base, construction_buttons, count);
+    image_buttons_push_commands(base, construction_buttons, count);
 
     update_construction_rotate_button();
     if (construction_buttons[2].enabled) {
         const image_button& rotate = construction_buttons[2];
         const vec2i pos = base + vec2i{rotate.x, rotate.y};
-        outer_panel_draw_exact(pos, {rotate.width, rotate.height});
+        ui::push(ui::cmd_t::panel_outer_exact, ui::opt::Pos{pos}, ui::opt::Size{vec2i{rotate.width, rotate.height}});
         const int pressed_offset = rotate.pressed ? 1 : 0;
-        text_draw_centered((const uint8_t*)rotate_button_text(), pos.x + pressed_offset, pos.y + 11 + pressed_offset,
-          rotate.width, FONT_LARGE_BLACK_ON_LIGHT, COLOR_MASK_NONE);
+        ui::push(ui::cmd_t::text_centered, ui::opt::Caption{rotate_button_text()},
+          ui::opt::Pos{vec2i{pos.x + pressed_offset, pos.y + 11 + pressed_offset}}, ui::opt::BoxWidth{rotate.width},
+          ui::opt::Font{FONT_LARGE_BLACK_ON_LIGHT}, ui::opt::TextColor{COLOR_MASK_NONE});
     }
 }
 
@@ -246,9 +249,9 @@ static bool handle_construction_buttons(const mouse *m) {
     update_construction_rotate_button();
 
     const vec2i base = construction_buttons_base_pos();
-    // get_earliest_touch() hides fingers for ~150ms (start_delayed). Button downs
+    // g_touch.earliest() hides fingers for ~150ms (start_delayed). Button downs
     // in that window never latched; use the raw finger and decide by start_point.
-    const touch_t* t = (m->is_touch || touch_only_platform()) ? get_earliest_touch_raw() : nullptr;
+    const touch_t* t = (m->is_touch || touch_only_platform()) ? g_touch.earliest_raw() : nullptr;
     if (!t || !t->in_use) {
         construction_button_pressed = -1;
         construction_buttons[0].pressed = 0;
@@ -272,15 +275,15 @@ static bool handle_construction_buttons(const mouse *m) {
                         || is_in_construction_buttons_region(t->current_point);
 
     if (t->has_started || t->has_ended) {
-        logs::info(
-            "[build-btn] touch start=(%d,%d) cur=(%d,%d) hit_start=%d hit_cur=%d in_region=%d "
-            "started=%d ended=%d moved=%d click=%d base=(%d,%d) view=(%d,%d) "
-            "btns={cancel:(%d,%d,%dx%d) confirm:(%d,%d,%dx%d)} build=%d progress=%d",
-            t->start_point.x, t->start_point.y, t->current_point.x, t->current_point.y, hit_start, hit_cur, in_region ? 1 : 0,
-            t->has_started, t->has_ended, t->has_moved, touch_was_click(t), base.x, base.y, g_camera.size_pixels.x,
-            g_camera.size_pixels.y, base.x, base.y, construction_buttons[0].width, construction_buttons[0].height,
-            base.x + construction_buttons[1].x, base.y + construction_buttons[1].y, construction_buttons[1].width,
-            construction_buttons[1].height, (int)g_city_planner.build_type, g_city_planner.in_progress ? 1 : 0);
+        logs::info("[build-btn] touch start=(%d,%d) cur=(%d,%d) hit_start=%d hit_cur=%d in_region=%d "
+                   "started=%d ended=%d moved=%d click=%d base=(%d,%d) view=(%d,%d) "
+                   "btns={cancel:(%d,%d,%dx%d) confirm:(%d,%d,%dx%d)} build=%d progress=%d",
+          t->start_point.x, t->start_point.y, t->current_point.x, t->current_point.y, hit_start, hit_cur,
+          in_region ? 1 : 0, t->has_started, t->has_ended, t->has_moved, t->was_click(), base.x, base.y,
+          g_camera.size_pixels.x, g_camera.size_pixels.y, base.x, base.y, construction_buttons[0].width,
+          construction_buttons[0].height, base.x + construction_buttons[1].x, base.y + construction_buttons[1].y,
+          construction_buttons[1].width, construction_buttons[1].height, (int)g_city_planner.build_type,
+          g_city_planner.in_progress ? 1 : 0);
     }
 
     // Whole gesture: only steal if finger began on or in region of buttons.
@@ -426,7 +429,7 @@ static e_company_button_touch handle_company_text_button(const touch_t* t, const
 }
 
 bool window_city_handle_company_buttons(const mouse* m, int formation_id) {
-    const touch_t* t = (m->is_touch || touch_only_platform()) ? get_earliest_touch_raw() : nullptr;
+    const touch_t* t = (m->is_touch || touch_only_platform()) ? g_touch.earliest_raw() : nullptr;
     if (!t || !t->in_use) {
         company_orders_button_pressed = false;
         company_rotate_button_pressed = false;
@@ -463,7 +466,7 @@ void window_city_draw_ship_orders_button() {
 }
 
 bool window_city_handle_ship_orders_button(const mouse* m, int figure_id) {
-    const touch_t* t = (m->is_touch || touch_only_platform()) ? get_earliest_touch_raw() : nullptr;
+    const touch_t* t = (m->is_touch || touch_only_platform()) ? g_touch.earliest_raw() : nullptr;
     if (!t || !t->in_use) {
         ship_orders_button_pressed = false;
         return false;
@@ -500,8 +503,7 @@ bool window_city_draw_construction_cost_and_size() {
         return false;
     }
 
-    painter ctx = game.painter();
-    set_city_clip_rectangle(ctx);
+    ui::push(ui::cmd_t::clip_set, ui::opt::Pos{g_camera.offset}, ui::opt::Size{g_camera.size_pixels});
     screen_tile screen = g_camera.selected_tile;
     int inverted_scale = calc_percentage<int>(100, g_zoom.get_percentage());
     int x = calc_adjust_with_percentage(screen.x, inverted_scale);
@@ -513,19 +515,19 @@ bool window_city_draw_construction_cost_and_size() {
             color = g_scenario.is_desert() ? COLOR_FONT_ORANGE : COLOR_FONT_ORANGE_LIGHT;
         else
             color = COLOR_FONT_RED;
-        text_draw_number_colored(cost, '@', " ", x + 58 + 1, y + 1, FONT_SMALL_PLAIN, COLOR_BLACK);
-        text_draw_number_colored(cost, '@', " ", x + 58, y, FONT_SMALL_PLAIN, color);
+        ui::number_abs(cost, '@', " ", {x + 58 + 1, y + 1}, FONT_SMALL_PLAIN, COLOR_BLACK);
+        ui::number_abs(cost, '@', " ", {x + 58, y}, FONT_SMALL_PLAIN, color);
     }
 
     if (has_size) {
         int width = -text_get_width(string_from_ascii("  "), FONT_SMALL_PLAIN);
-        width += text_draw_number_colored(size_x, '@', "x", x - 15 + 1, y + 25 + 1, FONT_SMALL_PLAIN, COLOR_BLACK);
-        text_draw_number_colored(size_x, '@', "x", x - 15, y + 25, FONT_SMALL_PLAIN, COLOR_FONT_YELLOW);
-        text_draw_number_colored(size_y, '@', " ", x - 15 + width + 1, y + 25 + 1, FONT_SMALL_PLAIN, COLOR_BLACK);
-        text_draw_number_colored(size_y, '@', " ", x - 15 + width, y + 25, FONT_SMALL_PLAIN, COLOR_FONT_YELLOW);
+        width += ui::number_abs(size_x, '@', "x", {x - 15 + 1, y + 25 + 1}, FONT_SMALL_PLAIN, COLOR_BLACK);
+        ui::number_abs(size_x, '@', "x", {x - 15, y + 25}, FONT_SMALL_PLAIN, COLOR_FONT_YELLOW);
+        ui::number_abs(size_y, '@', " ", {x - 15 + width + 1, y + 25 + 1}, FONT_SMALL_PLAIN, COLOR_BLACK);
+        ui::number_abs(size_y, '@', " ", {x - 15 + width, y + 25}, FONT_SMALL_PLAIN, COLOR_FONT_YELLOW);
     }
 
-    graphics_reset_clip_rectangle();
+    ui::push_cmd(ui::cmd_t(ui::cmd_t::clip_reset));
     return true;
 }
 
@@ -533,7 +535,11 @@ void window_city::draw_foreground(UiFlags flags) {
     OZZY_PROFILER_FUNCTION();
 
     window_city_draw();
+    const size_t sidebar_commands = ui::command_mark();
     widget_sidebar_city_draw_foreground();
+    const size_t top_menu_commands = ui::command_mark();
+    js_call_event_handlers("top_menu_draw_bar", {});
+    ui::move_commands_below(top_menu_commands, sidebar_commands);
     ui::dispatch_autoconfig_es_event(this, __func__, {});
 
     if (window_is_city_view()) {
@@ -646,11 +652,14 @@ void window_city_draw() {
 
 void window_city::init_city() {
     widget_sidebar_city_init();
+}
 
+static void window_city_subscribe_events() {
     events::subscribe([] (event_toggle_legion ev) {
         cycle_legion();
     });
 }
+static events::session_subscriber g_window_city_session(&window_city_subscribe_events);
 
 window_city &window_city::instance() {
     return g_window_city;
@@ -664,6 +673,8 @@ void window_city::show() {
         [](const mouse *m, const hotkeys *h) { instance().handle_input(m, h); },
         [](tooltip_context *c) { g_screen_city.draw_tooltip(c); }
     };
+    window.sim_time_runs = true;
+    window.city_sounds = true;
 
     instance().init_city();
     window_show(&window);

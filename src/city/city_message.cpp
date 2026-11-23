@@ -12,10 +12,10 @@
 #include "graphics/window.h"
 #include "graphics/image.h"
 #include "io/gamefiles/lang.h"
-#include "sound/sound.h"
 #include "window/message_dialog.h"
 #include "game/game_events.h"
-#include "game/game.h"
+#include "game/sound_effect.h"
+#include "game/simulation.h"
 #include "game/game_config.h"
 #include "scenario/scenario.h"
 
@@ -155,8 +155,9 @@ void message_manager_t::init() {
     }
 
     init_problem_areas();
+}
 
-    // city_t::init() drops every g_city_events listener; re-subscribe on each init (subscribe() dedups).
+void message_manager_t::subscribe_events() {
     events::subscribe([this] (event_message ev) {
         auto& msg = post_common(ev.use_popup, ev.message_id, ev.param1, ev.param2, GOD_UNKNOWN, 0);
         msg.src_location = ev.src_location;
@@ -170,6 +171,11 @@ void message_manager_t::init() {
         post_common(ev.use_popup, ev.message_id, 0, 0, GOD_UNKNOWN, messages::IMAGE_FROM_SCHEME);
     });
 }
+
+static void message_manager_subscribe_events() {
+    g_message_manager.subscribe_events();
+}
+static events::session_subscriber g_message_manager_session(&message_manager_subscribe_events);
 
 void message_manager_t::init_problem_areas() {
     problem_count = 0;
@@ -208,8 +214,8 @@ int message_manager_t::alloc_message(xstring template_id) {
 
     msg.MM_text_id = lang_get_message_uid(template_id);
     msg.is_read = 0;
-    msg.year = game.simtime.year;
-    msg.month = game.simtime.month;
+    msg.year = g_simulation.simtime.year;
+    msg.month = g_simulation.simtime.month;
     // Queue slots use 0 as empty sentinel — sequences must start at 1.
     if (next_message_sequence <= 0) {
         next_message_sequence = 1;
@@ -276,9 +282,9 @@ static void enqueue_message(int sequence) {
 
 static void play_sound(const lang_message &template_id) {
     if (template_id.urgent) {
-        g_sound.play_effect(SOUND_EFFECT_FANFARE_URGENT);
+        events::emit(event_sound_effect{SOUND_EFFECT_FANFARE_URGENT});
     } else {
-        g_sound.play_effect(SOUND_EFFECT_FANFARE);
+        events::emit(event_sound_effect{SOUND_EFFECT_FANFARE});
     }
 }
 
@@ -337,7 +343,7 @@ static void apply_popup_delivery(bool use_popup, e_popup_message_category popup_
     if (use_popup && popup_messages_want_banner(popup_cat)) {
         show_message_banner_for_index(message_index);
         // I3: quiet UI chime instead of fanfare on banner path.
-        g_sound.play_effect(SOUND_EFFECT_ICON);
+        events::emit(event_sound_effect{SOUND_EFFECT_ICON});
         should_play_sound = true;
         return;
     }
@@ -605,7 +611,8 @@ int has_problem_area(const city_message* msg, int lang_msg_type) {
         // Formations have not been updated yet because the invasion just started.
         // Invasions always start at the end of the month: return true when we're in
         // the next month
-        return (msg->month + 1) % simulation_time_t::months_in_year == game.simtime.month && msg->year + (msg->month + 1) / simulation_time_t::months_in_year == game.simtime.year;
+        return (msg->month + 1) % simulation_time_t::months_in_year == g_simulation.simtime.month
+               && msg->year + (msg->month + 1) / simulation_time_t::months_in_year == g_simulation.simtime.year;
     }
     return 0;
 }
@@ -622,7 +629,7 @@ int city_message_next_problem_area_grid_offset() {
     data.problem_count = 0;
     for (int i = 0; i < 999; i++) {
         city_message* msg = &data.messages[i];
-        if (msg->MM_text_id && msg->year >= game.simtime.year - 1) {
+        if (msg->MM_text_id && msg->year >= g_simulation.simtime.year - 1) {
             const lang_message& lang_msg = lang_get_message(city_message_get_text_id(msg->MM_text_id));
             int lang_msg_type = lang_msg.message_type;
             if (has_problem_area(msg, lang_msg_type))
@@ -637,7 +644,7 @@ int city_message_next_problem_area_grid_offset() {
         data.problem_index = 0;
 
     int index = 0;
-    int current_year = game.simtime.year;
+    int current_year = g_simulation.simtime.year;
     for (int i = 0; i < 999; i++) {
         city_message* msg = &data.messages[i];
         if (msg->MM_text_id && msg->year >= current_year - 1) {
@@ -673,62 +680,3 @@ void city_message_set_scroll_position(int scroll_position) {
     auto& data = g_message_manager;
     data.scroll_position = scroll_position;
 }
-
-io_buffer* iob_messages = new io_buffer([](io_buffer* iob, size_t version) {
-    auto& data = g_message_manager;
-    for (int i = 0; i < MAX_MESSAGES; i++) {
-        city_message& msg = data.messages[i];
-       
-        iob->bind(BIND_SIGNATURE_INT32, &msg.param1);
-        iob->bind(BIND_SIGNATURE_INT32, &msg.param2);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.year);
-        
-        iob->bind_u16(msg.MM_text_id);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.sequence);
-        iob->bind(BIND_SIGNATURE_UINT8, &msg.is_read);
-        iob->bind(BIND_SIGNATURE_UINT8, &msg.month);
-
-        iob->bind_i16(msg.eventmsg_body_id);  // FF FF
-        iob->bind_i16(msg.eventmsg_title_id); // FF FF
-        iob->bind_i16(msg.sender_faction);            // FF FF
-
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_city);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_amount);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_resource);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_months_left);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.unk_07);
-
-        iob->bind(BIND_SIGNATURE_INT16, &msg.eventmsg_phrase_id);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_city_past); // enum?
-        iob->bind(BIND_SIGNATURE_INT16, &msg.delivered_amount); // OG phrases[EVENT_PHRASE_DELIVERED_AMOUNT]
-        iob->bind(BIND_SIGNATURE_UINT8, &msg.gift_buttons);     // OG phrases[EVENT_PHRASE_BUTTONS], low byte
-        iob->bind(BIND_SIGNATURE_UINT8, &msg.hide_img);        // 00 00
-
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_amount_past);
-        iob->bind(BIND_SIGNATURE_INT16, &msg.req_resource_past);
-        iob->bind(BIND_SIGNATURE_INT8 , &msg.unk_11a_i8); // FF
-        iob->bind(BIND_SIGNATURE_UINT8, &msg.god); // FF
-        iob->bind(BIND_SIGNATURE_UINT16,&msg.background_img);    // 00 00
-    }
-});
-
-io_buffer* iob_message_extra = new io_buffer([](io_buffer* iob, size_t version) {
-    auto& data = g_message_manager;
-    iob->bind(BIND_SIGNATURE_INT32, &data.next_message_sequence);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.total_messages);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.reserved_1);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.current_message_id);
-    iob->bind(BIND_SIGNATURE_UINT16, &data.reserved_2);
-
-    for (uint8_t& shown : data.population_shown) {
-        iob->bind(BIND_SIGNATURE_UINT8, &shown);
-    }
-
-    for (int i = 0; i < MESSAGE_CAT_SIZE; i++) {
-        iob->bind(BIND_SIGNATURE_INT32, &data.message_count[i]);
-    }
-
-    for (int i = 0; i < MESSAGE_CAT_SIZE; i++) {
-        iob->bind(BIND_SIGNATURE_INT32, &data.message_delay[i]);
-    }
-});

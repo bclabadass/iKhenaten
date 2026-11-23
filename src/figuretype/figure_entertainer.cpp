@@ -12,7 +12,7 @@
 #include "grid/building.h"
 #include "figure/service.h"
 #include "building/building_house.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 const e_entertainer_action_tokens_t ANK_CONFIG_ENUM(e_entertainer_action_tokens)
 
@@ -133,7 +133,6 @@ void figure_entertainer::figure_action() {
     int speed_factor = (type() == FIGURE_CHARIOR_RACER ? 2 : 1);
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_0_ENTERTAINER_AT_SCHOOL_CREATED:

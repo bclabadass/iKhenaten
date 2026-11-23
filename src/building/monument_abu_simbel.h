@@ -5,60 +5,103 @@
 #include "core/svector.h"
 #include "core/vec2i.h"
 
-// Abu Simbel: linked square parts (mastaba/sphinx style).
-// Rot0 / Heaven 9×21 — façade along +Y, entrance toward +X:
-//   far  X0: cliffL | statueL | midcut_back | statueR | cliffR
-//   mid  X3: cliffL_near | … | midcut_depth | … | cliffR_near
-//   near X6: midcut_front (clear land)
+class figure;
+
+// Rows of the part_kinds, parts and stages tables in abu_simbel.js.
+struct abu_simbel_view_art {
+    xstring image;
+    uint8_t offset = 0;
+    bool two_per_art_stage = false;
+};
+ANK_CONFIG_STRUCT(abu_simbel_view_art, image, offset, two_per_art_stage)
+
+struct abu_simbel_part_kind {
+    int kind = 0;
+    xstring name;
+    xstring hint;
+    uint8_t size = 0;
+    bool on_rock = false;
+    xstring family;
+    uint8_t rotate = 0;
+    svector<abu_simbel_view_art, 4> views;
+};
+ANK_CONFIG_STRUCT(abu_simbel_part_kind, kind, name, hint, size, on_rock, family, rotate, views)
+
+struct abu_simbel_part_cfg {
+    xstring id;
+    int dx = 0;
+    int dy = 0;
+    xstring kind;
+};
+ANK_CONFIG_STRUCT(abu_simbel_part_cfg, id, dx, dy, kind)
+
+struct abu_simbel_scaffold_cfg {
+    int scaffold = 0;
+    xstring name;
+    xstring image;
+    vec2i view0;
+    vec2i view3;
+};
+ANK_CONFIG_STRUCT(abu_simbel_scaffold_cfg, scaffold, name, image, view0, view3)
+
+struct abu_simbel_stage_cfg {
+    int stage = 0;
+    xstring hint;
+    xstring scaffold;
+    xstring art;
+    uint16_t work = 0;
+};
+ANK_CONFIG_STRUCT(abu_simbel_stage_cfg, stage, hint, scaffold, art, work)
+
+// Sixteen records cut into the cliff, fixed in map space (no rotation). The main record is part 0;
+// its phase holds the stage (0..55, then finished) and the work left at the current stage's spot.
 class building_abu_simbel : public building_monument {
 public:
     BUILDING_METAINFO(BUILDING_ABU_SIMBEL, building_abu_simbel, building_monument)
     virtual building_abu_simbel *dcast_abu_simbel() override { return this; }
 
-    enum part_variant : uint8_t {
-        PART_CLIFF_L_FAR = 0,
-        PART_CLIFF_L_NEAR = 1,
-        PART_STATUE_L = 2,
-        PART_MIDCUT_BACK = 3,
-        PART_MIDCUT_DEPTH = 4,
-        PART_MIDCUT_FRONT = 5,
-        PART_STATUE_R = 6,
-        PART_CLIFF_R_FAR = 7,
-        PART_CLIFF_R_NEAR = 8,
-        PART_COUNT = 9,
+    enum {
+        PARTS = 16,
+        STAGE_COMPLETE = 56,
+        PART_KINDS = 12,
+        SCAFFOLDS = 12,
     };
 
-    struct base_params {
-        vec2i init_tiles = {9, 21};
-        uint8_t art_stages = 10;
-        // AS0.6: no OG counts found (Heaven W=Y; SG3/exe lack load tables). Mason phases = 0.
-        svector<uint16_t, 10> timber_loads{400, 400, 400, 200, 200, 0, 0, 0, 0, 0};
-    };
+    struct runtime_data_t : building_monument::runtime_data_t {
+        uint16_t spot_work;
+        uint16_t spot_figure;
+    } BUILDING_RUNTIME_DATA_T;
 
-    struct static_params : public base_params, public building_static_params {
-        void archive_load(archive arch);
-        void rebuild_construction();
+    struct static_params : public building_static_params {
+        svector<abu_simbel_part_kind, PART_KINDS> part_kinds;
+        svector<abu_simbel_scaffold_cfg, SCAFFOLDS> scaffolds;
+        svector<abu_simbel_part_cfg, PARTS> parts;
+        svector<abu_simbel_stage_cfg, STAGE_COMPLETE> stages;
+        vec2i work_tile;
     } BUILDING_STATIC_DATA_T;
 
     struct preview : building_planer_renderer {
         virtual void setup_preview_graphics(build_planner &planer) const override;
         virtual uint32_t ghost_ignore_terrain(build_planner &p, tile2i tile) const override;
         virtual bool ghost_allow_tile(build_planner &p, tile2i tile) const override;
-        virtual int can_place(build_planner &p, tile2i tile, tile2i end, int state) const override;
-        virtual int finalize_check(build_planner &p, tile2i tile, tile2i end, int state) const override;
+        virtual int can_place(build_planner& p, tile2i tile, tile2i end, int state) const override;
         virtual void ghost_preview(build_planner &planer, painter &ctx, tile2i start, tile2i end, vec2i pixel) const override;
+        virtual void ghost_blocked(build_planner& planer, painter& ctx, tile2i start, tile2i end, vec2i pixel,
+          bool fully_blocked) const override;
         virtual int construction_place(build_planner &p, tile2i tile, tile2i end, int orientation, int variant) const override;
     };
 
     virtual void on_place_update_tiles(int orientation, int variant) override;
+    virtual void on_post_load() override;
+    virtual void on_destroy() override;
     virtual xstring demolish_blocked_message() const override;
-    virtual void on_phase_changed(int old_phase, int current) override;
+    virtual bool continues_cliff() const override { return true; }
     virtual void update_day() override;
     virtual void update_map_orientation(int map_orientation) override;
     virtual int building_image_get() const override;
-    virtual bool draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color mask) override;
-    virtual bool suppress_ornaments_in_flat_view() const override { return true; }
+    virtual bool draw_ornaments_and_animations_height(painter& ctx, vec2i point, tile2i tile, color mask) override;
     virtual bool need_stonemason() override;
+    virtual bool need_carpenter() override;
     virtual bool need_workers() const override;
     virtual bool needs_resources() const override;
     virtual void add_workers(figure_id fid) override;
@@ -66,20 +109,34 @@ public:
     virtual const monument &config() const override;
     virtual tile2i center_point() const override;
     virtual tile2i access_point() const override;
+    virtual tile2i access_tile() const override { return access_point(); }
     virtual grid_area get_area() const override;
     virtual void bind_dynamic(io_buffer *iob, size_t version) override;
 
-    int art_stage() const;
-    int art_orient_pair() const;
-    void refresh_part_tiles();
-    int part_size() const;
-    bool part_needs_cliff() const;
-    vec2i footprint_size() const;
+    // 0..56; 56 = complete.
+    int stage() const;
+    int progress_percent() const;
+    int part_index() const { return runtime_data().variant; }
+    const abu_simbel_part_kind* part_kind() const;
+    building_abu_simbel* main_abu_simbel();
+    const building_abu_simbel* main_abu_simbel() const;
 
-    static bool has_abu_simbel_on_map();
+    // Returns true when the figure is done here and should go home.
+    bool work_tick(figure& f);
+    virtual bool has_free_spot(e_figure_type type) const override;
+    bool has_active_worker() const;
+    int spot_work_left() const { return main_abu_simbel()->runtime_data().spot_work; }
+    void set_stage(int stage);
+    int scaffolds_raised() const;
+    int scaffold_draw_count() const;
 
-    bool need_carpenter_phase() const;
-    bool has_stonemason_worker() const;
-    bool has_carpenter_worker() const;
+    // OG abu_simbel_can_place: every part tile away from the map edge, rock parts on monument rock.
+    static bool site_fits(tile2i origin);
+
+private:
+    bool spot_free() const;
+    void advance_stage();
+    void refresh_part_images();
 };
-ANK_CONFIG_STRUCT(building_abu_simbel::static_params, init_tiles, art_stages, timber_loads)
+ANK_CONFIG_STRUCT(building_abu_simbel::static_params, part_kinds, scaffolds, parts, stages, work_tile)
+ANK_CONFIG_PROPERTY(building_abu_simbel::runtime_data_t, variant)

@@ -1,4 +1,5 @@
 #include "city_figures.h"
+#include "grid/figure.h"
 
 #include "core/profiler.h"
 #include "city/city.h"
@@ -72,6 +73,12 @@ namespace {
     std::vector<figure_original_fields> g_figures_original_fields;
 } // namespace
 
+figure_original_fields* city_figures_begin_read(size_t version) {
+    g_figures_loaded_version = version;
+    g_figures_original_fields.assign(MAX_FIGURES, figure_original_fields{});
+    return g_figures_original_fields.data();
+}
+
 void city_figures_t::on_post_load() {
     const bool from_original = g_figures_loaded_version > 0 && g_figures_loaded_version <= last_original_save_version
                                && g_figures_original_fields.size() == MAX_FIGURES;
@@ -97,10 +104,9 @@ void city_figures_t::update() {
 
     for (auto &figure: map_figures()) {
         // Stray tile from a bad save or a broken move: used to be dropped by the draw sort.
-        if (figure->tile.x() >= GRID_LENGTH || figure->tile.y() > GRID_LENGTH) {
+        if (figure->tile.x() >= GRID_LENGTH || figure->tile.y() >= GRID_LENGTH) {
             figure->tile = {-1, -1};
-            figure->main_cached_pos = {-1, -1};
-            figure->cart_cached_pos = {-1, -1};
+            map_figure_draw_state_reset(figure->id);
             figure->poof();
         }
         figure->action_perform();
@@ -206,30 +212,10 @@ void figure_clear_all() {
     for (auto *f : g_figure_data.figures) {
         int figure_id = f->id;
         f->clear_impl();
+        f->debug_lines_clear();
+        f->animctx.on_finished_cb = nullptr;
         memset(f, 0, sizeof(figure));
         f->state = FIGURE_STATE_NONE;
         f->id = figure_id;
     }
 }
-
-io_buffer* iob_figures = new io_buffer([](io_buffer* iob, size_t version) {
-    if (iob->is_read_access()) {
-        stub_records_guard_reset();
-    }
-    g_figure_data.init();
-    const bool reading = iob->is_read_access();
-    if (reading) {
-        g_figures_loaded_version = version;
-        g_figures_original_fields.assign(MAX_FIGURES, figure_original_fields{});
-    }
-    for (int i = 0; i < MAX_FIGURES; i++) {
-        figure_get(i)->bind(iob, reading ? &g_figures_original_fields[i] : nullptr); // doing this because some members
-                                                                                     // are PRIVATE.
-        figure_get(i)->id = i;
-    }
-});
-
-io_buffer *iob_figure_sequence = new io_buffer([] (io_buffer *iob, size_t version) {
-    iob->bind____skip(4);
-    //iob->bind(BIND_SIGNATURE_INT32, &g_figure_data.created_sequence);
-});

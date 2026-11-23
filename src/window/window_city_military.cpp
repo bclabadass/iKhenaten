@@ -6,7 +6,7 @@
 #include "widget/widget_sidebar.h"
 #include "widget/widget_figure_follow.h"
 #include "graphics/window.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "grid/point.h"
 #include "figure/formation.h"
 #include "figure/formation_batalion.h"
@@ -56,6 +56,8 @@ void window_city_military_show(int legion_formation_id) {
         },
         [] (auto c) { g_screen_city.draw_tooltip(c); }
     };
+    window.sim_time_runs = true;
+    window.city_sounds = true;
 
     window_show(&window);
 }

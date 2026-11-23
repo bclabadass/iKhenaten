@@ -1,6 +1,8 @@
 ﻿#include "building.h"
 #include "io/io_buffer.h"
-#include "js/js_game.h"
+#include "core/draw_phase.h"
+#include "grid/building_chunks.h"
+#include "js/js_register.h"
 
 #include "building/building.h"
 #include "building/building_wall.h"
@@ -15,23 +17,20 @@
 
 const e_highlight_mode_tokens_t ANK_CONFIG_ENUM(e_highlight_mode_tokens);
 
-grid_xx g_buildings_grid(FS_UINT16);
-grid_xx g_damage_grid(FS_UINT16);
-grid_xx g_rubble_type_grid(FS_UINT8);
 grid_xx g_highlight_grid(FS_UINT8);
 grid_xx g_height_building_grid(FS_UINT8);
 
 int map_building_at(int grid_offset) {
-    return map_grid_is_valid_offset(grid_offset) ? map_grid_get(g_buildings_grid, grid_offset) : 0;
+    return map_grid_is_valid_offset(grid_offset) ? map_grid_get(building_grid_chunk::grid, grid_offset) : 0;
 }
 
 int map_building_at(tile2i tile) {
     const int grid_offset = tile.grid_offset();
-    return map_grid_is_valid_offset(grid_offset) ? map_grid_get(g_buildings_grid, grid_offset) : 0;
+    return map_grid_is_valid_offset(grid_offset) ? map_grid_get(building_grid_chunk::grid, grid_offset) : 0;
 }
 
 void map_building_set(int grid_offset, int building_id) {
-    map_grid_set(g_buildings_grid, grid_offset, building_id);
+    map_grid_set(building_grid_chunk::grid, grid_offset, building_id);
 }
 
 e_building_type map_building_type_at(tile2i tile) {
@@ -45,15 +44,24 @@ bool map_building_type_is(tile2i tile, e_building_type type) {
     return (btype == type);
 }
 
+bool map_building_continues_cliff(int grid_offset) {
+    const int bid = map_building_at(grid_offset);
+    if (bid <= 0) {
+        return false;
+    }
+    building* b = building_get(bid);
+    return b->type != BUILDING_NONE && b->dcast()->continues_cliff();
+}
+
 void map_building_damage_clear(int grid_offset) {
-    map_grid_set(g_damage_grid, grid_offset, 0);
+    map_grid_set(building_damage_grid_chunk::grid, grid_offset, 0);
 }
 
 void map_building_damage_set(int grid_offset, int value) {
     if (!map_grid_is_valid_offset(grid_offset)) {
         return;
     }
-    map_grid_set(g_damage_grid, grid_offset, value < 0 ? 0 : value);
+    map_grid_set(building_damage_grid_chunk::grid, grid_offset, value < 0 ? 0 : value);
 }
 
 void map_highlight_set(int grid_offset, e_highlight_mode mode) {
@@ -81,25 +89,26 @@ int map_building_height_at(int grid_offset) {
 }
 
 void map_building_height_set(int grid_offset, int8_t height) {
+    draw_phase::check_write("map_building_height_set");
     map_grid_set(g_height_building_grid, grid_offset, height);
 }
 
 int map_get_building_damage(int grid_offset) {
-    return map_grid_is_valid_offset(grid_offset) ? map_grid_get(g_damage_grid, grid_offset) : 0;
+    return map_grid_is_valid_offset(grid_offset) ? map_grid_get(building_damage_grid_chunk::grid, grid_offset) : 0;
 }
 
 int map_rubble_building_type(int grid_offset) {
-    return map_grid_get(g_rubble_type_grid, grid_offset);
+    return map_grid_get(rubble_type_grid_chunk::grid, grid_offset);
 }
 
 void map_set_rubble_building_type(int grid_offset, int type) {
-    map_grid_set(g_rubble_type_grid, grid_offset, type);
+    map_grid_set(rubble_type_grid_chunk::grid, grid_offset, type);
 }
 
 void map_building_clear() {
-    map_grid_clear(g_buildings_grid);
-    map_grid_clear(g_damage_grid);
-    map_grid_clear(g_rubble_type_grid);
+    map_grid_clear(building_grid_chunk::grid);
+    map_grid_clear(building_damage_grid_chunk::grid);
+    map_grid_clear(rubble_type_grid_chunk::grid);
     map_grid_clear(g_height_building_grid);
 }
 
@@ -130,7 +139,7 @@ adjust_orientation map_adjust_building_determine_orientation(tile2i tile, int si
     int y = tile.y();
 
     if (adjust_xy) {
-        switch (g_camera.orientation) {
+        switch (map_view_orientation()) {
         case DIR_0_TOP_RIGHT:
             break;
 
@@ -240,18 +249,3 @@ void map_building_update_all_tiles() {
     map_orientation_update_buildings();
     building_mud_wall::update_all_walls();
 }
-
-io_buffer *iob_building_grid = new io_buffer([] (io_buffer *iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &g_buildings_grid);
-});
-
-io_buffer *iob_damage_grid = new io_buffer([] (io_buffer *iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &g_damage_grid);
-});
-
-io_buffer *iob_rubble_type_grid = new io_buffer([] (io_buffer *iob, size_t version) {
-    iob->bind(BIND_SIGNATURE_GRID, &g_rubble_type_grid);
-}, [] (size_t version) {
-    // saves older than this grid leave every ruin at the default variant
-    map_grid_clear(g_rubble_type_grid);
-});

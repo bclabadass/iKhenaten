@@ -113,3 +113,6 @@ struct figure_draw_cache_data_t;
 using minimap_draw_callback = void(vec2i pixel, tile2i point);
 
 extern viewport_t g_camera;
+
+// The zoom a city opens at: 100, or on iOS the zoom kept for the screen in use (set by the platform).
+extern float (*g_viewport_load_zoom)();

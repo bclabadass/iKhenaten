@@ -1,4 +1,6 @@
 #include "building.h"
+#include "game/sound_effect.h"
+#include "city/building_index.h"
 
 #include <new>
 
@@ -45,7 +47,6 @@
 #include "core/object_property.h"
 #include "game/game_config.h"
 #include "core/random.h"
-#include "sound/sound.h"
 
 #include <string.h>
 #include <map>
@@ -53,7 +54,7 @@
 #include <cmath>
 
 #include "dev/debug.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 declare_console_command_p(destroytype) {
     int type = args.next_int(0);
@@ -403,7 +404,6 @@ building_static_params &building_static_params::ref(e_building_type e) {
     return *const_cast<building_static_params *>(cfg);
 }
 
-
 const building_impl *building::dcast() const {
     if (!_ptr) {
         building_impl::acquire(type, const_cast<building&>(*this));
@@ -464,6 +464,11 @@ bool building::is_main() {
     return (prev_part_building_id == 0);
 }
 
+void building::set_type(e_building_type new_type) {
+    type = new_type;
+    g_building_index.note(*this);
+}
+
 void building::reset_slot(building_id slot_id) {
     this->~building();
     // Members without an initializer were zero in the OG records. Value-initialization zeroes them
@@ -481,7 +486,6 @@ void building::clear_impl() {
 void building::reset_impl() {
     _ptr = nullptr;
 }
-
 
 xstring building::get_sound() {
     return snd::get_building_info_sound(type);
@@ -620,7 +624,7 @@ void building::destroy_by_collapse() {
     map_building_tiles_set_rubble(id, tile, size);
     figure_create_explosion_cloud(tile, size);
     destroy_linked_parts(false);
-    g_sound.play_effect(SOUND_EFFECT_EXPLOSION);
+    events::emit(event_sound_effect{SOUND_EFFECT_EXPLOSION});
 }
 
 void building::destroy_by_enemy() {
@@ -635,7 +639,7 @@ void building::destroy_by_enemy() {
     map_building_tiles_set_rubble(id, tile, size);
     figure_create_explosion_cloud(tile, size);
     destroy_linked_parts(false);
-    g_sound.play_effect(SOUND_EFFECT_EXPLOSION);
+    events::emit(event_sound_effect{SOUND_EFFECT_EXPLOSION});
 }
 
 void building::destroy_by_flooded() {
@@ -649,7 +653,7 @@ void building::destroy_by_flooded() {
     dcast()->on_before_flooded();
     map_building_tiles_set_rubble(id, tile, size);
     destroy_linked_parts(false);
-    g_sound.play_effect(SOUND_EFFECT_FLOODED);
+    events::emit(event_sound_effect{SOUND_EFFECT_FLOODED});
 }
 
 void building::destroy_on_fire_impl(bool plagued) {
@@ -695,7 +699,7 @@ void building::destroy_by_fire() {
 
     destroy_on_fire_impl(false);
     destroy_linked_parts(true);
-    g_sound.play_effect(SOUND_EFFECT_FIRE);
+    events::emit(event_sound_effect{SOUND_EFFECT_FIRE});
 }
 
 void building::destroy_linked_parts(bool on_fire) {
@@ -864,14 +868,3 @@ int building::mothball_toggle() {
 
     return state;
 }
-
-io_buffer* iob_building_highest_id = new io_buffer([](io_buffer* iob, size_t version) {
-    //iob->bind(BIND_SIGNATURE_INT32, &building_extra_data.highest_id_in_use);
-    iob->bind____skip(4);
-});
-
-io_buffer* iob_building_highest_id_ever = new io_buffer([](io_buffer* iob, size_t version) {
-    //iob->bind(BIND_SIGNATURE_INT32, &building_extra_data.highest_id_ever);
-    iob->bind____skip(4);
-    iob->bind(BIND_SIGNATURE_INT32, &g_city.plagues.locusts_countdown);
-});

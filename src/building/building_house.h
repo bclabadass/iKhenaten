@@ -3,6 +3,7 @@
 #include "building/building_house_demands.h"
 #include "building/building_house_model.h"
 #include "building/building.h"
+#include "city/city_buildings.h"
 #include "grid/building.h"
 #include "grid/grid.h"
 
@@ -108,7 +109,6 @@ public:
     virtual e_sound_channel_city sound_channel() const override { return SOUND_CHANNEL_CITY_STATUE; }
     virtual void on_undo() override;
     virtual void update_day() override;
-    virtual void update_week() override;
     virtual void update_count() const override;
     virtual void bind_dynamic(io_buffer *iob, size_t version) override;
     // Shared by every tier: applies the rung its config describes. The hooks below cover the
@@ -152,6 +152,7 @@ public:
     void consume_goods(int day);
     void consume_food_weekly();
     void split(int num_tiles);
+    void devolve_to_smaller(e_building_type new_type, int new_size, int divisor, bool random_variant);
     const model_house &model() const;
 
     e_house_progress check_evolve_desirability();
@@ -768,12 +769,11 @@ ANK_CONFIG_STRUCT(building_house_palatial_estate::static_params, model, can_merg
 // gameplay systems (overlays, advisors, economy calculations).
 template<typename T>
 void buildings_house_do(T func) {
-    for (auto it = building_begin(), end = building_end(); it != end; ++it) {
-        auto house = it->dcast_house();
-        if (house) {
+    buildings_of_types_do(k_house_building_types, [&](building& b) {
+        if (auto house = b.dcast_house()) {
             func(house);
         }
-    }
+    });
 }
 
 template<typename T, typename Processed>

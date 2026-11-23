@@ -4,7 +4,7 @@
 #include "city/city_figures.h"
 #include "figure/figure.h"
 #include "grid/water.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_transport_wharf);
 

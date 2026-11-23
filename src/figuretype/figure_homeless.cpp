@@ -12,7 +12,7 @@
 #include "dev/debug.h"
 #include "game/game.h"
 #include "graphics/view/lookup.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_homeless);
 
@@ -245,7 +245,6 @@ void figure_homeless::figure_action() {
 void figure_homeless::figure_before_action() {
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_125_ROAMER_ROAMING:

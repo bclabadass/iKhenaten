@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 #include "content/dir.h"
 #include "io/gamestate/save_versions.h"
 
@@ -13,6 +14,8 @@ uint32_t svx_container_version();
 
 vfs::path fullpath_player_folder(pcstr player_name);
 vfs::path fullpath_saves(vfs::path filename);
+// The family folder saves go to while no family is chosen ("": loose in Save/).
+void fullpath_saves_set_fallback_family(pcstr family);
 vfs::path fullpath_maps(vfs::path filename);
 
 namespace GamestateIO {
@@ -23,6 +26,8 @@ bool write_map(pcstr path, bool relative = true);
 
 bool load_mission(const int scenario_id, bool start_immediately);
 bool load_savegame(pcstr filename_short, bool start_immediately = true);
+bool write_savegame_memory(std::vector<uint8_t>& out);
+bool load_savegame_memory(const std::vector<uint8_t>& bytes, pcstr name, bool start_immediately = true);
 // Original Pharaoh .sav at a full path, through the og_save converter.
 bool load_og_savegame(pcstr full_path, bool start_immediately = true);
 bool load_map(pcstr filename, bool relative, bool start_immediately);
@@ -34,5 +39,7 @@ bool delete_map(const char* filename_short);
 
 // Dynasty folder marker (family.sav stub). Not a city save — no Ironwill gate.
 bool write_family_marker(pcstr filename_short = "family.sav");
+
+void set_replay_autosave(bool enabled);
 
 } // namespace GamestateIO

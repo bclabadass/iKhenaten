@@ -4,7 +4,7 @@
 
 Modern open-source reimplementation of the classic city-builder **Pharaoh (1999)** by Impressions Games.
 Fork of Julius/Augustus, targets Pharaoh + Cleopatra expansion. Full savegame compatibility with the original.
-Version: 0.2.8 | License: AGPL-3.0 | Solo maintainer + community contributors.
+Version: 0.2.9 | License: AGPL-3.0 | Solo maintainer + community contributors.
 
 ## Build (Windows)
 
@@ -58,7 +58,7 @@ Sources are collected via `file(GLOB ...)` with **no `CONFIGURE_DEPENDS`**, so a
 --display-scale PCT   display scale, 50..500
 --cursor-scale PCT    cursor scale, 100 / 150 / 200
 --render RENDERER     force renderer (direct3d11, opengl, direct3d, software); without it Windows tries
-                      direct3d11 -> opengl -> direct3d -> software, other platforms SDL's pick -> software
+                      opengl -> direct3d11 -> direct3d -> software, other platforms SDL's pick -> software
 --font PATH           use custom TTF font (overrides the font from localization.js)
 --language ru         set language (en, ru, fr, de, it, sp, po, pr, sw, tc, sc, kr)
 --nosound             disable audio (skips sound manager init and audio file probing)
@@ -90,6 +90,7 @@ Sources are collected via `file(GLOB ...)` with **no `CONFIGURE_DEPENDS`**, so a
 --log-js-handlers     log when JS event handlers are registered
 --log-resources       log resource loading (textures, image packs)
 --log-sound           log which sound files the game tries to load
+--log-sound-events    log each sound effect / music event: where it is sent (file:line) and when it plays
 --log-config-keys     warn about config keys nothing reads and non-zero C++ defaults a missing key resets to 0
                       (a value of the wrong type is always reported as "[config] ... expected number")
 --config-keys-baseline PATH  with --integraltests, fail on config key issues not listed in PATH (implies --log-config-keys)
@@ -129,8 +130,9 @@ check `clang-format --version` before formatting.
 
 ### Include layers
 
-`python3 tools/check_layers.py` (CI gate `akhenaten_layers.yml`) enforces the include direction
-core < grid < sim < presentation < app (directory → layer map in the script): a file may include
+`tools/check_layers.cpp` (CI gate `akhenaten_layers.yml`; build it with the CMake target `check_layers`, or
+`g++ -std=c++17 -O2 tools/check_layers.cpp -o check_layers`, and run it from the repository root) enforces the include
+direction core < grid < sim < presentation < app (directory → layer map in the source): a file may include
 headers of its own layer or lower. Known violations live in `tools/layers_baseline.txt`; only new ones
 fail. When you remove a violation, delete its baseline line (or run `--update` after a cleanup);
 never add lines to silence a new one. `--summary` prints counts per layer pair.
@@ -171,20 +173,30 @@ leave useful existing comments alone.
 
 ## Testing — integral tests
 
-`tests/*.js` is the integral test suite (377 files). It is a CI gate
+`tests/*.js` is the integral test suite (572 files, numbered `000`-`571` in run order). It is a CI gate
 (`.github/workflows/akhenaten_integral_tests.yml`); a red run blocks the PR.
 **This is the default way to verify a change.**
 
-Run the whole suite (the invocation CI uses):
+Run the whole suite in parallel (the invocation CI uses): the process starts N copies of itself, each running
+every N-th test with its own user dir `<user-dir>/shard-<i>`, then prints the failures with their reasons, the slowest
+tests and `[integraltests] N passed, M failed, K problem(s)`, and writes `summary.txt` / `summary.md` to `--user-dir`:
+```
+build/RelWithDebInfo/akhenaten.exe --integraltests --integraltest-jobs 8 --user-dir build/integraltests --no-logo --no-resource --nosound --window --size 800x600 --config-keys-baseline tools/config_keys_baseline.txt
+```
+One process, no shards:
 ```
 build/RelWithDebInfo/akhenaten.exe --integraltests --no-logo --no-resource --nosound --window --size 800x600
 ```
-Run one test — the tests whose filename stem starts with NAME (case-insensitive; `06` runs `06_*` but not
-`106_*`); when no stem starts with NAME, every stem that contains it:
+Run one test — the tests whose filename stem starts with NAME (case-insensitive; `006` runs `006_*`; `06` runs
+`060_*`..`069_*`); when no stem starts with NAME, every stem that contains it:
 ```
-build/RelWithDebInfo/akhenaten.exe --integraltests --integraltest-only 06 --no-logo --no-resource --nosound --window --size 800x600
+build/RelWithDebInfo/akhenaten.exe --integraltests --integraltest-only 006 --no-logo --no-resource --nosound --window --size 800x600
 ```
-Exit code is `0` only when every test passed.
+Exit code is `0` only when every test passed. `--integraltest-shard I/N` keeps every N-th selected test from
+index I (what `--integraltest-jobs` passes to each child).
+
+Every test leaves `<user-dir>/results/<test stem>.result` (`status=PASS|FAIL`, `ms=`, and for a failure `reason=`
+plus the test's `FAIL`/`error:` log lines), so a run is read from those files, not from one shared log.
 
 Results go to the log, **not** to stdout:
 - Windows: `%APPDATA%/Akhenaten/akhenaten-log.txt`
@@ -194,6 +206,11 @@ Results go to the log, **not** to stdout:
 
 Grep it for `\[test:.*\] (PASS|FAIL)` per test and `\[integraltests\] N passed, M failed`
 for the summary.
+
+Under `--integraltests` saves go to `<user-dir>/Save`, the monthly and replay autosaves are off and the renderer
+runs without vsync. Tests check save/load in memory (`__test_save_memory(name)` / `__test_load_memory(name)`,
+`__test_save_roundtrip(name)`); only `544_ironwill` (quicksave + Ironwill), `295_save_roundtrip` and `332_mods_saveload` (the mods switch reloads the
+save file) write a save file.
 
 Tests that need real Pharaoh data take the install path as the last positional argument;
 `--no-resource` covers the rest.
@@ -263,6 +280,7 @@ src/
 ├── sound/        music, speech, effects, city sounds
 ├── net/          networking / remote services
 ├── events/       typed event bus infrastructure
+├── app/          application shell (SDL event loop, input/HUD modules)
 ├── core/         utilities (CRC32, ZIP, threading, math, logging)
 ├── debug/        tile overlay / ImGui debug registration
 ├── dev/          dev tooling (console commands, event history)

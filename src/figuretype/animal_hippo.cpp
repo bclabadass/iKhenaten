@@ -1,4 +1,5 @@
 #include "animal_hippo.h"
+#include "game/game_events.h"
 
 #include "city/city.h"
 #include "city/city_figures.h"
@@ -14,8 +15,7 @@
 #include "grid/grid.h"
 #include "grid/ring.h"
 #include "grid/terrain.h"
-#include "js/js_game.h"
-#include "sound/sound.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -359,7 +359,7 @@ void figure_hippo::figure_action() {
 
     if (base.in_attack() || (base.opponent_id > 0 && !figure_get(base.opponent_id)->is_dead())) {
         base.set_flag(e_figure_flag_inattack);
-        g_sound.speech_play_file("Wavs/hippoatk.wav", 255);
+        events::emit(event_sound_speech{"Wavs/hippoatk.wav"});
         base.figure_combat_handle_attack();
         return;
     }
@@ -370,7 +370,6 @@ void figure_hippo::figure_action() {
             base.play_die_sound();
         }
         d.frame_count = 8;
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_8_HIPPO_CHOOSE:
@@ -574,12 +573,10 @@ void figure_hippo::update_animation() {
         return;
     }
 
-    const bool water = in_deep_water() || map_terrain_is(tile(), TERRAIN_WATER);
-    xstring anim_key = water ? animkeys().swim_idle : animkeys().idle;
+    const bool water = in_deep_water();
+    xstring anim_key = water ? animkeys().swim_idle : animkeys().eating;
 
-    if (base.in_attack()) {
-        anim_key = water ? animkeys().swim_attack : animkeys().attack;
-    } else {
+    if (!base.in_attack()) {
         switch (action_state()) {
         case FIGURE_ACTION_149_CORPSE:
         case ACTION_12_HIPPO_DYING:
@@ -604,15 +601,10 @@ void figure_hippo::update_animation() {
             break;
 
         case ACTION_26_HIPPO_ANIMATE:
-            anim_key = water ? animkeys().dancer : animkeys().idle;
-            break;
-
-        case ACTION_18_HIPPO_REST:
-            anim_key = water ? animkeys().swim_idle : animkeys().eating;
+            anim_key = water ? animkeys().swim_animate : animkeys().idle;
             break;
 
         default:
-            anim_key = water ? animkeys().swim_idle : animkeys().eating;
             break;
         }
     }
@@ -626,13 +618,13 @@ void figure_hippo::main_image_update() {
         return;
     }
 
-    const bool water_corpse = map_terrain_is(tile(), TERRAIN_WATER);
+    const bool water_corpse = in_deep_water();
     if (action_state(ACTION_12_HIPPO_DYING) || action_state(FIGURE_ACTION_149_CORPSE)) {
         if (water_corpse) {
             const animation_t &water_death = anim(animkeys().bubbles);
             const int base_img = water_death.first_img();
             const int frame = base.wait_ticks < 23 ? base.wait_ticks : 22;
-            if (base_img > 0 || base.force_valid_animation) {
+            if (base_img > 0) {
                 base.main_image_id = base_img + frame;
             }
             return;
@@ -642,21 +634,7 @@ void figure_hippo::main_image_update() {
         const int frame = action_state(ACTION_12_HIPPO_DYING)
             ? (base.wait_ticks < 8 ? base.wait_ticks : 7)
             : 7;
-        if (base_img > 0 || base.force_valid_animation) {
-            base.main_image_id = base_img + frame;
-        }
-        return;
-    }
-
-    // The dive is one strip with no facings; drawn as facing + 8 * frame it ran into the next group's art.
-    const bool water = in_deep_water() || map_terrain_is(tile(), TERRAIN_WATER);
-    if (action_state(ACTION_26_HIPPO_ANIMATE) && water && !base.in_attack()) {
-        const animation_t& dive = anim(animkeys().dancer);
-        const int base_img = dive.first_img();
-        const auto& d = runtime_data();
-        const int frames = std::max<int>(1, dive.max_frames);
-        const int frame = std::min(frames - 1, d.anim_tick * frames / std::max<int>(1, d.frame_count));
-        if (base_img > 0 || base.force_valid_animation) {
+        if (base_img > 0) {
             base.main_image_id = base_img + frame;
         }
         return;
@@ -670,7 +648,7 @@ void figure_hippo::acquire_attack() {
 }
 
 bool figure_hippo::play_die_sound() {
-    g_sound.speech_play_file("Wavs/hippodie.wav", 255);
+    events::emit(event_sound_speech{"Wavs/hippodie.wav"});
     return true;
 }
 

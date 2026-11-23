@@ -62,6 +62,7 @@ localization_en = [
   {key:"#TR_CONFIG_PAUSE_SIM_WHILE_BUILDING", text:"Pause simulation while placing buildings"}
   {key:"#TR_CONFIG_HIGHLIGHT_LEGIONS", text:"Highlight legion on cursor hover"}
   {key:"#TR_CONFIG_ROTATE_MANUALLY", text:"Rotate Gatehouse and Triumph Arch by hotkey"}
+  {key:"#TR_CONFIG_HOUSE_INTERIOR", text:"Show the inside of merged houses under the cursor"}
   {key:"#TR_CONFIG_FIX_IMMIGRATION_BUG", text:"Fix immigration bug on very hard"}
   {key:"#TR_CONFIG_FIX_100_YEAR_GHOSTS", text:"Fix 100-year-old ghosts"}
   {key:"#TR_CONFIG_FIX_EDITOR_EVENTS", text:"Fix Emperor change and survival time in custom missions"}
@@ -87,13 +88,16 @@ localization_en = [
   {key:"#TR_CONFIG_DOCK_DOUBLE_HAUL", text:"Double the haul amount of dockers (800 per trip)"}
   {key:"#TR_CONFIG_DOCK_SMART_ROUTING", text:"Smart dock routing: score pier by orders/goods, hop to a better free pier (not original Pharaoh)"}
   {key:"#TR_CONFIG_SLED_PULLERS_FLEE", text:"Sled pullers drop the sled and flee to the map exit when enemies come near; the sled stays where it was left (not original Pharaoh)"}
+  {key:"#TR_CONFIG_SLED_RETURN_EMPTY", text:"After unloading at a monument, laborers pull the empty sled train back to the storage yard it came from (not original Pharaoh)"}
   {key:"#TR_CONFIG_FOLLOWER_RUNAWAY", text:"Followers flee to the map exit when their leader dies (caravan donkeys, delivery boys; not original Pharaoh)"}
   {key:"#TR_CONFIG_ROBBER_REMAKE", text:"Mugger remake: steal on spawn, always head for the palace, ambient mansion theft (not original Pharaoh)"}
   {key:"#TR_CONFIG_TOMB_ROBBER_REMAKE", text:"Tomb-robber remake: monthly spawn, flee/arrest, fixed kingdom hit (not original Pharaoh)"}
   {key:"#TR_CONFIG_POLICE_WEAPONS", text:"Police stations fetch weapons from storage yards, each constable takes one (not original Pharaoh)"}
   {key:"#TR_CONFIG_WALKER_PHRASES_REMAKE", text:"Walker phrases remake: each walker picks its own lines, soldiers and enemies talk too (not original Pharaoh)"}
   {key:"#TR_CONFIG_PROTESTOR_HUNT_NOBLES", text:"Protestors hunt noble citizens and manor/estate houses (not original Pharaoh)"}
+  {key:"#TR_CONFIG_PLAGUED_CITIZEN_REMAKE", text:"Plague carrier remake: one per sick house, cured near herbalists, corpse fades (not original Pharaoh)"}
   {key:"#TR_CONFIG_FISHING_BOAT_REMAKE", text:"Fishing-boat remake: faster with staff, half load, sticky spots, soft lose-home (not original Pharaoh)"}
+  {key:"#TR_CONFIG_FERRY_REMAKE", text:"Ferry remake: landings pair with the nearest landing nearby instead of the one placed with them (not original Pharaoh)"}
   {key:"#TR_CONFIG_BAZAAR_MULTI_BUYERS", text:"Bazaars can send two buyers at once (food + goods)"}
   {key:"#TR_CONFIG_BAZAAR_BUYER_SPAWN_TIMER", text:"Bazaar buyers use labor spawn timer instead of original every-8-days stagger (not original Pharaoh)"}
   {key:"#TR_CONFIG_BAZAAR_DEMAND_FROM_TRADER", text:"Bazaar goods demand only when a trader visits houses, instead of original radius-10 scan (not original Pharaoh)"}
@@ -222,7 +226,10 @@ localization_en = [
   {key:"#TR_CONFIG_WOOD_CUTTER_SINGLE_GATHERER", text:"Wood cutters: one lumberjack + any-tree spawn gate (remake; original 1/2/3 by staffing, grown trees only)"}
   {key:"#TR_CONFIG_FIREMAN_RETURNING", text:"Fireman returning after fight fire"}
   {key:"#TR_CONFIG_FISHING_POINTS_MONTHLY_RESPAWN", text:"Fishing spots respawn every month"}
+  {key:"#TR_CONFIG_FISHING_POINTS_DRIFT", text:"Fishing spots drift around their point"}
+  {key:"#TR_CONFIG_MIGRATION_UNEMPLOYMENT", text:"Unemployment also lowers immigration"}
   {key:"#TR_CONFIG_HOUSE_EVOLVE_DELAY", text:"Houses evolve at most once every 7 days"}
+  {key:"#TR_CONFIG_ABU_SIMBEL_DRAW_SCAFFOLDS", text:"Abu Simbel shows its scaffolds while it is built"}
   {key:"#TR_CONFIG_FOOD_CONSUMPTION_REMAKE", text:"Houses eat their level's share of food twice a month"}
   {key:"#TR_CONFIG_ARCHITECT_PATROL_MOST_DAMAGED", text:"Architects path to most damaged buildings"}
   {key:"#TR_CONFIG_OG_ARCHITECT", text:"Original Pharaoh architect (subtract damage, repair walls)"}
@@ -525,11 +532,11 @@ localization_en = [
   {key: "#mission1_goal_build_mines", text:"Mine some gold for the Palace's treasury" }
   {key: "#mission1_goal_build_temples", text:"Build some Temples and Shrines to Bast" }
   {key: "#mission1_goal_build_entertainment", text:"Build Booths and Juggler Schools to raise city Culture" }
+  {key: "#mission1_goal_evolve_housing", text:"Evolve 10 houses to Ordinary Cottage" }
 
   {key: "#exit_this_panel", text:"Exit this panel"}
   {key: "#display_options_title", text:"Display options"}
   {key: "#display_options_ui_scale", text:"Interface scale"}
-  {key: "#display_options_restart_required", text:"Restart the game for the interface scale to apply correctly."}
   {key: "#popup_dialog_quit", text:"Quit" }
   {key: "#popup_dialog_open_trade", text:"Open trade route" }
   {key: "#popup_dialog_send_goods", text:"Dispatch goods?" }
@@ -1077,7 +1084,7 @@ localization_en = [
   {key: "#figure_enemy_egyptian_chariot", group:64, id:48 }
   {key: "#figure_enemy_egyptian_sword", group:64, id:49 }
   {key: "#figure_enemy_egyptian_heavy_sword", group:64, id:50 }
-  {key: "#figure_enemy_egyptian_transport_ship", group:64, id:51 }
+  {key: "#figure_enemy_reserved_51", group:64, id:51 }
   {key: "#figure_enemy_egyptian_mounted_archer", group:64, id:52 }
   {key: "#figure_enemy_egyptian_axe", group:64, id:53 }
   {key: "#figure_rioter", group:64, id:54 }
@@ -1130,8 +1137,8 @@ localization_en = [
   {key: "#figure_showman", group:64, id:97 }
   {key: "#figure_plagued_citizen", group:64, id:98 }
   {key: "#figure_bedouin_infantry", group:64, id:99 }
-  {key: "#figure_egyptian_warship", group:64, id:100 }
-  {key: "#figure_egyptian_transport", group:64, id:101 }
+  {key: "#figure_egyptian_war_ship", group:64, id:100 }
+  {key: "#figure_egyptian_transport_ship", group:64, id:101 }
   {key: "#figure_asp", group:64, id:102 }
   {key: "#figure_lion", group:64, id:103 }
   {key: "#figure_scorpion", group:64, id:104 }
@@ -2559,4 +2566,6 @@ localization_en = [
   { key: "#western_desert", text: "WESTERN DESERT" }
   { key: "#lebanon", text: "LEBANON" }
   { key: "#canaan", text: "CANAAN" }
+  { key: "#save_migration_title", text: "Save converted" }
+  { key: "#save_migration_message", text: "Your save file used an older format, so it was converted automatically. You'll find the original file under the name {0}, if you ever need it." }
 ]

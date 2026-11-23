@@ -68,6 +68,7 @@ public:
         virtual bool ghost_allow_tile(build_planner &planer, tile2i tile) const override;
         virtual uint32_t ghost_ignore_terrain(build_planner &planer, tile2i tile) const override;
         virtual int can_place(build_planner &planer, tile2i start, tile2i end, int state) const override;
+        virtual void collect_site(build_planner& planer, tile2i end) const override;
     };
 
     virtual void on_place_update_tiles(int orientation, int variant) override;
@@ -99,7 +100,7 @@ public:
 
     figure_id worker_figure_id() const;
     bool part_has_active_worker() const;
-    bool has_free_spot(e_figure_type type) const;
+    virtual bool has_free_spot(e_figure_type type) const override;
     // OG caesareum_check_work_for_figure with assign: takes the single worker slot.
     bool claim_worker(figure &f);
     // Returns true when the figure is done here and should go home.

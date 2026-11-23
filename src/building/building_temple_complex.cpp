@@ -1,4 +1,5 @@
 #include "building_temple_complex.h"
+#include "grid/orientation.h"
 
 #include "city/city.h"
 #include "figure/action.h"
@@ -14,7 +15,9 @@
 #include "building/rotation.h"
 #include "graphics/view/lookup.h"
 #include "construction/build_planner.h"
-#include "js/js_game.h"
+
+#include <limits>
+#include "js/js_register.h"
 #include "game/game_pool.h"
 
 BUILDING_RUNTIME_DATA_IMPL(building_temple_complex)
@@ -183,7 +186,7 @@ void building_temple_complex::map_add_tiles(e_building_type type, tile2i north_t
     int statue1_image_id = image_id_from_group(packid, 5);
     int statue2_image_id = image_id_from_group(packid, 6);
 
-    int EMPTY______ = 0;
+    constexpr int EMPTY______ = std::numeric_limits<int>::min();
 
     // floor tiles
     int til_0 = flooring_image_id + 0;
@@ -192,38 +195,38 @@ void building_temple_complex::map_add_tiles(e_building_type type, tile2i north_t
     int til_3 = flooring_image_id + 3;
 
     // small (1x1) statues
-    int smst0 = statue1_image_id + (4 - g_camera.orientation / 2) % 4; // north
-    int smst1 = statue1_image_id + (5 - g_camera.orientation / 2) % 4; // east
-    int smst2 = statue1_image_id + (6 - g_camera.orientation / 2) % 4; // south
-    int smst3 = statue1_image_id + (7 - g_camera.orientation / 2) % 4; // west
+    int smst0 = statue1_image_id + (4 - map_view_orientation() / 2) % 4; // north
+    int smst1 = statue1_image_id + (5 - map_view_orientation() / 2) % 4; // east
+    int smst2 = statue1_image_id + (6 - map_view_orientation() / 2) % 4; // south
+    int smst3 = statue1_image_id + (7 - map_view_orientation() / 2) % 4; // west
 
     // long (1x2) statues
-    int lst0B = statue2_image_id + (8 - g_camera.orientation) % 8; // north
-    int lst0A = statue2_image_id + (9 - g_camera.orientation) % 8;
-    int lst1B = statue2_image_id + (10 - g_camera.orientation) % 8; // east
-    int lst1A = statue2_image_id + (11 - g_camera.orientation) % 8;
-    int lst2B = statue2_image_id + (12 - g_camera.orientation) % 8; // south
-    int lst2A = statue2_image_id + (13 - g_camera.orientation) % 8;
-    int lst3B = statue2_image_id + (14 - g_camera.orientation) % 8; // west
-    int lst3A = statue2_image_id + (15 - g_camera.orientation) % 8;
+    int lst0B = statue2_image_id + (8 - map_view_orientation()) % 8; // north
+    int lst0A = statue2_image_id + (9 - map_view_orientation()) % 8;
+    int lst1B = statue2_image_id + (10 - map_view_orientation()) % 8; // east
+    int lst1A = statue2_image_id + (11 - map_view_orientation()) % 8;
+    int lst2B = statue2_image_id + (12 - map_view_orientation()) % 8; // south
+    int lst2A = statue2_image_id + (13 - map_view_orientation()) % 8;
+    int lst3B = statue2_image_id + (14 - map_view_orientation()) % 8; // west
+    int lst3A = statue2_image_id + (15 - map_view_orientation()) % 8;
 
     // correct long statues graphics for relative orientation
-    switch (g_camera.orientation / 2) {
+    switch (map_view_orientation() / 2) {
     case 1:
     case 0:
-        lst1A = statue2_image_id + (10 - g_camera.orientation) % 8; // east
-        lst1B = statue2_image_id + (11 - g_camera.orientation) % 8;
-        lst3A = statue2_image_id + (14 - g_camera.orientation) % 8; // west
-        lst3B = statue2_image_id + (15 - g_camera.orientation) % 8;
+        lst1A = statue2_image_id + (10 - map_view_orientation()) % 8; // east
+        lst1B = statue2_image_id + (11 - map_view_orientation()) % 8;
+        lst3A = statue2_image_id + (14 - map_view_orientation()) % 8; // west
+        lst3B = statue2_image_id + (15 - map_view_orientation()) % 8;
         break;
     }
-    switch (g_camera.orientation / 2) {
+    switch (map_view_orientation() / 2) {
     case 3:
     case 0:
-        lst0A = statue2_image_id + (8 - g_camera.orientation) % 8; // north
-        lst0B = statue2_image_id + (9 - g_camera.orientation) % 8;
-        lst2A = statue2_image_id + (12 - g_camera.orientation) % 8; // south
-        lst2B = statue2_image_id + (13 - g_camera.orientation) % 8;
+        lst0A = statue2_image_id + (8 - map_view_orientation()) % 8; // north
+        lst0B = statue2_image_id + (9 - map_view_orientation()) % 8;
+        lst2A = statue2_image_id + (12 - map_view_orientation()) % 8; // south
+        lst2B = statue2_image_id + (13 - map_view_orientation()) % 8;
         break;
     }
 
@@ -377,7 +380,7 @@ void building_temple_complex::on_post_load() {
     g_city.buildings.track_building(base, is_active);
 
     // save decorative tiles to runtime_data
-    const int city_orientation = g_camera.orientation / 2;
+    const int city_orientation = map_view_orientation() / 2;
     runtime_data().decorative_tiles = get_decorative_tiles_pool().allocate();
     update_map_orientation(city_orientation);
 }
@@ -398,7 +401,11 @@ building *add_temple_complex_element(tile2i tile, e_building_type type, int orie
 void building_temple_complex::on_place(int orientation, int variant) {
     building_impl::on_place(orientation, variant);
 
-    g_city_planner.add_building_tiles_from_list(id(), false);
+    auto& decorative_tiles = *runtime_data().decorative_tiles;
+    map_add_tiles(type(), tile(), orientation, decorative_tiles);
+    for (int grid_offset : decorative_tiles) {
+        map_building_tiles_add(id(), tile2i(grid_offset), 1, map_image_at(grid_offset), TERRAIN_BUILDING);
+    }
 
     tile2i offset = building_part_offset(orientation, 3);
 
@@ -488,7 +495,7 @@ void building_temple_complex::update_map_orientation(int orientation) {
 
     building *building_main = &main()->base;
     if (building_main) {
-        int city_orientation = g_camera.orientation / 2;
+        int city_orientation = map_view_orientation() / 2;
         int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
         pcstr orient_key[] = { "main_n", "main_e", "main_s", "main_w" };
         int image_id = anim(orient_key[orientation]).first_img();
@@ -513,7 +520,7 @@ tile2i temple_complex_part_target(building *main, int part) {
 
     int x = b->tile.x();
     int y = b->tile.y();
-    switch (g_camera.orientation / 2) {
+    switch (map_view_orientation() / 2) {
     case 1:  x += 2; break; // east
     case 2:  x += 2; y += 2; break; // south
     case 3:  y += 2; break; // west
@@ -565,7 +572,7 @@ void building_temple_complex::map_tiles_add_temple_complex_parts(building *b) {
 
     auto &d = complex->runtime_data();
     int orientation = (5 - (d.variant / 2)) % 4;
-    int orientation_rel = g_camera.relative_orientation(orientation);
+    int orientation_rel = map_view_relative_orientation(orientation);
     int orientation_binary = (1 + orientation_rel) % 2;
     int part = 0;                                             // default = main
     if (b->prev_part_building_id && b->next_part_building_id) // the middle part is ALWAYS the altar

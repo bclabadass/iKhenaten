@@ -77,3 +77,7 @@ public:
 
     void cleanup_and_destroy();
 };
+
+int isometric_foot_first_row(int width, int height, int x);
+void isometric_clear_above_foot(color *pixels, int stride, int width, int height);
+int isometric_split_top(color* pixels, int stride, int width, int height, bool footprint_high);

@@ -22,14 +22,13 @@
 #include "window/building/figures.h"
 #include "widget/city/ornaments.h"
 #include "widget/city/flat_draw.h"
-#include "widget/city/building_ghost.h"
 #include "figuretype/figure_entertainer.h"
 #include "sound/sound_building.h"
 #include "figure/figure.h"
 #include "grid/routing/routing_grids.h"
 #include "core/profiler.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_bandstand);
 
@@ -57,43 +56,59 @@ bool building_bandstand::target_route_tile_blocked(int grid_offset) const {
     return false;
 }
 
+void building_bandstand::preview::collect_site(build_planner& planer, tile2i end) const {
+    int orientation = 0;
+    planer.site_blocked = !map_venue_ghost_orientation(end, e_venue_mode_bandstand, &orientation);
+    planer.site_orientation = orientation;
+}
+
 void building_bandstand::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i start, tile2i end, vec2i pixel) const {
     const auto &params = building_static_params::get(planer.build_type);
-    int orientation = 0;
-    const bool can_build = map_venue_ghost_orientation(end, e_venue_mode_bandstand, &orientation);
+    const int orientation = planer.site_orientation;
+    const bool can_build = !planer.site_blocked;
 
     if (!can_build) {
         for (int i = 0; i < params.building_size * params.building_size; i++) {
-            planer.draw_flat_tile(ctx, pixel + VIEW_OFFSETS[i], COLOR_MASK_RED);
+            ghost_draw::draw_ground_tile(ctx, pixel + VIEW_OFFSETS[i], COLOR_MASK_RED);
         }
     } else {
         int square_id = params.first_img(animkeys().square);
         for (int i = 0; i < params.building_size * params.building_size; i++) {
             const int x = ((i % params.building_size) - (i / params.building_size)) * 30;
             const int y = ((i % params.building_size) + (i / params.building_size)) * 15;
-            ctx.img_isometric(square_id + i, pixel + vec2i{ x, y }, COLOR_MASK_GREEN, 1.f, ImgFlag_None);
+            ghost_draw::draw_ground_isometric(ctx, square_id + i, pixel + vec2i{x, y}, COLOR_MASK_GREEN);
         }
 
         switch (orientation / 2) {
         case 0:
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_sn_n), pixel, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_sn_s), pixel + vec2i{ -30, 15 }, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{ 60, 30 }, COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_sn_n), pixel, COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_sn_s), pixel + vec2i{-30, 15},
+              COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{60, 30},
+              COLOR_MASK_GREEN);
             break;
         case 1:
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_we_w), pixel + vec2i{ 30, 15 }, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_we_e), pixel + vec2i{ 60, 30 }, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{ 0, 60 }, COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_we_w), pixel + vec2i{30, 15},
+              COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_we_e), pixel + vec2i{60, 30},
+              COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{0, 60},
+              COLOR_MASK_GREEN);
             break;
         case 2:
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_sn_n), pixel + vec2i{ -30, 15 }, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_sn_s), pixel + vec2i{ -60, 30 }, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{ 0, 60 }, COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_sn_n), pixel + vec2i{-30, 15},
+              COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_sn_s), pixel + vec2i{-60, 30},
+              COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{0, 60},
+              COLOR_MASK_GREEN);
             break;
         case 3:
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_we_w), pixel, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::stand_we_e), pixel + vec2i{ 30, 15 }, COLOR_MASK_GREEN);
-            planer.draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{ -60, 30 }, COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_we_w), pixel, COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::stand_we_e), pixel + vec2i{30, 15},
+              COLOR_MASK_GREEN);
+            ghost_draw::draw_building_ghost(ctx, params.first_img(parts::booth), pixel + vec2i{-60, 30},
+              COLOR_MASK_GREEN);
             break;
         }
     }

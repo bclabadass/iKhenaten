@@ -24,9 +24,15 @@
 #include "game/mission.h"
 #include "game/game.h"
 #include "dev/debug.h"
+#include "input/mouse.h"
+#include "window/autoconfig_window.h"
 #if defined(GAME_PLATFORM_ANDROID)
 #include "graphics/elements/lang_text.h"
 #endif
+
+#include <algorithm>
+#include <string>
+#include <vector>
 
 #include "js/js_debugger.h"
 #include "js/js_self_tests.h"
@@ -63,6 +69,7 @@ struct {
     std::unordered_set<std::string> disabled_handlers;
     bool reset_requested = false;
     bool requeue_mods = false;
+    bool ui_relayout_only = false;
     uint32_t generation = 0;
     bstring256 error_str;
     js_State *J;
@@ -773,6 +780,9 @@ bool js_vm_sync(const xstring &mission_id) {
         js_reset_vm_state();
     }
 
+    const bool windows_only = vm.ui_relayout_only && !vm.have_error && !reset_now && !vm.requeue_mods;
+    vm.ui_relayout_only = false;
+
     const int nfiles = (int)vm.files2load.size();
     bstring512 files_summary;
     for (int i = 0; i < nfiles; i++) {
@@ -834,7 +844,11 @@ bool js_vm_sync(const xstring &mission_id) {
         }
     }
 
-    config::refresh(vm.J);
+    if (windows_only) {
+        autoconfig_window::refresh_all();
+    } else {
+        config::refresh(vm.J);
+    }
     archive_check::flush();
 
     if (vm.J) {
@@ -846,12 +860,12 @@ bool js_vm_sync(const xstring &mission_id) {
     }
 
     const unsigned elapsed_ms = (unsigned)(time_get_millis() - t0);
-    logs::info("JS: vm_sync done files=%d (%s) refresh=full elapsed_ms=%u", nfiles, files_summary.c_str(),
-               elapsed_ms);
+    logs::info("JS: vm_sync done files=%d (%s) refresh=%s elapsed_ms=%u", nfiles, files_summary.c_str(),
+      windows_only ? "windows" : "full", elapsed_ms);
 
     vm.have_error = 0;
     vm.disabled_handlers.clear();
-    return true;
+    return !windows_only;
 }
 
 void js_vm_reload_file(pcstr path) {
@@ -864,6 +878,64 @@ void js_vm_request_reset() {
 
 uint32_t js_vm_generation() {
     return vm.generation;
+}
+
+static struct {
+    bool pending = false;
+    time_millis requested_at = 0;
+} g_ui_relayout;
+
+void js_vm_request_ui_relayout() {
+    g_ui_relayout.pending = true;
+    g_ui_relayout.requested_at = time_get_millis();
+}
+
+// Reloading re-creates every script window, including the one on screen. Wait until the size has
+// settled and no button is held: the interface-scale arrows repeat while pressed and resize on each
+// step, and a window rebuilt mid-press loses its state. Windows that hold unsaved edits while the size
+// changes (display options, game options) set defer_relayout and keep themselves centred meanwhile.
+static bool ui_relayout_ready() {
+    constexpr time_millis settle_ms = 300;
+    if (!g_ui_relayout.pending || time_get_millis() - g_ui_relayout.requested_at < settle_ms) {
+        return false;
+    }
+    const mouse &m = mouse::get();
+    if (m.left.is_down || m.right.is_down || m.middle.is_down) {
+        return false;
+    }
+    // A popup over a deferring window draws it underneath, so the reload would rebuild that one too.
+    for (int depth = 0; depth < 6; ++depth) {
+        const xstring id = window_get_id_at_depth(depth);
+        if (autoconfig_window::defers_relayout(id)) {
+            return false;
+        }
+        if (!autoconfig_window::draws_underlying(id)) {
+            break;
+        }
+    }
+    return true;
+}
+
+static void js_vm_reload_ui_layouts() {
+    vm.ui_relayout_only = vm.files2load.empty();
+    std::vector<std::string> files;
+    for (const auto &key : vm.loaded_files) {
+        const size_t slash = key.find_last_of("/\\:");
+        const size_t name_start = (slash == std::string::npos) ? 0 : slash + 1;
+        if (key.compare(name_start, 3, "ui_") == 0) {
+            files.push_back(key);
+        }
+    }
+    // loaded_files is unordered; keep reloads deterministic. ui_common.js builds the ui object that other ui_ scripts
+    // add to (ui_build_menu.js sorts before it), so it reloads first.
+    auto is_ui_common
+      = [](const std::string& f) { return f.size() >= 12 && f.compare(f.size() - 12, 12, "ui_common.js") == 0; };
+    std::sort(files.begin(), files.end(), [&](const std::string& a, const std::string& b) {
+        return is_ui_common(a) != is_ui_common(b) ? is_ui_common(a) : a < b;
+    });
+    for (const auto &file : files) {
+        js_vm_queue_file(file.c_str(), true);
+    }
 }
 
 int js_vm_exec_function_args(pcstr funcname, const char *szTypes, ...) {
@@ -1178,6 +1250,10 @@ void js_vm_frame_begin() {
 }
 
 void js_vm_frame_end() {
+    if (ui_relayout_ready()) {
+        g_ui_relayout.pending = false;
+        js_vm_reload_ui_layouts();
+    }
     mission_id_t missionid(g_scenario.campaign_scenario_id);
     if (js_vm_sync(missionid.value())) {
         game.reload_objects();

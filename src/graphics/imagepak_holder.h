@@ -5,6 +5,8 @@
 #include "core/archive.h"
 #include "core/hvector.h"
 
+#include <atomic>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -54,12 +56,12 @@ struct imagepak_holder_t {
     int last_active_index = -1;
 
     stable_array<imagepak_handle> pak_list;
-    std::vector<const image_t *> image_cache;
+    std::unique_ptr<std::atomic<const image_t*>[]> image_cache;
+    size_t image_cache_size = 0;
     hvector<int, 32> load_queue;
 
     // Packs load only on the main thread (SDL textures, unsynchronized pak_list); render workers
     // that hit an unloaded pack leave the id here and draw without it until the main thread loads it.
-    std::thread::id main_thread;
     std::mutex worker_requests_mutex;
     hvector<int, 32> worker_requests;
 };

@@ -18,6 +18,7 @@
 #include "figure/figure_impl.h"
 #include "figure/figure_names.h"
 #include "figure/formation.h"
+#include "figure/formation_layout.h"
 #include "figuretype/animal_asp.h"
 #include "figuretype/animal_lion.h"
 #include "figuretype/animal_scorpion.h"
@@ -31,43 +32,11 @@
 #include "grid/road_access.h"
 #include "grid/routing/routing.h"
 #include "grid/routing/routing_terrain.h"
+#include "overlays/city_overlay.h"
 #include "scenario/scenario.h"
 
 #include <algorithm>
 #include <cstring>
-
-static int __test_locust_cloud_variant(int fid) {
-    figure* f = figure_get(fid);
-    if (!f || !f->is_alive() || f->type != FIGURE_LOCUST) {
-        return -1;
-    }
-    return figure_locust(f).runtime_data().cloud_variant;
-}
-ANK_FUNCTION_1(__test_locust_cloud_variant);
-
-static int __test_locust_post_load(int fid) {
-    figure* f = figure_get(fid);
-    if (!f || !f->is_alive() || f->type != FIGURE_LOCUST) {
-        return 0;
-    }
-    // Simulate corrupt save flags then restore via on_post_load.
-    f->allow_move_type = EMOVE_TERRAIN;
-    f->use_cross_country = false;
-    f->current_height = 0;
-    figure_locust(f).runtime_data().cloud_variant = 99;
-    figure_locust(f).on_post_load();
-    if (f->allow_move_type != EMOVE_AMPHIBIAN || !f->use_cross_country) {
-        return 0;
-    }
-    if (figure_locust(f).runtime_data().cloud_variant != 0) {
-        return 0;
-    }
-    if (f->current_height <= 0) {
-        return 0;
-    }
-    return 1;
-}
-ANK_FUNCTION_1(__test_locust_post_load);
 
 static int __test_locust_farm(int fid) {
     figure* f = figure_get(fid);
@@ -83,6 +52,28 @@ static void __test_locust_update_month(int month) {
 }
 ANK_FUNCTION_1(__test_locust_update_month);
 
+static int __test_figure_use_cross_country(int fid) {
+    figure* f = figure_get(fid);
+    return (f && f->is_alive() && f->use_cross_country) ? 1 : 0;
+}
+ANK_FUNCTION_1(__test_figure_use_cross_country);
+
+static int __test_figure_terrain_usage(int fid) {
+    figure* f = figure_get(fid);
+    return (f && f->is_alive()) ? f->terrain_usage : -1;
+}
+ANK_FUNCTION_1(__test_figure_terrain_usage);
+
+static int __test_overlay_show_figure(int overlay_id, int fid) {
+    const city_overlay* overlay = city_overlay::get((e_overlay)overlay_id);
+    figure* f = figure_get(fid);
+    if (!overlay || !f || !f->is_alive()) {
+        return -1;
+    }
+    return overlay->show_figure(f) ? 1 : 0;
+}
+ANK_FUNCTION_2(__test_overlay_show_figure);
+
 static int __test_frog_house(int fid) {
     figure* f = figure_get(fid);
     if (!f || !f->is_alive() || f->type != FIGURE_FROG) {
@@ -91,6 +82,16 @@ static int __test_frog_house(int fid) {
     return figure_frog(f).runtime_data().house_id;
 }
 ANK_FUNCTION_1(__test_frog_house);
+
+static int __test_frog_create_at(int bid, int x, int y) {
+    building* b = building_get(bid);
+    if (!b || !b->is_valid()) {
+        return 0;
+    }
+    figure* f = figure_frog::create_at(*b, tile2i(x, y));
+    return f ? f->id : 0;
+}
+ANK_FUNCTION_3(__test_frog_create_at);
 
 static int __test_frog_infest_house(int bid) {
     building* b = building_get(bid);
@@ -133,17 +134,17 @@ static void __test_plagues_tick(int n) {
 }
 ANK_FUNCTION_1(__test_plagues_tick);
 
-static int __test_floods_season() {
-    return g_floods.season;
+static int __test_floods_season_month() {
+    return g_floods.season_month;
 }
-ANK_FUNCTION(__test_floods_season);
+ANK_FUNCTION(__test_floods_season_month);
 
 static int __test_lion_setup_curse_raid(int fid, int days) {
     figure* f = figure_get(fid);
     if (!f || !f->is_alive() || f->type != FIGURE_LION) {
         return 0;
     }
-    figure_lion_setup_curse_raid(*f, days);
+    figure_predator_setup_curse_raid(*f, days);
     return 1;
 }
 ANK_FUNCTION_2(__test_lion_setup_curse_raid);
@@ -153,7 +154,8 @@ static int __test_lion_is_curse_raid(int fid) {
     if (!f || f->type != FIGURE_LION) {
         return 0;
     }
-    return figure_lion(f).is_curse_raid() ? 1 : 0;
+    auto lion = f->dcast<figure_predator>();
+    return (lion && lion->is_curse_raid()) ? 1 : 0;
 }
 ANK_FUNCTION_1(__test_lion_is_curse_raid);
 
@@ -162,7 +164,7 @@ static int __test_asp_setup_curse_raid(int fid, int days) {
     if (!f || !f->is_alive() || f->type != FIGURE_ASP) {
         return 0;
     }
-    figure_asp_setup_curse_raid(*f, days);
+    figure_predator_setup_curse_raid(*f, days);
     return 1;
 }
 ANK_FUNCTION_2(__test_asp_setup_curse_raid);
@@ -172,7 +174,8 @@ static int __test_asp_is_curse_raid(int fid) {
     if (!f || f->type != FIGURE_ASP) {
         return 0;
     }
-    return figure_asp(f).is_curse_raid() ? 1 : 0;
+    auto asp = f->dcast<figure_predator>();
+    return (asp && asp->is_curse_raid()) ? 1 : 0;
 }
 ANK_FUNCTION_1(__test_asp_is_curse_raid);
 
@@ -181,7 +184,7 @@ static int __test_scorpion_setup_curse_raid(int fid, int days) {
     if (!f || !f->is_alive() || f->type != FIGURE_SCORPION) {
         return 0;
     }
-    figure_scorpion_setup_curse_raid(*f, days);
+    figure_predator_setup_curse_raid(*f, days);
     return 1;
 }
 ANK_FUNCTION_2(__test_scorpion_setup_curse_raid);
@@ -191,7 +194,8 @@ static int __test_scorpion_is_curse_raid(int fid) {
     if (!f || f->type != FIGURE_SCORPION) {
         return 0;
     }
-    return figure_scorpion(f).is_curse_raid() ? 1 : 0;
+    auto scorpion = f->dcast<figure_predator>();
+    return (scorpion && scorpion->is_curse_raid()) ? 1 : 0;
 }
 ANK_FUNCTION_1(__test_scorpion_is_curse_raid);
 
@@ -225,6 +229,19 @@ static int __test_hunter_force_shot(int hunter_fid) {
     return missile->id();
 }
 ANK_FUNCTION_1(__test_hunter_force_shot);
+
+// Frame index (from the walk animation's first image) a fresh missile of `type` shows flying src -> dst.
+static int __test_missile_image_frame(int type, int src_x, int src_y, int dst_x, int dst_y) {
+    auto missile = figure_missile::create(0, tile2i(src_x, src_y), tile2i(dst_x, dst_y), (e_figure_type)type);
+    if (!missile) {
+        return -1;
+    }
+    missile->main_image_update();
+    const int frame = (uint16_t)(missile->base.main_image_id - missile->anim(animkeys().walk).first_img());
+    missile->poof();
+    return frame;
+}
+ANK_FUNCTION_5(__test_missile_image_frame);
 
 static int __test_get_scenario_climate() {
     return (int)g_scenario.climate;
@@ -431,3 +448,53 @@ static int __test_fishing_spot_og_tick(int fid) {
     return 1;
 }
 ANK_FUNCTION_1(__test_fishing_spot_og_tick);
+
+static int __test_create_herd(int x, int y, int ftype, int count) {
+    formation* m = g_city.animals.create_herd(tile2i(x, y), (e_figure_type)ftype, count);
+    return (m && m->id > 0) ? m->id : 0;
+}
+ANK_FUNCTION_4(__test_create_herd);
+
+// One herd step of formation_update_all: figure counts first, then the herd.
+static void __test_herd_update(int formation_id) {
+    formation* m = formation_get(formation_id);
+    if (!m || !m->in_use || !m->is_herd) {
+        return;
+    }
+    g_formations.calculate_figures();
+    g_city.animals.update_herd_formation(m);
+}
+ANK_FUNCTION_1(__test_herd_update);
+
+// Pack (x << 16) | y; -1 when the formation is not in use.
+static int __test_formation_destination(int formation_id) {
+    formation* m = formation_get(formation_id);
+    if (!m || !m->in_use) {
+        return -1;
+    }
+    return (m->destination.x() << 16) | (m->destination.y() & 0xffff);
+}
+ANK_FUNCTION_1(__test_formation_destination);
+
+static int __test_formation_figure(int formation_id, int index) {
+    formation* m = formation_get(formation_id);
+    if (!m || !m->in_use || index < 0 || index >= formation::max_figures_count) {
+        return 0;
+    }
+    g_formations.calculate_figures();
+    return m->figures[index];
+}
+ANK_FUNCTION_2(__test_formation_figure);
+
+// Pack (x << 16) | (y & 0xffff).
+static int __test_formation_layout_position(int layout, int index) {
+    const tile2i p = formation_layout_position(layout, index);
+    return (p.x() << 16) | (p.y() & 0xffff);
+}
+ANK_FUNCTION_2(__test_formation_layout_position);
+
+static int __test_figure_max_damage(int fid) {
+    figure* f = figure_get(fid);
+    return (f && f->id > 0) ? f->max_damage() : -1;
+}
+ANK_FUNCTION_1(__test_figure_max_damage);

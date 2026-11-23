@@ -1,15 +1,17 @@
-#include "core/app.h"
+#include "app/app.h"
+#include "core/main_thread.h"
 
 #include "core/encoding.h"
 #include "core/stacktrace.h"
 #include "core/log.h"
 #include "figure/figure.h"
 #include "js/js.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "core/profiler.h"
 #include "game/game.h"
 #include "input/scroll.h"
 #include "graphics/screen.h"
+#include "content/dir.h"
 #include "content/vfs.h"
 #include "io/gamefiles/lang.h"
 #include "game/game_config.h"
@@ -71,6 +73,8 @@ static int init_sdl() {
     logs::info("Initializing SDL");
     Uint32 SDL_flags = SDL_INIT_VIDEO;
     SDL_flags |= platform.sdl_init_flags();
+
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "permonitorv2");
 
     if (SDL_Init(SDL_flags) != 0) {
         logs::error("Could not initialize SDL: %s", SDL_GetError());
@@ -148,12 +152,11 @@ static bool check_engine_data_files() {
     }
 
     bstring2048 message;
-    message.printf(
-        "Akhenaten engine data files are missing (%d):\n\n%s\n\n"
-        "Copy these files from the Akhenaten build \"data\" folder into the "
-        "Pharaoh Data/ folder (data/ is also accepted on Linux).",
-        missing_count,
-        missing.c_str());
+    message.printf("Akhenaten engine data files are missing (%d):\n\n%s\n\n"
+                   "Akhenaten looks for them in a data/ folder next to its executable and in the "
+                   "Pharaoh Data/ folder (data/ is also accepted on Linux); copy them from the "
+                   "Akhenaten build \"data\" folder into one of these.",
+      missing_count, missing.c_str());
 
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Akhenaten data missing", message.c_str(), nullptr);
     return false;
@@ -414,7 +417,7 @@ static void setup() {
     if (!options_window_shown) {
         if (try_load_game_features(g_args.get_data_directory().c_str())) {
             const vec2i conf_size = game_features::gameopt_display_size.to_vec2i();
-            if (conf_size.x > 0 && conf_size.y > 0) {
+            if (conf_size.x > 0 && conf_size.y > 0 && !g_args.window_size_from_cli()) {
                 g_args.set_window_size(conf_size);
             }
         } else if (g_args.config_file_exists()) {
@@ -431,6 +434,8 @@ static void setup() {
     }
 
     game.set_cli_fullscreen(g_args.is_fullscreen());
+    // The window was created from the cfg/CLI mode; keep the in-game flag in step with it.
+    game.set_fullscreen(g_args.is_fullscreen());
     if (g_args.has_window_pos()) {
         const auto& pos = g_args.get_window_pos();
         g_platform_screen.move(pos.x, pos.y);
@@ -490,6 +495,12 @@ static void setup() {
     game_opts opts = g_args.use_sound() ? game_opt_sound : game_opt_none;
     platform.append_startup_log("Startup: game_init");
 
+    if (g_args.is_integral_tests()) {
+        std::error_code ec;
+        const auto saves = std::filesystem::absolute(std::filesystem::path(platform.user_directory()) / "Save", ec);
+        vfs::set_save_folder(saves.generic_string().c_str());
+        logs::info("[integraltests] saves go to %s", saves.generic_string().c_str());
+    }
 
     if (!game_init(opts)) {
         platform.append_startup_log("Startup: game_init failed");
@@ -693,6 +704,7 @@ static int handle_unpack_scripts() {
 }
 
 int main(int argc, char** argv) {
+    main_thread::set();
     g_args.parse(argc, argv);
     archive_check::report_keys = g_args.is("log_config_keys", false) || !g_args.get_str("config_keys_baseline").empty();
 
@@ -704,6 +716,10 @@ int main(int argc, char** argv) {
 
     logs::initialize();
     game_debug_cli_attach_log_sink();
+
+    if (const int jobs = integral_tests_parallel_jobs()) {
+        return run_integral_tests_parallel(argc, argv, jobs);
+    }
 
     setup();
 

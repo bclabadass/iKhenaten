@@ -4,6 +4,8 @@
 #include "building/building_statue.h"
 #include "building/monument_caesareum.h"
 #include "building/monument_obelisk.h"
+#include "building/monument_abu_simbel.h"
+#include "building/monument_pharos_lighthouse.h"
 #include "building/monument_sphinx.h"
 #include "building/monument_sun_temple.h"
 #include "building/monument_alexandria_library.h"
@@ -16,7 +18,7 @@
 #include "building/monuments.h"
 #include "core/random.h"
 #include "grid/road_access.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_carpenter);
 
@@ -244,6 +246,26 @@ void figure_carpenter::figure_action() {
             base.set_flag(e_figure_flag_invisible);
             if (sphinx->work_tick(base)) {
                 base.set_flag(e_figure_flag_invisible, false);
+                advance_action(ACTION_3_CARPENTER_RETURN);
+            }
+            break;
+        }
+
+        if (auto* abu = worked->dcast_abu_simbel()) {
+            base.set_flag(e_figure_flag_invisible);
+            if (abu->work_tick(base)) {
+                base.set_flag(e_figure_flag_invisible, false);
+                abu->remove_worker(id());
+                advance_action(ACTION_3_CARPENTER_RETURN);
+            }
+            break;
+        }
+
+        if (auto* lighthouse = worked->dcast_pharos_lighthouse()) {
+            base.set_flag(e_figure_flag_invisible);
+            if (lighthouse->work_tick(base)) {
+                base.set_flag(e_figure_flag_invisible, false);
+                lighthouse->remove_worker(id());
                 advance_action(ACTION_3_CARPENTER_RETURN);
             }
             break;

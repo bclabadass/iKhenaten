@@ -9,6 +9,7 @@
 #include "core/variant.h"
 #include "core/cstring.h"
 #include "core/flat_map.h"
+#include "core/xfunction.h"
 
 #include "input/hotkey.h"
 #include "graphics/elements/scroll_list_panel.h"
@@ -147,6 +148,12 @@ namespace ui {
             saved_texture,
             texture_icon,
             lang_text_year,
+            background,
+            panel_unbordered,
+            panel_outer_exact,
+            video,
+            line,
+            pixel,
         };
 
         e_type type = none;
@@ -164,6 +171,7 @@ namespace ui {
         int box_width = 0;
         rich_text_t* rt = nullptr;
         void* sdl_texture = nullptr;
+        rich_text_t::margin_t margin;
 
         cmd_t() = default;
         explicit cmd_t(e_type t) : type(t) {}
@@ -208,6 +216,8 @@ namespace ui {
     void end_frame();
 
     void push_cmd(cmd_t&& cmd);
+    size_t command_mark();
+    void move_commands_below(size_t from, size_t below);
 
     template <typename... Args>
     void push(cmd_t::e_type t, const Args&... args) {
@@ -215,6 +225,7 @@ namespace ui {
     }
 
     void flush_commands();
+    void reset_ui_command_queue();
     void begin_widget(vec2i offset, bool relative = false);
     void end_widget();
     bool handle_mouse(const mouse* m);
@@ -237,6 +248,10 @@ namespace ui {
     int label_amount(int group, int number, int amount, vec2i pos, e_font font = FONT_NORMAL_BLACK_ON_LIGHT,
       pcstr postfix = "");
     int label_percent(int amount, vec2i pos, e_font font = FONT_NORMAL_BLACK_ON_LIGHT);
+    int label_number(int value, char prefix, pcstr postfix, vec2i pos, e_font font = FONT_NORMAL_BLACK_ON_LIGHT);
+    void label_number_centered(int value, char prefix, pcstr postfix, vec2i pos, int box_width,
+      e_font font = FONT_NORMAL_BLACK_ON_LIGHT);
+    int text(pcstr str, vec2i pos, e_font font, color clr = 0);
     int label_year(int year, vec2i pos, e_font font = FONT_NORMAL_BLACK_ON_LIGHT);
     int label_colored(textid tx, vec2i pos, e_font font, color color, int box_width = 0);
     int label_colored(pcstr tx, vec2i pos, e_font font, color color, int box_width = 0);
@@ -273,7 +288,11 @@ namespace ui {
     void draw_rect(vec2i pos, vec2i size, color c);
     void image_abs(int image_id, vec2i abs_pos);
     void panel_abs(vec2i pos, vec2i size_blocks, UiFlags flags = UiFlags_None);
-    void text_abs(pcstr str, vec2i pos, e_font font, color clr = 0);
+    int text_abs(pcstr str, vec2i pos, e_font font, color clr = 0);
+    void text_centered_abs(pcstr str, vec2i pos, int box_width, e_font font, color clr = 0);
+    int number_abs(int value, char prefix, pcstr postfix, vec2i pos, e_font font, color clr = 0);
+    void number_centered_abs(int value, char prefix, pcstr postfix, vec2i pos, int box_width, e_font font,
+      color clr = 0);
     void text_multiline(pcstr text, vec2i pos, int width, e_font font, color clr);
     vec2i current_offset();
 

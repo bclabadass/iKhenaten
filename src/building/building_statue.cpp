@@ -1,4 +1,5 @@
 #include "building_statue.h"
+#include "grid/orientation.h"
 
 #include "building/building.h"
 #include "city/object_info.h"
@@ -9,7 +10,7 @@
 #include "graphics/image.h"
 #include "io/gamefiles/lang.h"
 #include "game/game_config.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "core/random.h"
 #include "window/building/common.h"
 #include "sound/sound_building.h"
@@ -20,7 +21,7 @@
 #include "window/window_building_info.h"
 #include "construction/build_planner.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 BUILDING_RUNTIME_DATA_IMPL(building_statue)
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_small_statue);
@@ -82,20 +83,20 @@ bool building_statue::guild_service_enabled() {
 void building_statue::on_create(int orientation) {
     base.orientation = orientation;
 
-    auto &d = runtime_data();
-    d.variant = g_city_planner.building_variant;
-    d.statue_offset = random_hash(game.simtime.absolute_tick(), id(), RANDOM_SALT_STATUE_OFFSET) % 4;
+    runtime_data().statue_offset
+      = random_hash(g_simulation.simtime.absolute_tick(), id(), RANDOM_SALT_STATUE_OFFSET) % 4;
 }
 
 void building_statue::on_place_update_tiles(int orientation, int variant) {
     base.orientation = orientation;
-    int orientation_rel = g_camera.relative_orientation(orientation);
+    runtime_data().variant = variant;
+    int orientation_rel = map_view_relative_orientation(orientation);
     int image_id = get_image(type(), orientation_rel, variant);
     map_building_tiles_add(id(), tile(), size(), image_id, TERRAIN_BUILDING);
 }
 
 void building_statue::update_map_orientation(int /*map_orientation*/) {
-    int orientation_rel = g_camera.relative_orientation(base.orientation);
+    int orientation_rel = map_view_relative_orientation(base.orientation);
     int image_id = get_image(type(), orientation_rel, runtime_data().variant);
     map_building_tiles_add(id(), tile(), base.size, image_id, TERRAIN_BUILDING);
 }

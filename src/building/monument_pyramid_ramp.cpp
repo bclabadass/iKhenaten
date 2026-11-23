@@ -1,4 +1,6 @@
 #include "monument_pyramid_ramp.h"
+#include "graphics/view/view.h"
+#include "grid/orientation.h"
 
 #include "building/monument_pyramid.h"
 #include "building/monument_pyramid_engine.h"
@@ -6,16 +8,17 @@
 #include "city/city_buildings.h"
 #include "core/calc.h"
 #include "core/direction.h"
+#include "core/draw_phase.h"
 #include "figure/figure.h"
 #include "graphics/graphics.h"
 #include "graphics/image.h"
-#include "graphics/view/view.h"
 #include "grid/building.h"
 #include "grid/grid.h"
 #include "js/js_game.h"
 
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 int pyramid_ramp_og_subtype(int part_count, tile2i footprint_nw, tile2i part_tile) {
     auto &engine = g_monument_pyramid_engine;
@@ -131,37 +134,51 @@ building_id pyramid_engine_find_ramp_part(building *main, figure_id claim_fid) {
     return 0;
 }
 
-void pyramid_engine_update_part_ramp_image(building_id part_id) {
-    building *part = building_get(part_id);
-    auto *ps = pyramid_part_state_get(part_id);
-    if (!part || !ps) {
-        return;
-    }
-    building *head = part->main();
+struct pyramid_ramp_sprite {
+    int image = 0;
+    vec2i offset1;
+    vec2i offset2;
+};
+
+static pyramid_ramp_sprite pyramid_ramp_sprite_get(building& part, const pyramid_part_state& ps, int view) {
+    building* head = part.main();
     if (!head) {
-        return;
+        return {};
     }
     const e_pyramid_style style = g_monument_pyramid_engine.style_of(head);
     if (style == PYRAMID_STYLE_NONE || style == PYRAMID_STYLE_MASTABA) {
-        ps->ramp_image_id = 0;
-        return;
+        return {};
     }
 
     auto &engine = g_monument_pyramid_engine;
     // OG uses pyramid_part_layout[size][subtype].kind — not full-footprint geometry
     // (inner-ring edge parts stay EDGE_BOTTOM_* so they still get ramp sprites).
-    int kind = engine.layout_kind(head, ps->subtype);
-    kind = engine.rotated_kind(kind, g_camera.orientation / 2);
+    int kind = engine.layout_kind(head, ps.subtype);
+    kind = engine.rotated_kind(kind, view);
 
-    const int ramp_img = engine.ramp_base_image(*part, kind, style);
-    if ((ps->ramp1_height == 0 && ps->ramp2_height == 0) || ramp_img <= 0) {
-        ps->ramp_image_id = 0;
-        ps->ramp_image_x1 = ps->ramp_image_y1 = 0;
-        ps->ramp_image_x2 = ps->ramp_image_y2 = 0;
+    const int ramp_img = engine.ramp_base_image(part, kind, style);
+    if ((ps.ramp1_height == 0 && ps.ramp2_height == 0) || ramp_img <= 0) {
+        return {};
+    }
+    pyramid_part_state placed = ps;
+    engine.set_ramp_offsets(placed, kind, style);
+    return {
+      ramp_img, vec2i{placed.ramp_image_x1, placed.ramp_image_y1}, vec2i{placed.ramp_image_x2, placed.ramp_image_y2}};
+}
+
+void pyramid_engine_update_part_ramp_image(building_id part_id) {
+    draw_phase::check_write("pyramid_engine_update_part_ramp_image");
+    building* part = building_get(part_id);
+    auto* ps = pyramid_part_state_get(part_id);
+    if (!part || !ps) {
         return;
     }
-    engine.set_ramp_offsets(*ps, kind, style);
-    ps->ramp_image_id = (uint32_t)ramp_img;
+    const pyramid_ramp_sprite sprite = pyramid_ramp_sprite_get(*part, *ps, map_view_orientation() / 2);
+    ps->ramp_image_id = (uint32_t)sprite.image;
+    ps->ramp_image_x1 = (int16_t)sprite.offset1.x;
+    ps->ramp_image_y1 = (int16_t)sprite.offset1.y;
+    ps->ramp_image_x2 = (int16_t)sprite.offset2.x;
+    ps->ramp_image_y2 = (int16_t)sprite.offset2.y;
 }
 
 void pyramid_engine_clear_part_ramps(building_id part_id) {
@@ -174,8 +191,6 @@ void pyramid_engine_clear_part_ramps(building_id part_id) {
     ps->ramp_image_id = 0;
     ps->ramp_image_x1 = ps->ramp_image_y1 = 0;
     ps->ramp_image_x2 = ps->ramp_image_y2 = 0;
-    ps->ramp_link_part_id = 0;
-    ps->ramp_link_draw_x = ps->ramp_link_draw_y = 0;
 }
 
 void pyramid_engine_clear_all_ramps(building *main) {
@@ -336,7 +351,7 @@ static int pyramid_ramp_sprite_for(building &part, const pyramid_part_state &ps,
         return 0;
     }
     int kind = g_monument_pyramid_engine.layout_kind(head, ps.subtype);
-    kind = g_monument_pyramid_engine.rotated_kind(kind, g_camera.orientation / 2);
+    kind = g_monument_pyramid_engine.rotated_kind(kind, map_view_orientation() / 2);
     if (kind >= PYRAMID_PART_EDGE_TOP_LEFT) {
         return (height - 1) % 3;
     }
@@ -367,7 +382,11 @@ static vec2i pyramid_ramp_stepped_shift(building &part, int image_id) {
 
 static void pyramid_ramp_draw_sprites(painter &ctx, building &part, vec2i part_anchor_px, color mask) {
     auto *ps = pyramid_part_state_get(part.id);
-    if (!ps || ps->ramp_image_id == 0) {
+    if (!ps) {
+        return;
+    }
+    const pyramid_ramp_sprite ramp = pyramid_ramp_sprite_get(part, *ps, map_view_orientation() / 2);
+    if (ramp.image == 0) {
         return;
     }
 
@@ -376,20 +395,18 @@ static void pyramid_ramp_draw_sprites(painter &ctx, building &part, vec2i part_a
     mask = mask ? mask : 0xffffffff;
     if (ps->ramp1_height) {
         const int sprite = pyramid_ramp_sprite_for(part, *ps, ps->ramp1_height);
-        const int image_id = (int)ps->ramp_image_id + sprite;
+        const int image_id = ramp.image + sprite;
         auto &cmd = ImageDraw::create_subcommand(ctx, render_command_t::ert_generic);
         cmd.image_id = image_id;
-        cmd.pixel = part_anchor_px + vec2i{ps->ramp_image_x1, ps->ramp_image_y1}
-            + pyramid_ramp_stepped_shift(part, image_id);
+        cmd.pixel = part_anchor_px + ramp.offset1 + pyramid_ramp_stepped_shift(part, image_id);
         cmd.mask = mask;
     }
     if (ps->ramp2_height) {
         const int sprite = pyramid_ramp_sprite_for(part, *ps, ps->ramp2_height);
-        const int image_id = (int)ps->ramp_image_id + sprite;
+        const int image_id = ramp.image + sprite;
         auto &cmd = ImageDraw::create_subcommand(ctx, render_command_t::ert_generic);
         cmd.image_id = image_id;
-        cmd.pixel = part_anchor_px + vec2i{ps->ramp_image_x2, ps->ramp_image_y2}
-            + pyramid_ramp_stepped_shift(part, image_id);
+        cmd.pixel = part_anchor_px + ramp.offset2 + pyramid_ramp_stepped_shift(part, image_id);
         cmd.mask = mask;
     }
 }
@@ -418,7 +435,7 @@ static building *pyramid_ramp_neighbour_at(building &part, int32_t delta) {
 }
 
 static tile2i pyramid_part_draw_anchor(building &part) {
-    switch (g_camera.orientation) {
+    switch (map_view_orientation()) {
     case DIR_0_TOP_RIGHT: return part.tile.shifted(0, 1);
     case DIR_4_BOTTOM_LEFT: return part.tile.shifted(1, 0);
     case DIR_6_TOP_LEFT: return part.tile.shifted(1, 1);
@@ -442,7 +459,7 @@ static building *pyramid_ramp_link_neighbor(building &part, const pyramid_part_s
         return nullptr;
     }
     int kind = g_monument_pyramid_engine.layout_kind(head, ps.subtype);
-    kind = g_monument_pyramid_engine.rotated_kind(kind, g_camera.orientation / 2);
+    kind = g_monument_pyramid_engine.rotated_kind(kind, map_view_orientation() / 2);
     const bool attach = (style == PYRAMID_STYLE_STEPPED)
         ? (kind != PYRAMID_PART_CORNER_TOP && kind != PYRAMID_PART_EDGE_TOP_LEFT
             && kind != PYRAMID_PART_EDGE_TOP_RIGHT)
@@ -450,7 +467,7 @@ static building *pyramid_ramp_link_neighbor(building &part, const pyramid_part_s
     if (!attach) {
         return nullptr;
     }
-    const int view = g_camera.orientation / 2;
+    const int view = map_view_orientation() / 2;
     const int slot = (kind == PYRAMID_PART_CORNER_BOTTOM) ? 0 : 1;
     const int32_t delta = pyramid_engine_config.neighbour_offsets[view * 3 + slot];
     return pyramid_ramp_neighbour_at(part, delta);
@@ -459,26 +476,33 @@ static building *pyramid_ramp_link_neighbor(building &part, const pyramid_part_s
 static vec2i pyramid_ramp_origin_for_part(building &part) {
     const tile2i anchor = pyramid_part_draw_anchor(part);
     const vec2i anchor_px = g_camera.lookup_tile_to_pixel(anchor);
-    int L = 0;
-    if (auto *mon = part.dcast_monument()) {
-        L = mon->runtime_data().layer;
+    building* head = part.main();
+    const e_pyramid_style style = head ? g_monument_pyramid_engine.style_of(head) : PYRAMID_STYLE_NONE;
+    const auto* ps = pyramid_part_state_get(part.id);
+    int lift = 0;
+    if (ps && style == PYRAMID_STYLE_BENT) {
+        lift = g_monument_pyramid_engine.bent_layer_pixel_height((int)ps->size_variant, (int)ps->layer);
+    } else if (ps && (style == PYRAMID_STYLE_TRUE || style == PYRAMID_STYLE_MUDBRICK)) {
+        lift = TILE_HEIGHT_PIXELS * 3 * (int)ps->layer;
+    } else if (auto* mon = part.dcast_monument()) {
+        lift = TILE_HEIGHT_PIXELS * 3 * (int)mon->runtime_data().layer;
     }
-    const vec2i pixel = anchor_px - vec2i{0, TILE_HEIGHT_PIXELS * 3 * L};
+    const vec2i pixel = anchor_px - vec2i{0, lift};
     return pixel + vec2i{HALF_TILE_WIDTH_PIXELS + 1, -HALF_TILE_HEIGHT_PIXELS};
 }
+
+struct pyramid_ramp_frame_link {
+    building_id source = 0;
+    vec2i origin;
+};
+
+static std::vector<pyramid_ramp_frame_link> g_ramp_frame_links;
 
 void pyramid_ramp_prepare_frame_links() {
     // Serial pre-pass: OG stores ramp-link on the closer neighbor before city draw.
     // Height ornaments later run in parallel row blocks — in-draw store/consume races
     // and a sort_pixel stand-in both break under camera rotate.
-    for (int id = 1; id < MAX_BUILDINGS; ++id) {
-        auto *ps = pyramid_part_state_get(id);
-        if (!ps) {
-            continue;
-        }
-        ps->ramp_link_part_id = 0;
-        ps->ramp_link_draw_x = ps->ramp_link_draw_y = 0;
-    }
+    g_ramp_frame_links.assign(MAX_BUILDINGS, {});
     for (int id = 1; id < MAX_BUILDINGS; ++id) {
         building *part = building_get(id);
         auto *ps = pyramid_part_state_get(id);
@@ -486,17 +510,10 @@ void pyramid_ramp_prepare_frame_links() {
             continue;
         }
         building *neighbor = pyramid_ramp_link_neighbor(*part, *ps);
-        if (!neighbor) {
+        if (!neighbor || !pyramid_part_state_get(neighbor->id)) {
             continue;
         }
-        auto *nps = pyramid_part_state_get(neighbor->id);
-        if (!nps) {
-            continue;
-        }
-        const vec2i origin = pyramid_ramp_origin_for_part(*part);
-        nps->ramp_link_part_id = part->id;
-        nps->ramp_link_draw_x = origin.x;
-        nps->ramp_link_draw_y = origin.y;
+        g_ramp_frame_links[neighbor->id] = {part->id, pyramid_ramp_origin_for_part(*part)};
     }
 }
 
@@ -506,14 +523,14 @@ void pyramid_ramp_draw_part(painter &ctx, building &part, vec2i part_anchor_px, 
         return;
     }
     // Consume links stored by pyramid_ramp_prepare_frame_links (OG: draw during neighbor).
-    if (ps->ramp_link_part_id) {
-        building *other = building_get(ps->ramp_link_part_id);
-        if (other) {
-            pyramid_ramp_draw_sprites(ctx, *other,
-                vec2i{ps->ramp_link_draw_x, ps->ramp_link_draw_y}, mask);
+    if (part.id < g_ramp_frame_links.size()) {
+        pyramid_ramp_frame_link &link = g_ramp_frame_links[part.id];
+        if (link.source) {
+            if (building *other = building_get(link.source)) {
+                pyramid_ramp_draw_sprites(ctx, *other, link.origin, mask);
+            }
+            link = {};
         }
-        ps->ramp_link_part_id = 0;
-        ps->ramp_link_draw_x = ps->ramp_link_draw_y = 0;
     }
     // Source part that attached to a neighbor: skip own ramps this frame.
     if (pyramid_ramp_link_neighbor(part, *ps)) {

@@ -7,7 +7,7 @@
 #include "game/game_config.h"
 #include "graphics/image.h"
 #include "graphics/graphics.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 const e_lumberjack_action_tokens_t ANK_CONFIG_ENUM(e_lumberjack_action_tokens)
 
@@ -26,7 +26,6 @@ void figure_lumberjack::figure_action() {
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
         // OG case 4; also reached via lost→kill().
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_6_CARTPUSHER_ON_FERRY:

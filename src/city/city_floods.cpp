@@ -6,7 +6,7 @@
 #include "core/profiler.h"
 #include "core/random.h"
 #include "core/svector.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "grid/basin.h"
 #include "grid/floodplain.h"
 #include "grid/tiles.h"
@@ -16,7 +16,7 @@
 #include "game/game_config.h"
 #include "core/log.h"
 #include "dev/debug.h"
-#include "game/game.h"
+#include "game/simulation.h"
 
 #include <cmath>
 #include <cctype>
@@ -123,7 +123,7 @@ declare_console_command_p(flood_dump) {
 void floods_t::init() {
     season_default = season_initial;
     duration_default = duration_initial;
-    unk01 = 0;
+    season_month = 0;
     state = FLOOD_STATE_FARMABLE;
     floodplain_width = 0;
     has_floodplains = false;
@@ -142,12 +142,13 @@ int floods_t::debug_period() {
 }
 
 int floods_t::current_cycle() {
-    const int tick_since_year = game.simtime.absolute_tick(true) - game.simtime.absolute_tick_year_start() + 1;
+    const int tick_since_year
+      = g_simulation.simtime.absolute_tick(true) - g_simulation.simtime.absolute_tick_year_start() + 1;
     return (tick_since_year / 25) % CYCLES_IN_A_YEAR;
 }
 
 int floods_t::current_subcycle() {
-    return (game.simtime.absolute_tick(true) + 1) % 25;
+    return (g_simulation.simtime.absolute_tick(true) + 1) % 25;
 }
 
 bool floods_t::is_start_cycle() {
@@ -239,8 +240,7 @@ void floods_t::cycle_states_recalc() {
         return false;
     };
 
-    // ???
-    unk01 = season / 30;
+    season_month = season / 30;
     if (force_inundation != 0) {
         if (force_inundation < flood_progress) {
             state = FLOOD_STATE_INUNDATED;
@@ -418,7 +418,7 @@ void floods_t::tick_update(bool calc_only) {
     }
 
     // update at the end of each day
-    if (game.simtime.tick == 50) {
+    if (g_simulation.simtime.tick == 50) {
         if (state_is(FLOOD_STATE_INUNDATED)) {
             g_city.religion.osiris_flood_will_destroy_active = 0;
         }
@@ -444,20 +444,3 @@ void floods_t::tick_update(bool calc_only) {
 
     map_floodplain_sub_growth();
 }
-
-io_buffer* iob_floodplain_settings = new io_buffer([](io_buffer* iob, size_t version) {
-    auto& data = g_floods;
-
-    iob->bind(BIND_SIGNATURE_INT32, &data.season_initial);
-    iob->bind(BIND_SIGNATURE_INT32, &data.duration_initial);
-    iob->bind(BIND_SIGNATURE_INT32, &data.quality_initial);
-    iob->bind(BIND_SIGNATURE_INT32, &data.season);
-    iob->bind(BIND_SIGNATURE_INT32, &data.duration);
-    iob->bind(BIND_SIGNATURE_INT32, &data.quality_current);
-    iob->bind(BIND_SIGNATURE_INT32, &data.unk00);
-    iob->bind(BIND_SIGNATURE_UINT8, &data.quality_next);
-    iob->bind(BIND_SIGNATURE_UINT8, &data.flood_progress);
-    iob->bind(BIND_SIGNATURE_UINT8, &data.flood_progress_target);
-    iob->bind____skip(1);
-    iob->bind(BIND_SIGNATURE_INT32, &data.quality_last);
-});

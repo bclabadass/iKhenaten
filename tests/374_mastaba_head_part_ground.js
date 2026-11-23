@@ -57,8 +57,11 @@ function run_test() {
     // black unless a tile is left undrawn.
     var black = 0
     var first = ''
-    for (var y = 150; y <= 650; y += 5) {
-        for (var x = 150; x <= 900; x += 5) {
+    // Inside the city view: pixels past the screen's edge read as black, and so does the minimap's margin.
+    var max_x = Math.min(900, __test_viewport_width() - 1)
+    var max_y = Math.min(650, screen.height - 1)
+    for (var y = 150; y <= max_y; y += 5) {
+        for (var x = 150; x <= max_x; x += 5) {
             if (__test_screen_pixel(x, y) == 0) {
                 black++
                 if (!first) {
@@ -68,7 +71,8 @@ function run_test() {
         }
     }
     __log_info_native('[test:374] black samples in the view: ' + black + (first ? ' (first at ' + first + ')' : ''))
-    if (black > 0) {
+    // An undrawn tile is about 70 samples (the bug left three); a few black pixels of art (a figure's outline) are not.
+    if (black > 10) {
         return test374_fail('undrawn (black) ground at the mastaba: ' + black + ' samples')
     }
     __log_marker('mastaba_ground_ok')

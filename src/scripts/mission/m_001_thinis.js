@@ -72,14 +72,22 @@ mission1 {
 
 	goal_tooltip: function() {
 		if (!mission.gold_mined_handled) {
-			return "#mission1_goal_build_temples"
+			return "#mission1_goal_build_mines"
 		}
 
 		if (!mission.temples_built) {
+			return "#mission1_goal_build_temples"
+		}
+
+		if (!mission.booth_built || !mission.juggler_school_built) {
 			return "#mission1_goal_build_entertainment"
 		}
 
-		return "#mission1_goal_build_mines"
+		if (!city.victory.is_housing_condition_met()) {
+			return "#mission1_goal_evolve_housing"
+		}
+
+		return ""
 	}
 }
 
@@ -161,7 +169,7 @@ function mission1_on_build_temple(ev) {
 
 	city.set_advisor_available(ADVISOR_ENTERTAINMENT, 1)
 
-    mission.last_action = game.absolute_day
+    mission.last_action_time = game.absolute_day
     mission.temples_built = true
 
     ui.popup_message("message_tutorial_entertainment");
@@ -178,7 +186,7 @@ function mission1_on_build_booth(ev) {
         return
     }
 
-	mission.last_action = game.absolute_day
+	mission.last_action_time = game.absolute_day
     mission.booth_built = true
 }
 
@@ -193,6 +201,6 @@ function mission1_on_build_juggler_school(ev) {
 		return
 	}
 
-	mission.last_action = game.absolute_day
+	mission.last_action_time = game.absolute_day
     mission.juggler_school_built = true
 }

@@ -54,7 +54,7 @@ e_bribe_unit_class classify_figure(e_figure_type t) {
     case FIGURE_ENEMY_BARBARIAN_TRANSPORT_SHIP:
         return BRIBE_TRANSPORT;
     case FIGURE_ENEMY_WARSHIP:
-    case FIGURE_ENEMY_EGYPTIAN_WAR_SHIP:
+    case FIGURE_ENEMY_EGYPTIAN_WARSHIP:
     case FIGURE_ENEMY_EGYPTIAN_GALERA:
         return BRIBE_WARSHIP;
     case FIGURE_ENEMY_EGYPTIAN_ARCHER:
@@ -225,7 +225,7 @@ void pay_bribe_deben(int cost) {
     uint16_t &disasters = g_city.finance.this_year.expenses.disasters;
     const int sum = (int)disasters + cost;
     disasters = (uint16_t)std::min(sum, 65535);
-    g_city.finance.calculate_totals();
+    finance_system::calculate_totals(g_city.finance);
 }
 
 uint16_t resolve_seq(uint16_t seq) {

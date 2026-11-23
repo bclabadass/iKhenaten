@@ -5,6 +5,8 @@
 #include "building/monument_pyramid.h"
 #include "building/monument_pyramid_engine.h"
 #include "building/monument_obelisk.h"
+#include "building/monument_abu_simbel.h"
+#include "building/monument_pharos_lighthouse.h"
 #include "building/monument_royal_tomb.h"
 #include "building/monument_sphinx.h"
 #include "building/monument_sun_temple.h"
@@ -16,7 +18,7 @@
 #include "game/simulation_time.h"
 #include "grid/terrain.h"
 #include "grid/grid.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(figure_stonemason);
 
@@ -81,14 +83,15 @@ void figure_stonemason::figure_action() {
         auto *sun = b_dest->dcast_sun_temple();
         auto *library = b_dest->dcast_alexandria_library();
         const bool to_obelisk = b_dest->dcast_obelisk() != nullptr || b_dest->dcast_sphinx() != nullptr
-                                || b_dest->dcast_royal_tomb() != nullptr || (sun && sun->part_index() == 0);
+                                || b_dest->dcast_royal_tomb() != nullptr || b_dest->dcast_abu_simbel() != nullptr
+                                || (sun && sun->part_index() == 0);
         const bool to_og_pyramid = b_dest->dcast_pyramid()
             && g_monument_pyramid_engine.uses_block_engine(b_dest);
         short arrived = to_obelisk
             ? (short)ACTION_9_MASON_WORK_OBELISK
             : (to_og_pyramid ? (short)ACTION_16_MASON_CLIMB_RAMP : (short)ACTION_7_MASON_LOOKING_FOR_WORK_TILE);
-        // OG: side parts / library mason wait for a material sled before working.
-        if ((sun && sun->part_index() != 0) || library || b_dest->dcast_mausoleum() || b_dest->dcast_caesareum()) {
+        if ((sun && sun->part_index() != 0) || library || b_dest->dcast_mausoleum() || b_dest->dcast_caesareum()
+            || b_dest->dcast_pharos_lighthouse()) {
             arrived = ACTION_19_MASON_WAIT_FOR_BLOCK;
         }
         if (do_goto(base.destination_tile, terrain_usage, arrived, ACTION_10_MASON_DESTROY)) {
@@ -159,6 +162,12 @@ void figure_stonemason::figure_action() {
         }
         if (auto *maus = b_dest->dcast_mausoleum()) {
             if (maus->runtime_data().og_part.worker_figure_id != id()) {
+                advance_action(ACTION_6_MASON_RETURN_HOME);
+            }
+            break;
+        }
+        if (auto* lighthouse = b_dest->dcast_pharos_lighthouse()) {
+            if (lighthouse->worker_figure_id() != id()) {
                 advance_action(ACTION_6_MASON_RETURN_HOME);
             }
             break;
@@ -268,6 +277,25 @@ void figure_stonemason::figure_action() {
             base.set_flag(e_figure_flag_invisible);
             if (sphinx->work_tick(base)) {
                 base.set_flag(e_figure_flag_invisible, false);
+                advance_action(ACTION_6_MASON_RETURN_HOME);
+            }
+            break;
+        }
+        if (auto* abu = worked ? worked->dcast_abu_simbel() : nullptr) {
+            base.set_flag(e_figure_flag_invisible);
+            if (abu->work_tick(base)) {
+                base.set_flag(e_figure_flag_invisible, false);
+                abu->remove_worker(id());
+                advance_action(ACTION_6_MASON_RETURN_HOME);
+            }
+            break;
+        }
+
+        if (auto* lighthouse = worked ? worked->dcast_pharos_lighthouse() : nullptr) {
+            base.set_flag(e_figure_flag_invisible);
+            if (lighthouse->work_tick(base)) {
+                base.set_flag(e_figure_flag_invisible, false);
+                lighthouse->remove_worker(id());
                 advance_action(ACTION_6_MASON_RETURN_HOME);
             }
             break;

@@ -14,6 +14,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -36,7 +37,31 @@ struct path_uri {
 std::map<size_t, path_uri> path_cache;
 std::set<size_t> path_missing;
 
+static bool is_absolute_path(pcstr filepath) {
+    if (!filepath || !*filepath) {
+        return false;
+    }
+    if (platform.is_windows()) {
+        return std::isalpha(*filepath) && (*(filepath + 1) == ':')
+               && ((*(filepath + 2) == '/') || (*(filepath + 2) == '\\'));
+    }
+    return (*filepath) == '/';
+}
+
+static vfs::path g_save_folder_override;
+
+void set_save_folder(pcstr absolute) {
+    g_save_folder_override = absolute ? absolute : "";
+}
+
+vfs::path save_folder() {
+    return g_save_folder_override.empty() ? vfs::path(SAVE_FOLDER) : g_save_folder_override;
+}
+
 vfs::path content_internal_path(pcstr path) {
+    if (is_absolute_path(path)) {
+        return vfs::path(path);
+    }
     pcstr dir = platform_file_manager_get_base_path();
     vfs::path corrected_path(dir, "/", path);
     return corrected_path;
@@ -70,26 +95,33 @@ void content_cache_real_file_paths(pcstr f) {
     }
 }
 
-// Folders whose files are found whatever the case of the name asked for: on a case-sensitive file
-// system (iOS, Linux) a request for 203_mission.mp3 must still open 203_mission.MP3.
 void content_cache_paths() {
-    pcstr folders[] = {
-      "",
-      "AUDIO",
-      "AUDIO/Ambient",
-      "AUDIO/Music",
-      "AUDIO/Voice",
-      "AUDIO/Voice/Mission",
-      "AUDIO/Voice/Walker",
-      "AUDIO/Wavs",
-      "BINKS",
-      "BINKS/High",
-      "BINKS/Low",
-      "Data",
+    // Cache every file and folder under the game directory recursively, so lookups such as
+    // "AUDIO/Wavs/CLAY.WAV" resolve on case-sensitive filesystems even when an install uses
+    // different casing (e.g. "Audio/Wavs/clay.wav" on CD / localized releases). Previously only
+    // a fixed list of exactly-cased folders was scanned, so such installs had no sound at all.
+    vfs::path root = content_internal_path("");
+    std::error_code ec;
+    if (!fs::is_directory(root.c_str(), ec)) {
+        return;
+    }
+
+    auto add_cached_path = [] (pcstr entry) {
+        path_uri uri;
+        uri.original = entry;
+        uri.original.replace('\\', '/');
+        uri.lowered = uri.original;
+        uri.lowered.tolower();
+        path_cache.insert({uri.lowered.hash(), uri});
     };
 
-    for (const auto &folder : folders) {
-        content_cache_real_file_paths(folder);
+    add_cached_path(root);
+    for (auto it = fs::recursive_directory_iterator(root.c_str(), fs::directory_options::skip_permission_denied, ec);
+         it != fs::recursive_directory_iterator(); it.increment(ec)) {
+        if (ec) {
+            break;
+        }
+        add_cached_path(it->path().string().c_str());
     }
 }
 
@@ -178,45 +210,55 @@ void content_clear_path_cache() {
 // Case-sensitive file systems: Pharaoh installs mix "Data"/"data", "SprMain.sg3"/"SPRMAIN.SG3", and the
 // game asks for one fixed spelling. Correct every component under the base dir, not just the files of
 // the folders content_cache_paths() pre-lists.
-static bool correct_case_on_disk(pcstr relative, vfs::path& out) {
+static bool match_case_on_disk(const fs::path& cur, const std::vector<std::string>& parts, size_t index,
+  fs::path& out) {
+    if (index == parts.size()) {
+        out = cur;
+        return true;
+    }
+
     std::error_code ec;
-    fs::path cur(platform_file_manager_get_base_path());
-    if (cur.empty()) {
-        cur = ".";
+    const std::string& part = parts[index];
+    const fs::path exact = cur / part;
+    if (fs::exists(exact, ec) && match_case_on_disk(exact, parts, index + 1, out)) {
+        return true;
+    }
+
+    for (const auto& entry : fs::directory_iterator(cur, ec)) {
+        const std::string name = entry.path().filename().string();
+        if (name != part && string_compare_case_insensitive(name.c_str(), part.c_str()) == 0
+            && match_case_on_disk(entry.path(), parts, index + 1, out)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool correct_case_on_disk(pcstr relative, vfs::path& out) {
+    fs::path base(platform_file_manager_get_base_path());
+    if (base.empty()) {
+        base = ".";
     }
 
     std::string rel(relative);
     std::replace(rel.begin(), rel.end(), '\\', '/');
+    std::vector<std::string> parts;
     size_t pos = 0;
     while (pos <= rel.size()) {
         const size_t slash = rel.find('/', pos);
-        const std::string part = rel.substr(pos, slash == std::string::npos ? std::string::npos : slash - pos);
+        std::string part = rel.substr(pos, slash == std::string::npos ? std::string::npos : slash - pos);
         pos = (slash == std::string::npos) ? rel.size() + 1 : slash + 1;
-        if (part.empty() || part == ".") {
-            continue;
-        }
-
-        fs::path exact = cur / part;
-        if (fs::exists(exact, ec)) {
-            cur = exact;
-            continue;
-        }
-
-        bool found = false;
-        for (const auto& entry : fs::directory_iterator(cur, ec)) {
-            const std::string name = entry.path().filename().string();
-            if (string_compare_case_insensitive(name.c_str(), part.c_str()) == 0) {
-                cur = entry.path();
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            return false;
+        if (!part.empty() && part != ".") {
+            parts.push_back(std::move(part));
         }
     }
 
-    out = cur.string().c_str();
+    fs::path found;
+    if (!match_case_on_disk(base, parts, 0, found)) {
+        return false;
+    }
+
+    out = found.string().c_str();
     return true;
 }
 #endif
@@ -255,12 +297,23 @@ vfs::path content_path(pcstr path) {
 }
 
 vfs::path current_path(pcstr path) {
-    vfs::path result;
-    if (char* base = SDL_GetBasePath()) {
-        result.concat(base, "/", path);
-        SDL_free(base);
-    }
+    static const vfs::path base = [] {
+        vfs::path dir;
+        if (char* sdl_base = SDL_GetBasePath()) {
+            std::string s = sdl_base;
+            SDL_free(sdl_base);
+            while (!s.empty() && (s.back() == '/' || s.back() == '\\')) {
+                s.pop_back();
+            }
+            dir = s.c_str();
+        }
+        return dir;
+    }();
 
+    vfs::path result;
+    if (!base.empty()) {
+        result.concat(base.c_str(), "/", path);
+    }
     return result;
 }
 
@@ -281,16 +334,7 @@ vfs::path vfs::path::resolve() {
 #ifndef GAME_PLATFORM_ANDROID
     pcstr filepath = data();
 
-    // Check if the path is absolute
-    bool is_absolute_path = false;
-    if (platform.is_windows()) {
-        is_absolute_path = std::isalpha(*filepath) && (*(filepath + 1) == ':') && ((*(filepath + 2) == '/') || (*(filepath + 2) == '\\'));
-    } else {
-        is_absolute_path = (*filepath) == '/';
-    }
-
-    // For absolute paths, return as-is (normalized)
-    if (is_absolute_path) {
+    if (is_absolute_path(filepath)) {
         return filepath;
     }
 
@@ -302,6 +346,11 @@ vfs::path vfs::path::resolve() {
     vfs::path from_pwd = vfs::path("./", filepath);
     if (std::filesystem::exists(from_pwd.c_str())) {
         return std::filesystem::absolute(from_pwd.c_str()).string().c_str();
+    }
+
+    vfs::path from_exe = current_path(filepath);
+    if (!from_exe.empty() && std::filesystem::exists(from_exe.c_str())) {
+        return from_exe;
     }
 
 #if defined(GAME_PLATFORM_BROWSER)

@@ -117,17 +117,23 @@ game_features {
     @gameplay_change_dock_smart_routing {}
     @gameplay_change_follower_runaway {}
     @gameplay_change_sled_pullers_flee {}
+    @gameplay_change_sled_return_empty {}
     @gameplay_change_robber_remake {}
     @gameplay_change_tomb_robber_remake {}
     @gameplay_change_police_weapons {}
     @gameplay_change_walker_phrases_remake {}
     @gameplay_change_protestor_hunt_nobles {}
     @gameplay_change_fishing_boat_remake {}
+    @gameplay_change_ferry_remake {}
+    @gameplay_change_plagued_citizen_remake {}
     @gameplay_change_wood_cutter_single_gatherer {}
     @gameplay_change_irrigation_range_5x5 {}
     @gameplay_fishing_wharf_spawn_boats {}
     @gameplay_change_fishing_points_monthly_respawn {}
+    @gameplay_change_fishing_points_drift {}
+    @gameplay_change_migration_unemployment {}
     @gameplay_change_house_evolve_delay {}
+    @gameplay_change_abu_simbel_draw_scaffolds {}
     @gameplay_change_food_consumption_remake {}
     @gameplay_change_market_distribute_remake {}
     @gameplay_change_library_service_cap {}
@@ -168,6 +174,7 @@ game_features {
     @gameplay_change_industry_nearby_houses {}
     @gameplay_change_jeweler_nearby_discount {}
     @gameopt_display_size {}
+    @gameopt_fullscreen_resolution {}
     @gameplay_change_multiple_temple_complexes {}
     @gameplay_change_work_camp_one_worker_per_month {}
     @gameplay_change_work_camp_destination_at_spawn {}

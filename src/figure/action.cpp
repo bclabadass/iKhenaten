@@ -1,7 +1,7 @@
 
 #include "action.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "grid/terrain.h"
 #include "grid/road_network.h"
 
@@ -201,11 +201,11 @@ void figure::action_perform() {
         // common action states handling
         dcast()->figure_roaming_action();
 
-        if (state == FIGURE_STATE_DYING) { // update corpses / dying animation
+        if (state == FIGURE_STATE_DYING || action_state == FIGURE_ACTION_149_CORPSE) {
             // kill() sets the corpse action; saves where an attack resumed the old action still carry dying
             // figures stuck in it (their action's own timer undid the corpse timer, so they never went).
             action_state = FIGURE_ACTION_149_CORPSE;
-            figure_combat_handle_corpse();
+            dcast()->figure_dying_action();
         }
 
 
@@ -214,7 +214,7 @@ void figure::action_perform() {
         const bool on_ferry_lane = can_cross_ferry() && (on_ferry || (map_terrain_is(tile, TERRAIN_WATER) && map_terrain_is_near_ferry_route(tile.grid_offset(), 1)));
         if (on_normal_road || on_ferry_lane) {
             outside_road_ticks = 0;
-            if (map_terrain_is(tile.grid_offset(), TERRAIN_WATER)) {
+            if (map_terrain_is(tile.grid_offset(), TERRAIN_WATER) && !dcast()->sets_own_height()) {
                 set_target_height_bridge();
             }
         } else {
@@ -222,7 +222,7 @@ void figure::action_perform() {
                 outside_road_ticks++;
             }
 
-            if (map_terrain_is(tile.grid_offset(), TERRAIN_BUILDING)) {
+            if (map_terrain_is(tile.grid_offset(), TERRAIN_BUILDING) && !dcast()->sets_own_height()) {
                 set_target_height_building();
             }
 

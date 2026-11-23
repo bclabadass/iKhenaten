@@ -1,4 +1,5 @@
 #include "figure/figure_impl.h"
+#include "grid/figure.h"
 
 #include "building/monument_mastaba.h"
 
@@ -16,11 +17,12 @@
 #include "grid/grid.h"
 #include "grid/building.h"
 #include "grid/terrain.h"
+#include "grid/bridge.h"
 #include "building/building.h"
 #include "core/object_property.h"
 #include "core/profiler.h"
 #include "scenario/invasion_auto_resolve.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "js/js_struct.h"
 
 #include "dev/debug.h"
@@ -198,10 +200,13 @@ void figure_impl::on_change_terrain(int old, int current) {
     }
 }
 
+void figure_impl::figure_dying_action() {
+    base.figure_combat_handle_corpse();
+}
+
 void figure_impl::figure_roaming_action() {
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_125_ROAMER_ROAMING:
@@ -320,7 +325,7 @@ void figure_impl::drop_route_if_heading_into_non_ferry_water() {
     }
 
     const int next = tile().grid_offset() + map_grid_direction_delta(direction());
-    if (!map_terrain_is(next, TERRAIN_WATER)) {
+    if (!map_terrain_is(next, TERRAIN_WATER) || map_is_bridge(next)) {
         return;
     }
 
@@ -364,7 +369,7 @@ void figure_impl::advance_action(int action, tile2i t) {
 }
 
 void figure_impl::draw_main_sprite(painter &ctx, vec2i pixel, int highlight) {
-    base.draw_main_sprite(ctx, base.main_cached_pos, highlight);
+    base.draw_main_sprite(ctx, map_figure_draw_state(base.id).main_pos, highlight);
 }
 
 void figure_impl::poof() {

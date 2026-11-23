@@ -67,6 +67,7 @@ namespace game_features {
     extern game_feature gameui_complete_ratings_columns;
     extern game_feature gameui_highlight_legions;
     extern game_feature gameui_rotate_manually;
+    extern game_feature gameui_house_interior;
     extern game_feature gameplay_change_grandfestival;
     extern game_feature gameplay_change_jealous_gods;
     extern game_feature gameplay_change_global_labour;
@@ -87,12 +88,15 @@ namespace game_features {
     extern game_feature gameplay_change_dock_smart_routing;
     extern game_feature gameplay_change_follower_runaway;
     extern game_feature gameplay_change_sled_pullers_flee;
+    extern game_feature gameplay_change_sled_return_empty;
     extern game_feature gameplay_change_robber_remake;
     extern game_feature gameplay_change_tomb_robber_remake;
     extern game_feature gameplay_change_police_weapons;
     extern game_feature gameplay_change_walker_phrases_remake;
     extern game_feature gameplay_change_protestor_hunt_nobles;
     extern game_feature gameplay_change_fishing_boat_remake;
+    extern game_feature gameplay_change_ferry_remake;
+    extern game_feature gameplay_change_plagued_citizen_remake;
     extern game_feature gameplay_change_bazaar_multi_buyers;
     extern game_feature gameplay_change_bazaar_buyer_spawn_timer;
     extern game_feature gameplay_change_bazaar_demand_from_trader;
@@ -134,7 +138,10 @@ namespace game_features {
     extern game_feature gameplay_change_wood_cutter_single_gatherer;
     extern game_feature gameplay_change_fireman_returning;
     extern game_feature gameplay_change_fishing_points_monthly_respawn;
+    extern game_feature gameplay_change_fishing_points_drift;
+    extern game_feature gameplay_change_migration_unemployment;
     extern game_feature gameplay_change_house_evolve_delay;
+    extern game_feature gameplay_change_abu_simbel_draw_scaffolds;
     extern game_feature gameplay_change_food_consumption_remake;
     extern game_feature gameplay_change_architect_patrol_most_damaged;
     extern game_feature gameplay_og_architect;
@@ -215,6 +222,7 @@ namespace game_features {
     extern game_feature gameopt_fullscreen;
     extern game_feature gameopt_difficulty;
     extern game_feature gameopt_display_size;
+    extern game_feature gameopt_fullscreen_resolution;
     extern game_feature gameopt_disable_victory;
     extern game_feature gameopt_player_name;
     extern game_feature gameplay_change_empire_map_runs_simulation;

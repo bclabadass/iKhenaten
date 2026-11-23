@@ -1,4 +1,5 @@
 #include "animal_crocodile.h"
+#include "game/game_events.h"
 
 #include "city/city.h"
 #include "city/city_figures.h"
@@ -13,8 +14,7 @@
 #include "grid/grid.h"
 #include "grid/ring.h"
 #include "grid/terrain.h"
-#include "js/js_game.h"
-#include "sound/sound.h"
+#include "js/js_register.h"
 #include "core/system_time.h"
 
 #include <algorithm>
@@ -297,14 +297,13 @@ void figure_crocodile::figure_action() {
     // OG ATTACK (5): crocatk each tick + figure_combat_handle_attack.
     if (base.in_attack() || (base.opponent_id > 0 && !figure_get(base.opponent_id)->is_dead())) {
         base.set_flag(e_figure_flag_inattack);
-        g_sound.speech_play_file("Wavs/crocatk.wav", 255);
+        events::emit(event_sound_speech{"Wavs/crocatk.wav"});
         base.figure_combat_handle_attack();
         return;
     }
 
     switch (action_state()) {
     case FIGURE_ACTION_149_CORPSE:
-        base.figure_combat_handle_corpse();
         break;
 
     case ACTION_8_CROCODILE_CHOOSE:
@@ -501,7 +500,7 @@ void figure_crocodile::main_image_update() {
             const animation_t &water_death = anim(animkeys().bubbles);
             const int base_img = water_death.first_img();
             const int frame = base.wait_ticks < 23 ? base.wait_ticks : 22;
-            if (base_img > 0 || base.force_valid_animation) {
+            if (base_img > 0) {
                 base.main_image_id = base_img + frame;
             }
             return;
@@ -511,7 +510,7 @@ void figure_crocodile::main_image_update() {
         const int frame = action_state(ACTION_12_CROCODILE_DYING)
             ? (base.wait_ticks < 8 ? base.wait_ticks : 7)
             : 7;
-        if (base_img > 0 || base.force_valid_animation) {
+        if (base_img > 0) {
             base.main_image_id = base_img + frame;
         }
         return;
@@ -526,7 +525,7 @@ void figure_crocodile::acquire_attack() {
 
 bool figure_crocodile::play_die_sound() {
     // OG FIGURE_SOUND_CROCODILE variant die → crocdie.wav
-    g_sound.speech_play_file("Wavs/crocdie.wav", 255);
+    events::emit(event_sound_speech{"Wavs/crocdie.wav"});
     return true;
 }
 

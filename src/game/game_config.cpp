@@ -7,7 +7,7 @@
 #include <variant>
 #include <cstring>
 #include "core/svector.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "dev/debug.h"
 #include "platform/platform.h"
 
@@ -54,6 +54,7 @@ namespace game_features {
     game_feature gameui_complete_ratings_columns{ "gameui_complete_ratings_columns", "#TR_CONFIG_COMPLETE_RATING_COLUMNS", false, false };
     game_feature gameui_highlight_legions{ "gameui_highlight_legions", "#TR_CONFIG_HIGHLIGHT_LEGIONS", false, false };
     game_feature gameui_rotate_manually{ "gameui_rotate_manually", "#TR_CONFIG_ROTATE_MANUALLY", false, false };
+    game_feature gameui_house_interior{ "gameui_house_interior", "#TR_CONFIG_HOUSE_INTERIOR", false, false };
     game_feature gameplay_change_grandfestival{ "gameplay_change_grandfestival", "#TR_CONFIG_GRANDFESTIVAL", false, false };
     game_feature gameplay_change_hasanimals{ "gameplay_change_has_animals", "#TR_CONFIG_CITY_HAS_ANIMALS", false, false };
     game_feature gameplay_change_jealous_gods{ "gameplay_change_jealous_gods", "#TR_CONFIG_JEALOUS_GODS", false, false };
@@ -78,6 +79,8 @@ namespace game_features {
     game_feature gameplay_change_follower_runaway{ "gameplay_change_follower_runaway", "#TR_CONFIG_FOLLOWER_RUNAWAY", false, false };
     game_feature gameplay_change_sled_pullers_flee{
       "gameplay_change_sled_pullers_flee", "#TR_CONFIG_SLED_PULLERS_FLEE", false, false};
+    game_feature gameplay_change_sled_return_empty{
+      "gameplay_change_sled_return_empty", "#TR_CONFIG_SLED_RETURN_EMPTY", false, false};
     // Remake mugger: steal on spawn + always path to palace + ambient mansion theft. OG: wait, rob nearest rich building on arrival.
     game_feature gameplay_change_robber_remake{ "gameplay_change_robber_remake", "#TR_CONFIG_ROBBER_REMAKE", false, false };
     // Remake tomb robber: monthly/sentiment spawn, flee/arrest, fixed −10/−25. OG: house crime, wait 40, 2× walk, difficulty kingdom hit, die.
@@ -93,6 +96,11 @@ namespace game_features {
     game_feature gameplay_change_protestor_hunt_nobles{ "gameplay_change_protestor_hunt_nobles", "#TR_CONFIG_PROTESTOR_HUNT_NOBLES", false, false };
     // Remake fishing boat: worker-scaled fish time, half load, sticky spot, soft lose-home. OG: 200 ticks, 100 fish, tile sidestep, sink.
     game_feature gameplay_change_fishing_boat_remake{ "gameplay_change_fishing_boat_remake", "#TR_CONFIG_FISHING_BOAT_REMAKE", false, false };
+    game_feature gameplay_change_ferry_remake{"gameplay_change_ferry_remake", "#TR_CONFIG_FERRY_REMAKE", false, false};
+    // Remake plague carrier: one per infected house, cured near a herbalist / complex priest stop, corpse fades.
+    // OG: one per outbreak, cured on a shared tile, corpse stays.
+    game_feature gameplay_change_plagued_citizen_remake{
+      "gameplay_change_plagued_citizen_remake", "#TR_CONFIG_PLAGUED_CITIZEN_REMAKE", false, false};
     game_feature gameplay_change_bazaar_multi_buyers{ "gameplay_change_bazaar_multi_buyers", "#TR_CONFIG_BAZAAR_MULTI_BUYERS", false, false };
     game_feature gameplay_change_bazaar_buyer_spawn_timer{ "gameplay_change_bazaar_buyer_spawn_timer", "#TR_CONFIG_BAZAAR_BUYER_SPAWN_TIMER", false, false };
     game_feature gameplay_change_bazaar_demand_from_trader{ "gameplay_change_bazaar_demand_from_trader", "#TR_CONFIG_BAZAAR_DEMAND_FROM_TRADER", false, false };
@@ -140,8 +148,14 @@ namespace game_features {
     game_feature gameplay_change_fireman_returning{ "gameplay_change_fireman_returning", "#TR_CONFIG_FIREMAN_RETURNING", false, false };
     game_feature gameplay_change_fishing_points_monthly_respawn{
       "gameplay_change_fishing_points_monthly_respawn", "#TR_CONFIG_FISHING_POINTS_MONTHLY_RESPAWN", false, false};
+    game_feature gameplay_change_fishing_points_drift{
+      "gameplay_change_fishing_points_drift", "#TR_CONFIG_FISHING_POINTS_DRIFT", false, false};
+    game_feature gameplay_change_migration_unemployment{
+      "gameplay_change_migration_unemployment", "#TR_CONFIG_MIGRATION_UNEMPLOYMENT", false, false};
     game_feature gameplay_change_house_evolve_delay{
       "gameplay_change_house_evolve_delay", "#TR_CONFIG_HOUSE_EVOLVE_DELAY", false, false};
+    game_feature gameplay_change_abu_simbel_draw_scaffolds{
+      "gameplay_change_abu_simbel_draw_scaffolds", "#TR_CONFIG_ABU_SIMBEL_DRAW_SCAFFOLDS", false, false};
     game_feature gameplay_change_food_consumption_remake{
       "gameplay_change_food_consumption_remake", "#TR_CONFIG_FOOD_CONSUMPTION_REMAKE", false, false};
     game_feature gameplay_change_architect_patrol_most_damaged{ "gameplay_change_architect_patrol_most_damaged", "#TR_CONFIG_ARCHITECT_PATROL_MOST_DAMAGED", false, false };
@@ -225,6 +239,8 @@ namespace game_features {
     game_feature gameopt_fullscreen{ "gameopt_fullscreen", "", true, true };
     game_feature gameopt_difficulty{ "gameopt_difficulty", "", 2.0f, 2.0f };
     game_feature gameopt_display_size{"gameopt_display_size", "", vec2i(1280, 800), vec2i(1280, 800)};
+    // Render resolution while fullscreen (stretched to the desktop); 0x0 renders at the desktop size.
+    game_feature gameopt_fullscreen_resolution{"gameopt_fullscreen_resolution", "", vec2i(0, 0), vec2i(0, 0)};
     game_feature gameopt_disable_victory{ "gameopt_disable_victory", "", false, false };
     game_feature gameopt_player_name{"gameopt_player_name", "", "", ""};
     game_feature gameplay_change_empire_map_runs_simulation{ "gameplay_change_empire_map_runs_simulation", "#TR_CONFIG_EMPIRE_MAP_RUNS_SIMULATION", false, false };

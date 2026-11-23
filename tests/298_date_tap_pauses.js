@@ -18,6 +18,11 @@ function t298_tap() {
 function run_test() {
     test_reload_city_session('data/default.map')
     __camera_sidebar_collapsed(0)
+    // At 800 wide the menu headers push the date off the screen's edge. 1280x960 keeps the 4:3 window shape, so
+    // SDL does not letterbox (and shift) the taps.
+    var saved_w = screen.width
+    var saved_h = screen.height
+    __test_screen_resize(1280, 960)
     __test_pump_frames(3)
     game.paused = false
 
@@ -40,6 +45,8 @@ function run_test() {
     }
 
     game.paused = false
+    __test_screen_resize(saved_w, saved_h)
+    __test_pump_frames(3)
     __test_signal_ready()
 }
 

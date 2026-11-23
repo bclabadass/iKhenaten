@@ -666,9 +666,7 @@ extern const e_pack_tokens_t e_pack_type_tokens;
 #define GROUP_FIGURE_LION PACK_EXPANSION_SPR, 5
 // Cleopatra SprMain2 bmp scorpion — walk group 10 (entry 727+), after Lion 5–9.
 #define GROUP_FIGURE_SCORPION PACK_EXPANSION_SPR, 10
-// Cleopatra SprMain2 bmp locust — cloud swarm group 30 (6 frames, non-8-dir); variants 31–34.
-#define GROUP_FIGURE_FROG PACK_EXPANSION_SPR, 22
-#define GROUP_FIGURE_LOCUST PACK_EXPANSION_SPR, 30
+#define GROUP_FIGURE_FROG     PACK_EXPANSION_SPR, 22
 // Cleopatra SprMain2 bmp mummy — walk group 40 (entry 1919+); attack 41; idle 42.
 #define GROUP_FIGURE_MUMMY PACK_EXPANSION_SPR, 40
 #define GROUP_FIGURE_MUMMY_ATTACK PACK_EXPANSION_SPR, 41
@@ -751,7 +749,7 @@ extern const e_pack_tokens_t e_pack_type_tokens;
 //#define GROUP_FIGURE_EXPLOSION PACK_SPR_AMBIENT, 12             // 238 + 15831
 #define GROUP_FIGURE_BEDOUIN PACK_SPR_AMBIENT, 13        // 258 + 15831
 #define GROUP_FIGURE_BEDOUIN_DEATH PACK_SPR_AMBIENT, 14  // 354 + 15831
-#define GROUP_FIGURE_HUNTER_ANTELOPE PACK_SPR_AMBIENT, 15  // 362 + 15831
+#define GROUP_FIGURE_BEDOUIN_ATTACK        PACK_SPR_AMBIENT, 15  // 362 + 15831
 #define GROUP_FIGURE_JAVELIN_SHADOW PACK_SPR_AMBIENT, 16  // 458 + 15831
 #define GROUP_FIGURE_JAVELIN_ITSELF PACK_SPR_AMBIENT, 17  // 470 + 15831
 #define GROUP_FIGURE_JAVELIN_ITSELF_DEATH PACK_SPR_AMBIENT, 18  // 566 + 15831

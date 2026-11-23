@@ -2,7 +2,6 @@
 
 #include "graphics/image.h"
 #include "widget/city/ornaments.h"
-#include "widget/city/building_ghost.h"
 #include "window/building/common.h"
 #include "window/building/figures.h"
 #include "sound/sound_building.h"
@@ -10,7 +9,7 @@
 #include "graphics/graphics.h"
 #include "city/city.h"
 #include "core/random.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "city/city_warnings.h"
 #include "construction/build_planner.h"
 #include "figuretype/figure_entertainer.h"
@@ -21,7 +20,7 @@
 #include "figure/figure.h"
 #include "grid/routing/routing_grids.h"
 
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_pavilion);
 
@@ -51,21 +50,27 @@ bool building_pavilion::target_route_tile_blocked(int grid_offset) const {
     return false;
 }
 
+void building_pavilion::preview::collect_site(build_planner& planer, tile2i end) const {
+    int orientation = 0;
+    planer.site_blocked = !map_venue_ghost_orientation(end, e_venue_mode_pavilion, &orientation);
+    planer.site_orientation = orientation;
+}
+
 void building_pavilion::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i start, tile2i end, vec2i pixel) const {
     const auto &params = building_static_params::get(planer.build_type);
-    int orientation = 0;
-    const bool can_build = map_venue_ghost_orientation(end, e_venue_mode_pavilion, &orientation);
+    const int orientation = planer.site_orientation;
+    const bool can_build = !planer.site_blocked;
 
     if (!can_build) {
         for (int i = 0; i < params.building_size * params.building_size; i++) {
-            planer.draw_flat_tile(ctx, pixel + VIEW_OFFSETS[i], COLOR_MASK_RED);
+            ghost_draw::draw_ground_tile(ctx, pixel + VIEW_OFFSETS[i], COLOR_MASK_RED);
         }
     } else {
         int square_id = params.first_img(animkeys().square);
         for (int i = 0; i < params.building_size * params.building_size; i++) {
             const int x = ((i % params.building_size) - (i / params.building_size)) * 30;
             const int y = ((i % params.building_size) + (i / params.building_size)) * 15;
-            ctx.img_isometric(square_id + i, pixel + vec2i{ x, y }, COLOR_MASK_GREEN, 1.f, ImgFlag_None);
+            ghost_draw::draw_ground_isometric(ctx, square_id + i, pixel + vec2i{x, y}, COLOR_MASK_GREEN);
         }
         int stand_sn_n = params.first_img(animkeys().stand_sn_n);
         int stand_sn_s = params.first_img(animkeys().stand_sn_s);
@@ -73,10 +78,12 @@ void building_pavilion::preview::ghost_preview(build_planner &planer, painter &c
         int stand = params.base_img();
         const auto &preview_conf = current_params().preview_dir[orientation];
 
-        build_planner::draw_building_ghost(ctx, stand, pixel + preview_conf.stand, COLOR_MASK_GREEN);
-        build_planner::draw_building_ghost(ctx, stand_sn_n + preview_conf.stand_b_img, pixel + preview_conf.stand_b, COLOR_MASK_GREEN);
-        build_planner::draw_building_ghost(ctx, stand_sn_s + preview_conf.stand_e_img, pixel + preview_conf.stand_e, COLOR_MASK_GREEN);
-        build_planner::draw_building_ghost(ctx, booth, pixel + preview_conf.booth, COLOR_MASK_GREEN);
+        ghost_draw::draw_building_ghost(ctx, stand, pixel + preview_conf.stand, COLOR_MASK_GREEN);
+        ghost_draw::draw_building_ghost(ctx, stand_sn_n + preview_conf.stand_b_img, pixel + preview_conf.stand_b,
+          COLOR_MASK_GREEN);
+        ghost_draw::draw_building_ghost(ctx, stand_sn_s + preview_conf.stand_e_img, pixel + preview_conf.stand_e,
+          COLOR_MASK_GREEN);
+        ghost_draw::draw_building_ghost(ctx, booth, pixel + preview_conf.booth, COLOR_MASK_GREEN);
     }
 }
 
@@ -85,7 +92,8 @@ void building_pavilion::on_create(int orientation) {
 }
 
 void building_pavilion::update_month() {
-    runtime_data().play_index = random_hash(game.simtime.absolute_day(true), id(), RANDOM_SALT_PAVILION_PLAY) % 10;
+    runtime_data().play_index
+      = random_hash(g_simulation.simtime.absolute_day(true), id(), RANDOM_SALT_PAVILION_PLAY) % 10;
 }
 
 void building_pavilion::update_day() {

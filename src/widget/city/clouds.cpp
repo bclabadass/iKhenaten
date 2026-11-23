@@ -1,6 +1,6 @@
 #include "widget/city/clouds.h"
 
-#include "core/app.h"
+#include "core/app_module.h"
 #include "core/calc.h"
 #include "core/profiler.h"
 #include "core/speed.h"
@@ -12,10 +12,9 @@
 #include "graphics/view/view.h"
 #include "graphics/view/zoom.h"
 #include "graphics/window.h"
-#include "io/gamestate/chunks.h"
 #include "io/io_buffer.h"
-#include "js/js_game.h"
-#include "platform/renderer.h"
+#include "js/js_register.h"
+#include "graphics/render_device.h"
 #include "widget/widget_city.h"
 
 #include <algorithm>
@@ -373,23 +372,6 @@ void clouds_t::draw_city(painter &ctx) {
 }
 
 // Cosmetic only (Enhanced): the chunk keeps the clouds where they were, nothing in the simulation reads it.
-io_buffer* iob_clouds = new io_buffer(
-  [](io_buffer* iob, size_t version) {
-      int32_t count = (int32_t)std::min<size_t>(g_clouds.clouds.size(), 16);
-      iob->bind(BIND_SIGNATURE_INT32, &count);
-      for (int i = 0; i < 16; ++i) {
-          vec2i dummy;
-          vec2i& pos = (i < (int)g_clouds.clouds.size()) ? g_clouds.clouds[i].pos : dummy;
-          iob->bind(BIND_SIGNATURE_INT32, &pos.x);
-          iob->bind(BIND_SIGNATURE_INT32, &pos.y);
-      }
-  },
-  [](size_t version) {
-      for (auto& cloud : g_clouds.clouds) {
-          cloud.pos = {0, 0};
-      }
-  });
-
 void ANK_REGISTER_APPLICATION_MODULE(register_city_clouds_module) {
     g_screen_city.add_screen_space_effect([](painter &ctx) { g_clouds.draw_city(ctx); });
     g_debug.add_render_handler("clouds", [](painter &ctx) { g_clouds.draw_debug(ctx); });

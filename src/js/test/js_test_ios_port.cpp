@@ -1,4 +1,5 @@
 #include "js/test/js_test_common.h"
+#include "grid/figure.h"
 
 // Test hooks added on the ios-port branch (moved here when upstream split js_test_game.cpp by domain).
 
@@ -9,11 +10,12 @@
 #include "graphics/elements/ui.h"
 #include "platform/renderer.h"
 #include "building/construction/build_planner.h"
+#include "widget/city/placement_preview.h"
 #include "building/building_fort.h"
 #include "building/building_barracks.h"
 #include "building/building_gatehouse.h"
 #include "js/js_game.h"
-#include "core/app.h"
+#include "app/app.h"
 #include "core/log.h"
 #include "js/js.h"
 #include "js/js_defines.h"
@@ -222,11 +224,11 @@ static xstring __test_info_window_section() {
 }
 ANK_FUNCTION(__test_info_window_section);
 
-extern build_planner::ghost_fade_stats g_ghost_fade_stats;
 // "drawn,faded,kept" for the last building preview.
 static xstring __test_ghost_fade_stats() {
+    const auto& stats = placement_preview::last_ghost_fade_stats();
     char out[64];
-    snprintf(out, sizeof(out), "%d,%d,%d", g_ghost_fade_stats.drawn, g_ghost_fade_stats.faded, g_ghost_fade_stats.kept);
+    snprintf(out, sizeof(out), "%d,%d,%d", stats.drawn, stats.faded, stats.kept);
     return xstring(out);
 }
 ANK_FUNCTION(__test_ghost_fade_stats);
@@ -258,6 +260,7 @@ ANK_FUNCTION_1(__test_religion_monthly_blessings);
 
 // Sound effects the game asked for since the last call, as "4,42"; clears the list.
 static xstring __test_sound_effects_requested() {
+    events::process(); // effects sent as events play when the queue runs
     char out[512] = "";
     int len = 0;
     for (int i = 0; i < g_sound.requested_effects_count && len < (int)sizeof(out) - 8; i++) {
@@ -960,8 +963,9 @@ static xstring __test_figure_draw_position(int fid) {
     if (!f || !f->id) {
         return xstring("");
     }
+    const figure_draw_state& st = map_figure_draw_state(fid);
     bstring64 out;
-    out.printf("%d,%d,%d,%d", f->main_cached_pos.x, f->main_cached_pos.y, f->main_sort_pixel.x, f->main_sort_pixel.y);
+    out.printf("%d,%d,%d,%d", st.main_pos.x, st.main_pos.y, st.sort_pixel.x, st.sort_pixel.y);
     return xstring(out.c_str());
 }
 ANK_FUNCTION_1(__test_figure_draw_position);

@@ -1,4 +1,4 @@
-#include "core/app.h"
+#include "app/app.h"
 #include "dev/debug.h"
 
 #include "city/city_floods.h"
@@ -106,7 +106,7 @@ static void draw_flood_order_ui(painter &ctx) {
 
     cl = 150;
     debug_text(ctx, str, x, y + 205, cl, "progress:", g_floods.flood_progress);
-    debug_text(ctx, str, x, y + 215, cl, "(unk01):", g_floods.unk01);
+    debug_text(ctx, str, x, y + 215, cl, "season_month:", g_floods.season_month);
     debug_text(ctx, str, x, y + 225, cl, "state:", g_floods.state);
     debug_text(ctx, str, x, y + 235, cl, "width:", g_floods.floodplain_width);
     debug_text(ctx, str, x, y + 245, cl, "hasplains:", g_floods.has_floodplains);

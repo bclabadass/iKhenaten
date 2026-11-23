@@ -16,7 +16,7 @@
 #include "game/game.h"
 #include "graphics/elements/ui.h"
 #include "graphics/graphics.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "graphics/image.h"
 #include "figuretype/figure_soldier.h"
 #include "figuretype/figure_tower_sentry.h"
@@ -206,6 +206,10 @@ void building_barracks_decay_tower_sentry_request() {
 
 int building_barracks_has_tower_sentry_request() {
     return g_tower_sentry_request;
+}
+
+void building_barracks_clear_tower_sentry_request() {
+    g_tower_sentry_request = 0;
 }
 
 void building_barracks_save_state(buffer* buf) {

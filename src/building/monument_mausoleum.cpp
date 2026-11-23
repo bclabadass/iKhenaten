@@ -1,4 +1,5 @@
 #include "monument_mausoleum.h"
+#include "grid/orientation.h"
 
 #include "building/monuments.h"
 #include "city/city.h"
@@ -15,7 +16,6 @@
 #include "game/undo.h"
 #include "graphics/color.h"
 #include "graphics/view/lookup.h"
-#include "graphics/view/view.h"
 #include "grid/building.h"
 #include "grid/building_tiles.h"
 #include "grid/figure.h"
@@ -25,7 +25,7 @@
 #include "grid/road_access.h"
 #include "grid/terrain.h"
 #include "io/io_buffer.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 #include <utility>
@@ -46,32 +46,6 @@ bool tile_not_clear(tile2i t) {
         || (map_terrain_count_directly_adjacent_with_type(t, TERRAIN_FLOODPLAIN) > 0)
         || (map_terrain_count_diagonally_adjacent_with_type(t, TERRAIN_FLOODPLAIN) > 0)
         || map_has_figure_at(t);
-}
-
-bool area_blocked(tile2i origin, int w, int h) {
-    if (w < 1 || h < 1) {
-        return true;
-    }
-    for (int dy = 0; dy < h; dy++) {
-        for (int dx = 0; dx < w; dx++) {
-            tile2i t = origin.shifted(dx, dy);
-            if (!map_grid_is_inside(t, 1) || tile_not_clear(t)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-void draw_area_mask(painter &ctx, tile2i origin, int w, int h, bool force_red) {
-    for (int dy = 0; dy < h; dy++) {
-        for (int dx = 0; dx < w; dx++) {
-            tile2i t = origin.shifted(dx, dy);
-            vec2i pixel = g_camera.lookup_tile_to_pixel(t);
-            const bool bad = force_red || !map_grid_is_inside(t, 1) || tile_not_clear(t);
-            build_planner::draw_flat_tile(ctx, pixel, bad ? COLOR_MASK_RED_30 : COLOR_MASK_GREEN_30);
-        }
-    }
 }
 
 bool worker_slot_occupied(uint16_t wid) {
@@ -308,8 +282,8 @@ vec2i building_mausoleum::box_extent(int orientation) {
 }
 
 tile2i building_mausoleum::origin_from_cursor(tile2i cursor) {
-    const vec2i e = box_extent(g_camera.orientation);
-    switch (g_camera.orientation) {
+    const vec2i e = box_extent(map_view_orientation());
+    switch (map_view_orientation()) {
     case DIR_2_BOTTOM_RIGHT:
         return cursor.shifted(-e.x + 1, 0);
     case DIR_4_BOTTOM_LEFT:
@@ -343,10 +317,6 @@ vec2i building_mausoleum::part_offset(int index, int view, int orientation) {
 
 vec2i building_mausoleum::entry_offset(int view, int orientation) {
     return oriented_offset(MAUSOLEUM_ENTRY_DX, MAUSOLEUM_ENTRY_DY, 1, view, orientation);
-}
-
-bool building_mausoleum::area_blocked_at(tile2i origin, vec2i extent) {
-    return area_blocked(origin, extent.x, extent.y);
 }
 
 building_mausoleum *building_mausoleum::main_mausoleum() {
@@ -386,7 +356,7 @@ int building_mausoleum::block_index() const {
 }
 
 int building_mausoleum::camera_view() const {
-    return g_camera.orientation;
+    return map_view_orientation();
 }
 
 tile2i building_mausoleum::origin() const {
@@ -968,7 +938,7 @@ void building_mausoleum::remove_worker(figure_id fid) {
 }
 
 void building_mausoleum::preview::setup_preview_graphics(build_planner &planer) const {
-    const vec2i ext = box_extent(g_camera.orientation);
+    const vec2i ext = box_extent(map_view_orientation());
     planer.init_tiles(ext.x, ext.y);
 }
 
@@ -1003,7 +973,7 @@ int building_mausoleum::preview::can_place(build_planner &p, tile2i /*tile*/, ti
     if (sandstone_need > 0 && yards_available(RESOURCE_SANDSTONE) < sandstone_need) {
         return CAN_NOT_PLACE;
     }
-    if (area_blocked_at(origin_from_cursor(end), box_extent(g_camera.orientation))) {
+    if (p.site_blocked) {
         return CAN_NOT_PLACE;
     }
     return CAN_PLACE;
@@ -1034,9 +1004,8 @@ int building_mausoleum::preview::finalize_check(build_planner &p, tile2i tile, t
     return can_place(p, tile, end, CAN_PLACE);
 }
 
-void building_mausoleum::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i /*start*/, tile2i end, vec2i /*pixel*/) const {
-    const vec2i ext = box_extent(g_camera.orientation);
-    const tile2i org = origin_from_cursor(end);
+void building_mausoleum::preview::ghost_preview(build_planner& planer, painter& ctx, tile2i /*start*/, tile2i /*end*/,
+  vec2i /*pixel*/) const {
     int sandstone_need = 0;
     for (const auto &pr : maus_params().placement_resources) {
         if (pr.resource == RESOURCE_SANDSTONE) {
@@ -1045,8 +1014,28 @@ void building_mausoleum::preview::ghost_preview(build_planner &planer, painter &
         }
     }
     const bool short_of_sandstone = sandstone_need > 0 && yards_available(RESOURCE_SANDSTONE) < sandstone_need;
-    const bool blocked = has_unfinished_mausoleum() || short_of_sandstone || area_blocked_at(org, ext);
-    draw_area_mask(ctx, org, ext.x, ext.y, blocked);
+    const bool blocked = has_unfinished_mausoleum() || short_of_sandstone || planer.site_blocked;
+    for (const auto& part : planer.site_parts) {
+        ghost_draw::draw_partially_blocked(ctx, blocked, part);
+    }
+}
+
+void building_mausoleum::preview::collect_site(build_planner& planer, tile2i end) const {
+    const vec2i ext = box_extent(map_view_orientation());
+    tile2i origin = origin_from_cursor(end);
+    std::vector<blocked_tile> tiles;
+    for (int dy = 0; dy < ext.y; dy++) {
+        for (int dx = 0; dx < ext.x; dx++) {
+            const tile2i t = origin.shifted(dx, dy);
+            const bool bad = !map_grid_is_inside(t, 1) || tile_not_clear(t);
+            tiles.push_back({t, bad});
+            planer.site_blocked |= bad;
+        }
+    }
+    if (ext.x < 1 || ext.y < 1) {
+        planer.site_blocked = true;
+    }
+    planer.add_site_part(tiles);
 }
 
 void building_mausoleum::on_place(int orientation, int variant) {
@@ -1065,7 +1054,7 @@ void building_mausoleum::on_place(int orientation, int variant) {
 }
 
 void building_mausoleum::on_place_update_tiles(int /*orientation*/, int variant) {
-    const int view = g_camera.orientation;
+    const int view = map_view_orientation();
     const uint8_t skin = (uint8_t)((variant < 0 ? 0 : variant) % 3);
     tile2i org = tile();
 
@@ -1137,7 +1126,7 @@ void building_mausoleum::update_map_orientation(int /*map_orientation*/) {
     if (!m || !is_main()) {
         return;
     }
-    const int view = g_camera.orientation;
+    const int view = map_view_orientation();
     if (m->runtime_data().view == view) {
         refresh_part_images();
         return;

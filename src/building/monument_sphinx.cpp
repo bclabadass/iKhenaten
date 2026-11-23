@@ -1,4 +1,6 @@
 #include "monument_sphinx.h"
+#include "graphics/view/view.h"
+#include "grid/orientation.h"
 
 #include "building/monuments.h"
 #include "city/city.h"
@@ -7,20 +9,19 @@
 #include "construction/build_planner.h"
 #include "core/profiler.h"
 #include "figure/figure.h"
-#include "game/game.h"
+#include "game/simulation.h"
 #include "game/game_config.h"
 #include "game/resource.h"
 #include "game/undo.h"
 #include "graphics/graphics.h"
 #include "graphics/image.h"
 #include "graphics/view/lookup.h"
-#include "graphics/view/view.h"
 #include "grid/building_tiles.h"
 #include "grid/figure.h"
 #include "grid/grid.h"
 #include "grid/terrain.h"
 #include "io/io_buffer.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 
 #include <algorithm>
 
@@ -54,7 +55,7 @@ namespace {
     }
 
     int camera_view() {
-        return (g_camera.orientation / 2) & 3;
+        return (map_view_orientation() / 2) & 3;
     }
 
     // OG turn_origin_to_view: the clicked tile is the view anchor of the first 6x6 part.
@@ -517,12 +518,10 @@ void building_sphinx::preview::ghost_preview(build_planner& planer, painter& ctx
     const int view = camera_view();
     const tile2i origin = origin_from_anchor(end, view);
 
-    std::array<blocked_tile_vec, PARTS> parts;
-    const bool blocked = collect_site(origin, parts) || g_city.buildings.count_total(BUILDING_SPHINX) > 0;
-    if (blocked) {
-        const bool all_red = g_city.buildings.count_total(BUILDING_SPHINX) > 0;
-        for (const auto& p : parts) {
-            planer.draw_partially_blocked(ctx, all_red, p);
+    const bool all_red = g_city.buildings.count_total(BUILDING_SPHINX) > 0;
+    if (planer.site_blocked || all_red) {
+        for (const auto& p : planer.site_parts) {
+            ghost_draw::draw_partially_blocked(ctx, all_red, p);
         }
         return;
     }
@@ -530,16 +529,22 @@ void building_sphinx::preview::ghost_preview(build_planner& planer, painter& ctx
     for (int p = 0; p < PARTS; ++p) {
         const tile2i anchor = anchor_from_origin(part_origin(origin, p), view);
         const vec2i px = (p == 0) ? pixel : g_camera.lookup_tile_to_pixel(anchor);
-        planer.draw_building_ghost(ctx, sphinx_part_image(p, STAGE_FIRST), px);
+        ghost_draw::draw_building_ghost(ctx, sphinx_part_image(p, STAGE_FIRST), px);
     }
 }
 
 void building_sphinx::preview::ghost_blocked(build_planner& planer, painter& ctx, tile2i /*start*/, tile2i end,
   vec2i /*pixel*/, bool fully_blocked) const {
+    for (const auto& p : planer.site_parts) {
+        ghost_draw::draw_partially_blocked(ctx, fully_blocked, p);
+    }
+}
+
+void building_sphinx::preview::collect_site(build_planner& planer, tile2i end) const {
     std::array<blocked_tile_vec, PARTS> parts;
-    collect_site(origin_from_anchor(end, camera_view()), parts);
-    for (const auto& p : parts) {
-        planer.draw_partially_blocked(ctx, fully_blocked, p);
+    planer.site_blocked = ::collect_site(origin_from_anchor(end, camera_view()), parts);
+    for (const auto& part : parts) {
+        planer.add_site_part(part);
     }
 }
 
@@ -565,8 +570,7 @@ int building_sphinx::preview::can_place(build_planner& planer, tile2i /*start*/,
         planer.set_warning("#only_one_building_of_this_type");
         return CAN_NOT_PLACE;
     }
-    std::array<blocked_tile_vec, PARTS> parts;
-    if (collect_site(origin_from_anchor(end, camera_view()), parts)) {
+    if (planer.site_blocked) {
         planer.set_warning("#must_build_on_cleared_land");
         return CAN_NOT_PLACE;
     }
@@ -651,7 +655,7 @@ void building_sphinx::update_map_orientation(int /*map_orientation*/) {
 }
 
 void building_sphinx::animate_spots() {
-    const int now = game.simtime.absolute_tick();
+    const int now = g_simulation.simtime.absolute_tick();
     int steps = (g_spot_anim_tick < 0) ? 1 : std::clamp(now - g_spot_anim_tick, 0, 64);
     g_spot_anim_tick = now;
 

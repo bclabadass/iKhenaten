@@ -1,6 +1,7 @@
 #include "boilerplate_detail.h"
 
 #include "building/building.h"
+#include "building/building_barracks.h"
 #include "building/construction/build_planner.h"
 #include "building/building_storage.h"
 #include "building/monuments.h"
@@ -11,6 +12,7 @@
 #include "city/city_resource.h"
 #include "city/coverage.h"
 #include "city/map.h"
+#include "figure/figure.h"
 #include "content/vfs.h"
 #include "core/buffer.h"
 #include "core/profiler.h"
@@ -49,7 +51,7 @@
 #include "grid/wall_material.h"
 #include "io/chunk_serializer.h"
 #include "io/io.h"
-#include "js/js_game.h"
+#include "js/js_register.h"
 #include "scenario/distant_battle.h"
 #include "scenario/invasion_auto_resolve.h"
 #include "scenario/scenario.h"
@@ -70,6 +72,8 @@ const int GamestateLoadDetail::read_file_version(const char* filename, int offse
 
 void GamestateLoadDetail::pre_load() { // do we NEED this...?
     OZZY_PROFILER_FUNCTION();
+    legacy_figure_actions_remapped = false;
+
     g_scenario.campaign_scenario_id = -1;
     grid_xx::init_all_grids();
 
@@ -78,46 +82,18 @@ void GamestateLoadDetail::pre_load() { // do we NEED this...?
     g_city.migration.reset();
     g_city_planner.reset();
     g_city.init();
-    g_message_manager.init();
+    events::start_session();
     game.init_state();
     game.animation_timers_init();
     sound_city_init();
-    building_clear_all();
-    building_storage_clear_all();
-    g_city.figures.init_figures();
-    g_enemy_armies.clear();
-    // .map files carry no cities chunk; stale cities would rewrite empire objects in load_mission_metadata.
-    g_empire.clear_cities_data();
+    io_chunk::reset_all();
+    building_barracks_clear_tower_sentry_request();
     figure_name_init();
-    g_formations.clear_all();
-    figure_route_clear_all();
-    map_routing_stats_clear();
-    g_recorded_paths.clear();
-    map_clear_floodplain_growth();
-    // Troop carry lives outside city_data; clear so old saves (no chunk) and map
-    // loads cannot inherit a stale snapshot from the previous session.
-    g_campaign_carry.clear();
-
-    game.time_init(2098);
-    map_monuments_clear();
-    // clear grids
-    map_image_clear();
-    map_building_clear();
-    map_terrain_clear();
-    map_canal_clear();
-    map_figure_clear();
-    map_property_clear();
-    map_sprite_clear();
-    map_bridge_grids_clear();
-    map_random_clear();
-    g_desirability.clear_map();
-    map_elevation_clear();
-    map_soldier_strength_clear();
-    map_road_network_clear();
+    grid_xx::clear_all_grids();
+    map_figure_draw_states_clear_all();
 
     map_image_context_init();
     map_random_init();
-    map_tiles_gardens_clear_all();
 
     events::emit(event_game_mission_pre_load{});
     events::process();

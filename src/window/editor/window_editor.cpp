@@ -6,6 +6,7 @@
 #include "graphics/image.h"
 #include "graphics/graphics.h"
 #include "graphics/elements/generic_button.h"
+#include "graphics/elements/ui.h"
 #include "graphics/elements/lang_text.h"
 #include "graphics/elements/panel.h"
 #include "graphics/text.h"
@@ -17,7 +18,7 @@
 #include "widget/sidebar/editor.h"
 #include "window/editor/attributes.h"
 #include "window/popup_dialog.h"
-#include "platform/renderer.h"
+#include "graphics/render_device.h"
 
 static int city_view_dirty;
 
@@ -28,14 +29,13 @@ static void draw_background(int) {
 }
 
 static void draw_cancel_construction() {
-    painter ctx = game.painter();
     if (!mouse::get().is_touch || !editor_tool_is_active()) {
         return;
     }
     vec2i view_size = g_camera.size_pixels;
     view_size.x -= 4 * 16;
-    inner_panel_draw({ view_size.x - 4, 40 }, { 3, 2 });
-    ctx.img_generic(image_id_from_group(GROUP_OK_CANCEL_SCROLL_BUTTONS) + 4, vec2i{view_size.x, 44});
+    ui::panel({view_size.x - 4, 40}, {3, 2}, UiFlags_PanelInner);
+    ui::eimage(image_id_from_group(GROUP_OK_CANCEL_SCROLL_BUTTONS) + 4, vec2i{view_size.x, 44});
     city_view_dirty = 1;
 }
 
@@ -85,5 +85,6 @@ void window_editor_map_show(void) {
         draw_foreground,
         handle_input
     };
+    window.sim_time_runs = true;
     window_show(&window);
 }
