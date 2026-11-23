@@ -148,6 +148,16 @@ function mission_show_start_message(mission, message_id) {
     mission.start_message_shown = true
 }
 
+// OG event_manager.c scenario_events_rearm: once a recurring event fires, its year moves on by the years since the
+// start, so it comes back at twice the year it last came (from year 5: 5, 10, 20, 40), not every year (Brendan on
+// Saqqara: a gold mine collapse, a wage cut and a sandstorm every January). last_year is the handler's *_last_year.
+function mission_og_recurring_due(last_year, ev) {
+    if (last_year === undefined || last_year === null || last_year < 0) {
+        return true
+    }
+    return ev.years_since_start >= last_year + Math.max(last_year, 1)
+}
+
 // Recurring request cadence (pak): do not start the next cycle while a request for
 // this resource is still active; after it clears, wait ≥1 month before firing again.
 // Call update_idle every month; may_fire at the calendar slot (e.g. month 7).

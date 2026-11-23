@@ -529,6 +529,9 @@ function mission6_failed_flood(ev) {
 	if (mission.failed_flood_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.failed_flood_last_year, ev)) {
+		return
+	}
 	mission.failed_flood_last_year = ev.years_since_start
 	log_info("akhenaten: mission 6 behdet failed flood y" + ev.years_since_start, {ev:ev})
 	city.create_chain_event({

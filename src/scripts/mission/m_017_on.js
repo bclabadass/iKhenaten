@@ -596,6 +596,9 @@ function mission17_event_i1_perfect_flood(ev) {
 	if (mission.event1_perfect_flood_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event1_perfect_flood_last_year, ev)) {
+		return
+	}
 	mission.event1_perfect_flood_last_year = ev.years_since_start
 	mission17_ensure_gamemeat_leaves()
 	log_info("akhenaten: mission 17 on perfect flood y" + ev.years_since_start, {ev:ev})
@@ -668,6 +671,9 @@ function mission17_event_i5_limestone_recurring(ev) {
 		return
 	}
 	if (mission.event5_limestone_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event5_limestone_last_year, ev)) {
 		return
 	}
 	var abs_month = ev.years_since_start * 12 + ev.month

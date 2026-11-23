@@ -713,6 +713,9 @@ function mission41_event_i5_gift(ev) {
 	if (mission.event5_gift_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event5_gift_last_year, ev)) {
+		return
+	}
 	mission.event5_gift_last_year = ev.years_since_start
 	mission41_ensure_chain_leaves()
 	log_info("akhenaten: mission 41 gift grain×20 recurring", {ev:ev})
@@ -783,6 +786,9 @@ function mission41_event_i13_water(ev) {
 		return
 	}
 	if (mission.event13_water_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event13_water_last_year, ev)) {
 		return
 	}
 	mission.event13_water_last_year = ev.years_since_start

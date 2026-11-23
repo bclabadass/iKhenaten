@@ -657,6 +657,9 @@ function mission128_bricks_request_recurring(ev) {
 	if (mission.bricks_recurring_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.bricks_recurring_last_year, ev)) {
+		return
+	}
 	mission.bricks_recurring_last_year = ev.years_since_start
 	var tag = 3000 + ev.years_since_start
 	log_info("akhenaten: mission 128 bricks request y" + ev.years_since_start, {ev:ev})
@@ -670,6 +673,9 @@ function mission128_clay_flood_recurring(ev) {
 		return
 	}
 	if (mission.clay_flood_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.clay_flood_last_year, ev)) {
 		return
 	}
 	mission.clay_flood_last_year = ev.years_since_start
@@ -690,6 +696,9 @@ function mission128_gold_collapse_recurring(ev) {
 	if (mission.gold_collapse_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.gold_collapse_last_year, ev)) {
+		return
+	}
 	mission.gold_collapse_last_year = ev.years_since_start
 	city.create_chain_event({
 		tag_id: 3200 + ev.years_since_start,
@@ -708,6 +717,9 @@ function mission128_contaminated_water_recurring(ev) {
 		return
 	}
 	if (mission.contaminated_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.contaminated_last_year, ev)) {
 		return
 	}
 	mission.contaminated_last_year = ev.years_since_start

@@ -544,6 +544,9 @@ function mission10_gold_mine_collapse_early(ev) {
 	if (mission.gold_collapse_early_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.gold_collapse_early_last_year, ev)) {
+		return
+	}
 	mission.gold_collapse_early_last_year = ev.years_since_start
 	city.create_chain_event({
 		tag_id: 500 + ev.years_since_start,
@@ -560,6 +563,9 @@ function mission10_wage_decrease(ev) {
 		return
 	}
 	if (mission.wage_decrease_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.wage_decrease_last_year, ev)) {
 		return
 	}
 	mission.wage_decrease_last_year = ev.years_since_start
@@ -580,6 +586,9 @@ function mission10_land_trade_problem(ev) {
 	if (mission.land_trade_problem_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.land_trade_problem_last_year, ev)) {
+		return
+	}
 	mission.land_trade_problem_last_year = ev.years_since_start
 	city.create_chain_event({
 		tag_id: 700 + ev.years_since_start,
@@ -596,6 +605,9 @@ function mission10_pharaoh_request_stone_recurring(ev) {
 		return
 	}
 	if (mission.pharaoh_stone_recurring_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.pharaoh_stone_recurring_last_year, ev)) {
 		return
 	}
 	mission.pharaoh_stone_recurring_last_year = ev.years_since_start
@@ -619,6 +631,9 @@ function mission10_pharaoh_request_luxury_recurring(ev) {
 		return
 	}
 	if (mission.pharaoh_luxury_recurring_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.pharaoh_luxury_recurring_last_year, ev)) {
 		return
 	}
 	mission.pharaoh_luxury_recurring_last_year = ev.years_since_start
@@ -653,6 +668,9 @@ function mission10_gold_mine_collapse_late(ev) {
 	if (mission.gold_collapse_late_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.gold_collapse_late_last_year, ev)) {
+		return
+	}
 	mission.gold_collapse_late_last_year = ev.years_since_start
 	var y = ev.years_since_start
 	var collapse = city.create_chain_event({
@@ -677,6 +695,9 @@ function mission10_pharaoh_request_gamemeat_recurring(ev) {
 		return
 	}
 	if (mission.pharaoh_gamemeat_recurring_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.pharaoh_gamemeat_recurring_last_year, ev)) {
 		return
 	}
 	mission.pharaoh_gamemeat_recurring_last_year = ev.years_since_start
@@ -727,6 +748,9 @@ function mission10_pharaoh_request_gamemeat_y33(ev) {
 	if (mission.pharaoh_gamemeat_y33_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.pharaoh_gamemeat_y33_last_year, ev)) {
+		return
+	}
 	mission.pharaoh_gamemeat_y33_last_year = ev.years_since_start
 	var y = ev.years_since_start
 	var base = 3300 + y * 10
@@ -742,6 +766,9 @@ function mission10_pharaoh_request_luxury_y44(ev) {
 		return
 	}
 	if (mission.pharaoh_luxury_y44_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.pharaoh_luxury_y44_last_year, ev)) {
 		return
 	}
 	mission.pharaoh_luxury_y44_last_year = ev.years_since_start
@@ -776,6 +803,9 @@ function mission10_pharaoh_request_luxury_y46(ev) {
 		return
 	}
 	if (mission.pharaoh_luxury_y46_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.pharaoh_luxury_y46_last_year, ev)) {
 		return
 	}
 	mission.pharaoh_luxury_y46_last_year = ev.years_since_start

@@ -731,6 +731,9 @@ function mission12_event_i2_pottery_recurring(ev) {
 	if (mission.event2_pottery_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event2_pottery_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_POTTERY, "pottery_recurring", abs)) {
 		return
@@ -792,6 +795,9 @@ function mission12_event_i7_pottery_recurring_clay_chain(ev) {
 	if (mission.event7_pottery_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event7_pottery_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_POTTERY, "pottery_recurring", abs)) {
 		return
@@ -808,6 +814,9 @@ function mission12_event_i12_grain_recurring(ev) {
 		return
 	}
 	if (mission.event12_grain_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event12_grain_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month
@@ -856,6 +865,9 @@ function mission12_event_i15_price_increase_stone_recurring(ev) {
 	if (mission.event15_price_stone_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event15_price_stone_last_year, ev)) {
+		return
+	}
 	mission.event15_price_stone_last_year = ev.years_since_start
 	log_info("akhenaten: mission 12 meidum i15 price increase stone y" + ev.years_since_start, {ev:ev})
 	mission12_fire_simple_event(3000 + 15 * 100 + ev.years_since_start, EVENT_TYPE_PRICE_INCREASE, RESOURCE_STONE, 9, 2)
@@ -884,6 +896,9 @@ function mission12_event_i17_clay_pit_flood_recurring(ev) {
 	if (mission.event17_clay_pit_flood_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event17_clay_pit_flood_last_year, ev)) {
+		return
+	}
 	mission.event17_clay_pit_flood_last_year = ev.years_since_start
 	log_info("akhenaten: mission 12 meidum i17 clay pit flood y" + ev.years_since_start, {ev:ev})
 	mission12_fire_simple_event(3000 + 17 * 100 + ev.years_since_start, EVENT_TYPE_CLAY_PIT_FLOOD, undefined, 9)
@@ -896,6 +911,9 @@ function mission12_event_i18_wage_increase_recurring(ev) {
 		return
 	}
 	if (mission.event18_wage_increase_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event18_wage_increase_last_year, ev)) {
 		return
 	}
 	mission.event18_wage_increase_last_year = ev.years_since_start
@@ -911,6 +929,9 @@ function mission12_event_i19_timber_recurring(ev) {
 		return
 	}
 	if (mission.event19_timber_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event19_timber_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month
@@ -943,6 +964,9 @@ function mission12_event_i31_grain_recurring(ev) {
 		return
 	}
 	if (mission.event31_grain_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event31_grain_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month
@@ -991,6 +1015,9 @@ function mission12_event_i34_clay_pit_flood2_recurring(ev) {
 	if (mission.event34_clay_pit_flood2_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event34_clay_pit_flood2_last_year, ev)) {
+		return
+	}
 	mission.event34_clay_pit_flood2_last_year = ev.years_since_start
 	log_info("akhenaten: mission 12 meidum i34 clay pit flood y" + ev.years_since_start, {ev:ev})
 	mission12_fire_simple_event(3000 + 34 * 100 + ev.years_since_start, EVENT_TYPE_CLAY_PIT_FLOOD, undefined, 5, 2)
@@ -1033,6 +1060,9 @@ function mission12_event_i37_price_decrease_clay_recurring(ev) {
 	if (mission.event37_price_decrease_clay_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event37_price_decrease_clay_last_year, ev)) {
+		return
+	}
 	mission.event37_price_decrease_clay_last_year = ev.years_since_start
 	log_info("akhenaten: mission 12 meidum i37 price decrease clay y" + ev.years_since_start, {ev:ev})
 	mission12_fire_simple_event(3000 + 37 * 100 + ev.years_since_start, EVENT_TYPE_PRICE_DECREASE, RESOURCE_CLAY, 15)
@@ -1045,6 +1075,9 @@ function mission12_event_i38_grain_recurring(ev) {
 		return
 	}
 	if (mission.event38_grain_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event38_grain_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month
@@ -1065,6 +1098,9 @@ function mission12_event_i39_perfect_flood_recurring(ev) {
 	if (mission.event39_perfect_flood_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event39_perfect_flood_last_year, ev)) {
+		return
+	}
 	mission.event39_perfect_flood_last_year = ev.years_since_start
 	log_info("akhenaten: mission 12 meidum i39 perfect flood y" + ev.years_since_start, {ev:ev})
 	mission12_fire_simple_event(3000 + 39 * 100 + ev.years_since_start, EVENT_TYPE_PERFECT_FLOOD, undefined, 5)
@@ -1077,6 +1113,9 @@ function mission12_event_i40_pottery_recurring(ev) {
 		return
 	}
 	if (mission.event40_pottery_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event40_pottery_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month
@@ -1098,6 +1137,9 @@ function mission12_event_i41_grain_recurring(ev) {
 	if (mission.event41_grain_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event41_grain_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_GRAIN, "grain_recurring", abs)) {
 		return
@@ -1114,6 +1156,9 @@ function mission12_event_i47_sea_trade_problem_recurring(ev) {
 		return
 	}
 	if (mission.event47_sea_trade_problem_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event47_sea_trade_problem_last_year, ev)) {
 		return
 	}
 	mission.event47_sea_trade_problem_last_year = ev.years_since_start
@@ -1202,6 +1247,9 @@ function mission12_event_i59_timber_recurring(ev) {
 	if (mission.event59_timber_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event59_timber_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_TIMBER, "timber_recurring", abs)) {
 		return
@@ -1219,6 +1267,9 @@ function mission12_event_i60_grain_gift_recurring(ev) {
 		return
 	}
 	if (mission.event60_grain_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event60_grain_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month
@@ -1252,6 +1303,9 @@ function mission12_event_i63_stone_gift_recurring(ev) {
 		return
 	}
 	if (mission.event63_stone_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event63_stone_last_year, ev)) {
 		return
 	}
 	mission.event63_stone_last_year = ev.years_since_start

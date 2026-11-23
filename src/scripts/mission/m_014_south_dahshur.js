@@ -645,6 +645,9 @@ function mission14_event_i9_grain_recurring(ev) {
 	if (mission.event9_grain_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event9_grain_last_year, ev)) {
+		return
+	}
 	var abs_month = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_GRAIN, "grain_recurring", abs_month)) {
 		return
@@ -675,6 +678,9 @@ function mission14_event_i11_wage_decrease(ev) {
 		return
 	}
 	if (mission.event11_wage_decrease_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event11_wage_decrease_last_year, ev)) {
 		return
 	}
 	mission.event11_wage_decrease_last_year = ev.years_since_start

@@ -692,6 +692,9 @@ function mission13_event_i3_beer_recurring(ev) {
 	if (mission.event3_beer_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event3_beer_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_BEER, "beer_recurring", abs)) {
 		return
@@ -854,6 +857,9 @@ function mission13_clay_pit_flood_recurring(ev) {
 		return
 	}
 	if (mission.clay_pit_flood_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.clay_pit_flood_last_year, ev)) {
 		return
 	}
 	mission.clay_pit_flood_last_year = ev.years_since_start

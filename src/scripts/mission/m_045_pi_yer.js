@@ -691,6 +691,9 @@ function mission45_event_i0_chickpeas(ev) {
 	if (mission.event0_chickpeas_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event0_chickpeas_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_CHICKPEAS, "chickpeas_recurring", abs)) {
 		return
@@ -809,6 +812,9 @@ function mission45_event_i30_papyrus(ev) {
 		return
 	}
 	if (mission.event30_papyrus_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event30_papyrus_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month

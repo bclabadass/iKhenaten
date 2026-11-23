@@ -709,6 +709,9 @@ function mission18_event_i0_gems_recurring(ev) {
 	if (mission.event0_gems_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event0_gems_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_GEMS, "gems_recurring", abs)) {
 		return
@@ -884,6 +887,9 @@ function mission18_event_i16_gamemeat_recurring(ev) {
 	if (mission.event16_gamemeat_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event16_gamemeat_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_GAMEMEAT, "gamemeat_pharaoh_recurring", abs)) {
 		return
@@ -971,6 +977,9 @@ function mission18_event_i36_gamemeat_recurring(ev) {
 	if (mission.event36_gamemeat_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event36_gamemeat_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_GAMEMEAT, "gamemeat_city_recurring", abs)) {
 		return
@@ -988,6 +997,9 @@ function mission18_event_i38_timber_recurring(ev) {
 		return
 	}
 	if (mission.event38_timber_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event38_timber_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month

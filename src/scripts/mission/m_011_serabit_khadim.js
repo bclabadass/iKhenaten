@@ -560,6 +560,9 @@ function mission11_pharaoh_request_copper_recurring(ev) {
 	if (mission.pharaoh_copper_recurring_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.pharaoh_copper_recurring_last_year, ev)) {
+		return
+	}
 	var abs = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_COPPER, "pharaoh_copper_recurring", abs)) {
 		return
@@ -620,6 +623,9 @@ function mission11_clay_pit_flood_recurring(ev) {
 	if (mission.clay_pit_flood_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.clay_pit_flood_last_year, ev)) {
+		return
+	}
 	mission.clay_pit_flood_last_year = ev.years_since_start
 	var y = ev.years_since_start
 	var amounts = [6, 6, 8, 9, 7]
@@ -656,6 +662,9 @@ function mission11_pharaoh_request_luxury_recurring(ev) {
 		return
 	}
 	if (mission.pharaoh_luxury_recurring_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.pharaoh_luxury_recurring_last_year, ev)) {
 		return
 	}
 	var abs = ev.years_since_start * 12 + ev.month

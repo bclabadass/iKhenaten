@@ -654,6 +654,9 @@ function mission15_event_i2_grain_recurring(ev) {
 	if (mission.event2_grain_last_year == ev.years_since_start) {
 		return
 	}
+	if (!mission_og_recurring_due(mission.event2_grain_last_year, ev)) {
+		return
+	}
 	var abs_month = ev.years_since_start * 12 + ev.month
 	if (!mission_recurring_request_may_fire(mission, RESOURCE_GRAIN, "grain_recurring", abs_month)) {
 		return
@@ -670,6 +673,9 @@ function mission15_event_i3_stone_gift_recurring(ev) {
 		return
 	}
 	if (mission.event3_gift_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event3_gift_last_year, ev)) {
 		return
 	}
 	mission.event3_gift_last_year = ev.years_since_start
@@ -693,6 +699,9 @@ function mission15_event_i5_grain_recurring(ev) {
 		return
 	}
 	if (mission.event5_grain_last_year == ev.years_since_start) {
+		return
+	}
+	if (!mission_og_recurring_due(mission.event5_grain_last_year, ev)) {
 		return
 	}
 	var abs_month = ev.years_since_start * 12 + ev.month
