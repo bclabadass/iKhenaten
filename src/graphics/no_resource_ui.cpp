@@ -4,13 +4,14 @@
 #include "graphics/graphics.h"
 #include "graphics/screen.h"
 #include "graphics/painter.h"
-void ui::no_resource::graphics_draw_background(painter& ctx, int image_id, float scale, vec2i offset, bool fit) {
+void ui::no_resource::graphics_draw_background(painter& ctx, int image_id, float scale, vec2i offset, bool fit,
+  vec2i canvas) {
     (void)image_id;
     (void)scale;
     (void)offset;
     (void)fit;
     // Solid backdrop when Pharaoh menu textures are unavailable (same warm tone family as UI chrome).
-    ctx.fill_rect(vec2i{0, 0}, vec2i{screen_width(), screen_height()}, COLOR_SIDEBAR);
+    ctx.fill_rect(vec2i{0, 0}, canvas, COLOR_SIDEBAR);
 }
 
 void ui::no_resource::button_border_fill(vec2i pos, vec2i size, bool hovered) {

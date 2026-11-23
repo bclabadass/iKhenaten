@@ -170,7 +170,7 @@ void execute_ui_command(painter& ctx, const ui::cmd_t& cmd) {
         break;
 
     case cmd_t::background:
-        graphics_draw_background(ctx, cmd.image_id, cmd.scale, cmd.pos, cmd.box_width != 0);
+        graphics_draw_background(ctx, cmd.image_id, cmd.scale, cmd.pos, cmd.box_width != 0, cmd.size);
         break;
 
     case cmd_t::line:

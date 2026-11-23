@@ -28,7 +28,9 @@ void graphics_shade_rect(vec2i start, vec2i size, int darkness);
 
 namespace ui {
     namespace textured {
-        void graphics_draw_background(painter&, int image_id, float scale, vec2i offset, bool fit);
+        void graphics_draw_background(painter&, int image_id, float scale, vec2i offset, bool fit, vec2i canvas);
+        // Where the last fitted background landed, in canvas pixels (tests).
+        void last_background_canvas_rect(vec2i& pos, vec2i& size);
     }
 }
 

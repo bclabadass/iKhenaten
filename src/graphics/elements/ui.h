@@ -1144,6 +1144,6 @@ inline void archive::r<ui::widget>(pcstr name, ui::widget& v) {
 }
 ANK_CONFIG_STRUCT(ui::widget, pos)
 
-extern void (*graphics_draw_background)(painter&, int image_id, float scale, vec2i offset, bool fit);
+extern void (*graphics_draw_background)(painter&, int image_id, float scale, vec2i offset, bool fit, vec2i canvas);
 extern void (*button_border_draw)(vec2i, vec2i, bool);
 extern void (*large_label_draw)(vec2i, int, int);

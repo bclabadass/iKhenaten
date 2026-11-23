@@ -1542,7 +1542,9 @@ void ui::eimg_queue::image(int image) {
 void ui::ebackground::draw(UiFlags flags) {
     scr_pos = pos;
     if (!true_size) {
-        push(cmd_t::background, ImageId{img_desc.tid()}, Scale{1.f}, Pos{pos}, BoxWidth{fit ? 1 : 0});
+        // Fitted to the screen as it is now: a scaled window's virtual screen is gone when the batch replays.
+        push(cmd_t::background, ImageId{img_desc.tid()}, Scale{1.f}, Pos{pos}, BoxWidth{fit ? 1 : 0},
+          Size{vec2i{screen_width(), screen_height()}});
         return;
     }
 

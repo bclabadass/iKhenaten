@@ -47,7 +47,18 @@ void graphics_shade_rect(vec2i start, vec2i size, int darkness) {
     g_render.fill_rect(start, size, alpha);
 }
 
-void ui::textured::graphics_draw_background(painter& ctx, int image_id, float scale, vec2i offset, bool fit) {
+namespace {
+    vec2i g_last_background_pos;
+    vec2i g_last_background_size;
+} // namespace
+
+void ui::textured::last_background_canvas_rect(vec2i& pos, vec2i& size) {
+    pos = g_last_background_pos;
+    size = g_last_background_size;
+}
+
+void ui::textured::graphics_draw_background(painter& ctx, int image_id, float scale, vec2i offset, bool fit,
+  vec2i canvas) {
     const image_t* img = image_get(image_id);
     if (!img || img->width <= 0 || img->height <= 0) {
         return;
@@ -55,16 +66,19 @@ void ui::textured::graphics_draw_background(painter& ctx, int image_id, float sc
 
     float fit_scale = scale;
     if (fit && img->width >= 500 && img->height >= 350) {
-        float fit_x = (float)screen_width() / (float)img->width;
-        float fit_y = (float)screen_height() / (float)img->height;
+        float fit_x = (float)canvas.x / (float)img->width;
+        float fit_y = (float)canvas.y / (float)img->height;
         fit_scale = std::max(fit_x, fit_y) * scale;
     }
 
     const int scaled_w = (int)(img->width * fit_scale);
     const int scaled_h = (int)(img->height * fit_scale);
-    const int x = (screen_width() - scaled_w) / 2;
-    const int y = (screen_height() - scaled_h) / 2;
+    const int x = (canvas.x - scaled_w) / 2;
+    const int y = (canvas.y - scaled_h) / 2;
     ctx.draw_image(img, vec2i{x, y} + offset, COLOR_MASK_NONE, fit_scale);
+    const float ui_scale = g_render.ui_scale();
+    g_last_background_pos = {(int)((x + offset.x) * ui_scale), (int)((y + offset.y) * ui_scale)};
+    g_last_background_size = {(int)(scaled_w * ui_scale), (int)(scaled_h * ui_scale)};
 }
 
 void ImageDraw::execute_render_command(painter& ctx, const render_command_t& command) {

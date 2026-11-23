@@ -296,6 +296,17 @@ static int __test_screen_pixel(int x, int y) {
 }
 ANK_FUNCTION_2(__test_screen_pixel);
 
+// "x,y,w,h" of the last fitted background picture, in canvas pixels.
+static xstring __test_last_background_rect() {
+    vec2i pos;
+    vec2i size;
+    ui::textured::last_background_canvas_rect(pos, size);
+    bstring64 out;
+    out.printf("%d,%d,%d,%d", pos.x, pos.y, size.x, size.y);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION(__test_last_background_rect);
+
 static bool __test_sound_ready() {
     return g_sound.is_initialized();
 }
