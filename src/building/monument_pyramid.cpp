@@ -11,6 +11,7 @@
 #include "city/city_warnings.h"
 #include "city/city_buildings.h"
 #include "city/city_figures.h"
+#include "figuretype/figure_carpenter.h"
 #include "figure/figure.h"
 #include "game/game.h"
 #include "game/undo.h"
@@ -1225,17 +1226,19 @@ bool building_pyramid::need_carpenter() {
     if (!pyramid_engine_has_ramp_work(&base)) {
         return false;
     }
-    if (!has_free_worker_slot()) {
-        return false;
-    }
-    auto &d = runtime_data();
-    for (auto &wid : d.workers) {
-        figure *f = wid > 0 ? figure_get(wid) : nullptr;
-        if (f && f->type == FIGURE_CARPENTER) {
-            return false;
-        }
-    }
-    return true;
+    // Not gated on a free worker slot: stonemasons waiting for blocks can hold all five while the blocks wait for the
+    // ramp a carpenter builds (Saqqara: the guild had timber and full progress, and the pyramid stood). A carpenter
+    // claims the ramp part itself; one on the way to this pyramid is enough.
+    bool carpenter_coming = false;
+    figure_valid_do(
+      [&](figure& f) {
+          auto* carpenter = smart_cast<figure_carpenter>(&f);
+          if (carpenter && carpenter->runtime_data().destination_bid == id()) {
+              carpenter_coming = true;
+          }
+      },
+      std::initializer_list<e_figure_type>{FIGURE_CARPENTER});
+    return !carpenter_coming;
 }
 
 int building_pyramid::try_assign_bricklayer(figure_id fid) {
