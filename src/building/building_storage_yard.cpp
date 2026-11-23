@@ -769,7 +769,10 @@ storage_worker_task building_storageyard_deliver_resource_to_workshop(building *
         }
 
         storage_worker_task task = {STORAGEYARD_TASK_NONE};
-        buildings_workshop_do([&] (building &b) {
+        buildings_valid_do([&](building& b) {
+            if (!building_takes_raw_material(b)) {
+                return;
+            }
             if (!b.need_resource(space->resource()) || b.need_resource_amount(check_resource) < 100) {
                 return;
             }

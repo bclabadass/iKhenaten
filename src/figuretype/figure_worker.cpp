@@ -1131,6 +1131,16 @@ void figure_worker::monument_site_work_tick(building *monument) {
     }
 }
 
+// The mason a laborer's train is taking a block to. A mason that is gone leaves its slot to other figures: following
+// that slot, the train waited at the ramp forever (Saqqara: the pyramid stopped).
+static figure* laborer_paired_mason(figure_id mason_id) {
+    figure* mason = mason_id ? figure_get(mason_id) : nullptr;
+    if (!mason || !mason->is_alive()) {
+        return nullptr;
+    }
+    return (mason->type == FIGURE_STONEMASON || mason->type == FIGURE_BRICKLAYER) ? mason : nullptr;
+}
+
 void figure_worker::figure_action() {
     base.use_cross_country = false;
     base.max_roam_length = (int)current_params().max_roam_ticks;
@@ -1510,7 +1520,7 @@ void figure_worker::figure_action() {
         base.outside_road_ticks = 0;
         figure_id mason_id = base.leading_figure_id ? (figure_id)base.leading_figure_id : rd.mason_fid;
         building_id mason_part = 0;
-        if (figure *mason = figure_get(mason_id)) {
+        if (figure* mason = laborer_paired_mason(mason_id)) {
             mason_part = pyramid_figure_work_part_bid(mason);
             if (!mason_part) {
                 mason_part = map_building_at(mason->tile);
@@ -1550,7 +1560,7 @@ void figure_worker::figure_action() {
         base.terrain_usage = TERRAIN_USAGE_ANY;
         base.outside_road_ticks = 0;
         figure_id mason_id = base.leading_figure_id ? (figure_id)base.leading_figure_id : rd.mason_fid;
-        figure *mason = figure_get(mason_id);
+        figure* mason = laborer_paired_mason(mason_id);
         building_id part_id = mason ? map_building_at(mason->tile) : 0;
         if (!part_id && mason) {
             part_id = pyramid_figure_work_part_bid(mason);

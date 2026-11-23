@@ -919,6 +919,14 @@ int monument_pyramid_figure::claim_next_part(figure_id fid, int set_height, int 
     if (frontier.empty()) {
         return 0;
     }
+    // A part claimed by a worker that is gone (its slot now holds another figure) looked taken to every mason, and a
+    // pyramid with all its open parts claimed that way stopped (Saqqara). The check clears such claims.
+    for (building_id id : frontier) {
+        auto* ps = pyramid_part_state_get(id);
+        if (ps && ps->worker_figure_id && ps->worker_figure_id != fid) {
+            pyramid_engine_part_has_active_worker(id);
+        }
+    }
 
     building *first = building_get(frontier[0]);
     building *first_head = first ? chain_head_for(first) : head;

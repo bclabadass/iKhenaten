@@ -211,7 +211,7 @@ void building_industry_update_farms(void) {
 }
 
 void building_workshop_add_raw_material(building* b, int amount, e_resource res) {
-    if (b->id > 0 && b->is_workshop() && b->need_resource(res)) {
+    if (b->id > 0 && building_takes_raw_material(*b) && b->need_resource(res)) {
         if (b->input.resource == res || b->input.resource_second == res) {
             b->store_resource(res, amount);
         } else {
@@ -222,6 +222,13 @@ void building_workshop_add_raw_material(building* b, int amount, e_resource res)
     }
 }
 
+// Workshops, and guilds that work from a raw material: the carpenters' guild sends a carpenter only with timber in
+// stock, and since the workshop flag decided deliveries no yard or woodcutter brought it any (and a load that reached
+// it was dropped), so a stepped pyramid's ramp was never built and its sled trains waited at the ramp (Saqqara).
+bool building_takes_raw_material(const building& b) {
+    return b.is_workshop() || (b.is_guild() && b.input.resource != RESOURCE_NONE);
+}
+
 int building_get_workshop_for_raw_material_with_room(tile2i tile, e_resource resource, int distance_from_entry, int road_network_id, tile2i &dst) {
     if (g_city.resource.is_stockpiled(resource)) {
         return 0;
@@ -229,8 +236,8 @@ int building_get_workshop_for_raw_material_with_room(tile2i tile, e_resource res
 
     int min_dist = INFINITE;
     building* min_building = 0;
-    buildings_valid_do([&] (building &b) {
-        if (!b.is_workshop()) {
+    buildings_valid_do([&](building& b) {
+        if (!building_takes_raw_material(b)) {
             return;
         }
 
@@ -266,8 +273,8 @@ int building_get_workshop_for_raw_material(tile2i tile, e_resource resource, int
 
     int min_dist = INFINITE;
     building* min_building = nullptr;
-    buildings_valid_do([&] (building &b) {
-        if (!b.is_workshop()) {
+    buildings_valid_do([&](building& b) {
+        if (!building_takes_raw_material(b)) {
             return;
         }
 
