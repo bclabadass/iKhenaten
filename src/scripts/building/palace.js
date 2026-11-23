@@ -54,6 +54,13 @@ function building_palace_add_resource(ev) {
     }
 
     var b = city.get_building(ev.bid)
+    // The palace counts the gold it takes in a 16-bit store, and the cart sees the delivery made only if the store
+    // grew. Full, the delivery failed and the cart came back with the same load, paid again each time (Saqqara: money
+    // rising without end). Nothing reads the store (the vault shown is the tax money), so empty it when it can't take
+    // the load.
+    if (b.stored_resource(RESOURCE_GOLD) + ev.amount > 65535) {
+        b.consume_resource(RESOURCE_GOLD, b.stored_resource(RESOURCE_GOLD))
+    }
     b.store_resource(RESOURCE_GOLD, ev.amount)
     emit event_finance_request { type: request, deben: ev.amount }
 }
