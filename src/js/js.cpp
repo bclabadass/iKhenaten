@@ -846,6 +846,9 @@ bool js_vm_sync(const xstring &mission_id) {
 
     if (windows_only) {
         autoconfig_window::refresh_all();
+        // The re-run scripts laid every window out on the full canvas; windows drawn at a larger UI scale (the Duo's
+        // inner-screen pop-ups) lay out again on their smaller virtual screen.
+        autoconfig_window::refresh_layout_for_screen();
     } else {
         config::refresh(vm.J);
     }
