@@ -774,7 +774,7 @@ function mission13_event_i8_oil_request(ev) {
 	}
 	mission.event8_oil_done = true
 	log_info("akhenaten: mission 13 buhen i8 oil request y6m1", {ev:ev})
-	mission13_fire_request(2008, RESOURCE_OIL, 2000, 6, 1030, 1032, 1031, 4, 0)
+	mission13_fire_request(2008, RESOURCE_DEBEN, 2000, 6, 1030, 1032, 1031, 4, 0)
 }
 
 // pak i=10: year=7 month=2 limestone×32/24mo once; ok→KR+6 refuse→KR−8 late→KR−4.

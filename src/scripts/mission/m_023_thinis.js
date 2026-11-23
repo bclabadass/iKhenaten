@@ -785,7 +785,7 @@ function mission23_calendar(ev) {
 	if (!mission.oil_done && ev.years_since_start == 6 && ev.month == 0) {
 		mission.oil_done = true
 		log_info("akhenaten: mission 23 oil x142")
-		mission23_fire_request(2007, RESOURCE_OIL, 142, 2, 1026, 1025, 1026, 6, 0)
+		mission23_fire_request(2007, RESOURCE_DEBEN, 142, 2, 1026, 1025, 1026, 6, 0)
 	}
 	if (!mission.henna120_done && ev.years_since_start == 1 && ev.month == 7) {
 		mission.henna120_done = true

@@ -548,7 +548,7 @@ function mission14_ensure_oil_ladder_leaves() {
 
 	// Chain-only oil requests (dormant until a KR/late leaf fires them).
 	var oil3 = city.create_good_request({ // i3 oil×1000
-		tag_id: 1003, resource: RESOURCE_OIL, amount: 1000, months_initial: 12,
+		tag_id: 1003, resource: RESOURCE_DEBEN, amount: 1000, months_initial: 12,
 		trigger: EVENT_TRIGGER_ONLY_VIA_EVENT
 	})
 	oil3.set_sender_faction(0)
@@ -557,7 +557,7 @@ function mission14_ensure_oil_ladder_leaves() {
 	oil3.set_too_late_action_tag(1007)
 
 	var oil4 = city.create_good_request({ // i4 oil×2000
-		tag_id: 1004, resource: RESOURCE_OIL, amount: 2000, months_initial: 12,
+		tag_id: 1004, resource: RESOURCE_DEBEN, amount: 2000, months_initial: 12,
 		trigger: EVENT_TRIGGER_ONLY_VIA_EVENT
 	})
 	oil4.set_sender_faction(0)
@@ -566,7 +566,7 @@ function mission14_ensure_oil_ladder_leaves() {
 	oil4.set_too_late_action_tag(1008)
 
 	var oil5 = city.create_good_request({ // i5 oil×4000
-		tag_id: 1005, resource: RESOURCE_OIL, amount: 4000, months_initial: 12,
+		tag_id: 1005, resource: RESOURCE_DEBEN, amount: 4000, months_initial: 12,
 		trigger: EVENT_TRIGGER_ONLY_VIA_EVENT
 	})
 	oil5.set_sender_faction(0)
@@ -575,7 +575,7 @@ function mission14_ensure_oil_ladder_leaves() {
 	oil5.set_too_late_action_tag(1028)
 
 	var oil6 = city.create_good_request({ // i6 late-branch oil×2000
-		tag_id: 1006, resource: RESOURCE_OIL, amount: 2000, months_initial: 12,
+		tag_id: 1006, resource: RESOURCE_DEBEN, amount: 2000, months_initial: 12,
 		trigger: EVENT_TRIGGER_ONLY_VIA_EVENT
 	})
 	oil6.set_sender_faction(0)
@@ -584,7 +584,7 @@ function mission14_ensure_oil_ladder_leaves() {
 	oil6.set_too_late_action_tag(1007)
 
 	var oil7 = city.create_good_request({ // i7 late-branch oil×4000
-		tag_id: 1007, resource: RESOURCE_OIL, amount: 4000, months_initial: 12,
+		tag_id: 1007, resource: RESOURCE_DEBEN, amount: 4000, months_initial: 12,
 		trigger: EVENT_TRIGGER_ONLY_VIA_EVENT
 	})
 	oil7.set_sender_faction(0)
@@ -593,7 +593,7 @@ function mission14_ensure_oil_ladder_leaves() {
 	oil7.set_too_late_action_tag(1008)
 
 	var oil8 = city.create_good_request({ // i8 late-branch oil×8000
-		tag_id: 1008, resource: RESOURCE_OIL, amount: 8000, months_initial: 12,
+		tag_id: 1008, resource: RESOURCE_DEBEN, amount: 8000, months_initial: 12,
 		trigger: EVENT_TRIGGER_ONLY_VIA_EVENT
 	})
 	oil8.set_sender_faction(0)
@@ -633,7 +633,7 @@ function mission14_event_i2_oil_request(ev) {
 	}
 	mission.event2_oil_done = true
 	mission14_ensure_oil_ladder_leaves()
-	mission14_fire_request(2002, RESOURCE_OIL, 500, 12, 1020, 1024, 1006, 0, 0)
+	mission14_fire_request(2002, RESOURCE_DEBEN, 500, 12, 1020, 1024, 1006, 0, 0)
 }
 
 // pak i=9: grain×10 / 24mo recurring from y2m10, sender=pharaoh.

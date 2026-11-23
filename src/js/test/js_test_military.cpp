@@ -1384,11 +1384,13 @@ static void __test_events_dump() {
         if (!e) {
             continue;
         }
-        logs::info(
-          "[events] #%d type=%d sub=%d state=%d trig=%d tag=%d y%d m%d active=%d done=%d ref=%d late=%d def=%d", i,
-          (int)e->type, (int)e->subtype, (int)e->event_state, (int)e->event_trigger_type, (int)e->tag_id,
+        logs::info("[events] #%d type=%d sub=%d state=%d trig=%d tag=%d y%d m%d active=%d done=%d ref=%d late=%d def=%d"
+                   " item=%d,%d,%d,%d amount=%d,%d,%d,%d",
+          i, (int)e->type, (int)e->subtype, (int)e->event_state, (int)e->event_trigger_type, (int)e->tag_id,
           (int)e->time.year, (int)e->time.month, e->is_active ? 1 : 0, (int)e->on_completed_action,
-          (int)e->on_refusal_action, (int)e->on_too_late_action, (int)e->on_defeat_action);
+          (int)e->on_refusal_action, (int)e->on_too_late_action, (int)e->on_defeat_action, (int)e->item.value,
+          (int)e->item.f_fixed, (int)e->item.f_min, (int)e->item.f_max, (int)e->amount.value, (int)e->amount.f_fixed,
+          (int)e->amount.f_min, (int)e->amount.f_max);
     }
 }
 ANK_FUNCTION(__test_events_dump);

@@ -834,7 +834,7 @@ function mission20_requests_and_economy(ev) {
 		mission.event0_oil_done = true
 		log_info("akhenaten: mission 20 oil request×500")
 		// ok→1001 KR+8→1005 gamemeat; refuse→1002; late→1003
-		mission20_fire_request(2000, RESOURCE_OIL, 500, 6, 1001, 1002, 1003, 3, 1)
+		mission20_fire_request(2000, RESOURCE_DEBEN, 500, 6, 1001, 1002, 1003, 3, 1)
 	}
 	if (!mission.event5_gamemeat_done && ev.years_since_start == 4 && ev.month == 0) {
 		// Calendar root; no-op if oil ok already fired tag 1005.

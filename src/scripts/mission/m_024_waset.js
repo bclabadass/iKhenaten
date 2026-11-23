@@ -742,7 +742,7 @@ function mission24_requests_and_events(ev) {
 		mission.event4_oil_done = true
 		log_info("akhenaten: mission 24 oil×884 extortion (i=4)")
 		// refuse→egypt×6 via event_request_cleared (JS chain); no leaf 1007.
-		mission24_fire_request(2004, RESOURCE_OIL, 884, 18, 1005, 0, 1008, 6, 0, "Nekhen")
+		mission24_fire_request(2004, RESOURCE_DEBEN, 884, 18, 1005, 0, 1008, 6, 0, "Nekhen")
 	}
 	if (!mission.event10_troops_done && ev.years_since_start == 7 && ev.month == 2) {
 		mission.event10_troops_done = true
@@ -758,7 +758,7 @@ function mission24_requests_and_events(ev) {
 		mission.event18_oil_done = true
 		log_info("akhenaten: mission 24 oil×238 extortion (i=18)")
 		// refuse→egypt×4 via event_request_cleared (JS chain); no leaf 1021.
-		mission24_fire_request(2018, RESOURCE_OIL, 238, 18, 1019, 0, 1022, 6, 0, "Sauty")
+		mission24_fire_request(2018, RESOURCE_DEBEN, 238, 18, 1019, 0, 1022, 6, 0, "Sauty")
 	}
 	if (!mission.event24_flood_done && ev.years_since_start == 11 && ev.month == 5) {
 		mission.event24_flood_done = true

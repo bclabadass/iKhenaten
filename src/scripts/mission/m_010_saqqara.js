@@ -521,7 +521,7 @@ function mission10_pharaoh_gift_pomegranates(ev) {
 	gift.execute()
 }
 
-// pak: year=4 month=10 item=31 (oil) amount=501 / 2mo once; ok→+5 refuse→−5
+// pak: year=4 month=10 item=31 (deben in the base campaign) amount=501 / 2mo once; ok→+5 refuse→−5
 [es=event_advance_month, mission=mission10]
 function mission10_pharaoh_request_oil(ev) {
 	if (mission.pharaoh_requested_oil) {
@@ -532,7 +532,7 @@ function mission10_pharaoh_request_oil(ev) {
 	}
 	mission.pharaoh_requested_oil = true
 	log_info("akhenaten: mission 10 saqqara oil request", {ev:ev})
-	mission10_fire_request(2, RESOURCE_OIL, 501, 2, 201, 202, 0, 5, 5, 0)
+	mission10_fire_request(2, RESOURCE_DEBEN, 501, 2, 201, 202, 0, 5, 5, 0)
 }
 
 // pak: year=5+ month=0 GOLD_MINE_COLLAPSE recurring

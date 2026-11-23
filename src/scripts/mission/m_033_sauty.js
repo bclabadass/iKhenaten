@@ -540,7 +540,7 @@ function mission33_ensure_chain_leaves() {
 	pom32.set_too_late_action_tag(1007)
 	pom32.set_defeat_action_tag(1007)
 
-	var gift_oil = mission33_make_leaf(1006, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_OIL, 2500, 6, undefined, "Menat Khufu")
+	var gift_oil = mission33_make_leaf(1006, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_DEBEN, 2500, 6, undefined, "Menat Khufu")
 	gift_oil.set_completed_action_tag(1008)
 
 	mission33_make_leaf(1007, EVENT_TYPE_CITY_STATUS_CHANGE, undefined, 38, 6,
@@ -551,26 +551,26 @@ function mission33_ensure_chain_leaves() {
 	mission33_make_leaf(1009, EVENT_TYPE_PRICE_INCREASE, RESOURCE_LINEN, 30, 6, undefined, "Kerma")
 
 	// Chain B: oil ladder (13↔14 one ok-loop via cleared) → fail hub 1015 → troops/henna
-	var oil1000b = mission33_make_chain_request(1011, RESOURCE_OIL, 1000, 6, 6, "Kerma")
+	var oil1000b = mission33_make_chain_request(1011, RESOURCE_DEBEN, 1000, 6, 6, "Kerma")
 	oil1000b.set_completed_action_tag(1012)
 	oil1000b.set_refusal_action_tag(1015)
 	oil1000b.set_too_late_action_tag(1015)
 	oil1000b.set_defeat_action_tag(1015)
 
-	var oil1500 = mission33_make_chain_request(1012, RESOURCE_OIL, 1500, 6, 0, "Kerma")
+	var oil1500 = mission33_make_chain_request(1012, RESOURCE_DEBEN, 1500, 6, 0, "Kerma")
 	oil1500.set_completed_action_tag(1013)
 	oil1500.set_refusal_action_tag(1015)
 	oil1500.set_too_late_action_tag(1015)
 	oil1500.set_defeat_action_tag(1015)
 
-	var oil2000 = mission33_make_chain_request(1013, RESOURCE_OIL, 2000, 3, 6, "Menat Khufu")
+	var oil2000 = mission33_make_chain_request(1013, RESOURCE_DEBEN, 2000, 3, 6, "Menat Khufu")
 	oil2000.set_completed_action_tag(1014)
 	oil2000.set_refusal_action_tag(1015)
 	oil2000.set_too_late_action_tag(1015)
 	oil2000.set_defeat_action_tag(1015)
 
 	// ok→1013 once (cleared); refuse→1015
-	var oil2500 = mission33_make_chain_request(1014, RESOURCE_OIL, 2500, 6, 0, "Pwenet")
+	var oil2500 = mission33_make_chain_request(1014, RESOURCE_DEBEN, 2500, 6, 0, "Pwenet")
 	oil2500.set_refusal_action_tag(1015)
 	oil2500.set_too_late_action_tag(1015)
 	oil2500.set_defeat_action_tag(1015)
@@ -768,7 +768,7 @@ function mission33_requests_and_events(ev) {
 	if (!mission.event10_oil_done && ev.years_since_start == 7 && ev.month == 7) {
 		mission.event10_oil_done = true
 		log_info("akhenaten: mission 33 oil×1000 Men-nefer (i=10)")
-		mission33_fire_request(2010, RESOURCE_OIL, 1000, 6, 1011, 1015, 1015, 6, "Men-nefer", 1015)
+		mission33_fire_request(2010, RESOURCE_DEBEN, 1000, 6, 1011, 1015, 1015, 6, "Men-nefer", 1015)
 	}
 }
 

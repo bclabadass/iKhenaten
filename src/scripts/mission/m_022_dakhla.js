@@ -638,7 +638,7 @@ function mission22_ensure_timber_i23_leaves() {
 	mission22_make_leaf(1025, EVENT_TYPE_CITY_STATUS_CHANGE, undefined, 5, 2,
 		EVENT_SUBTYPE_NEW_TRADE_ROUTE, "Selima Oasis")
 	var gift_gems = mission22_make_leaf(1026, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_GEMS, 5, 2)
-	var gift_oil = mission22_make_leaf(1027, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_OIL, 812, 2)
+	var gift_oil = mission22_make_leaf(1027, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_DEBEN, 812, 2)
 	var kr_refuse = mission22_make_leaf(1028, EVENT_TYPE_REPUTATION_DECREASE, undefined, 28, 2)
 	var bricks = city.create_good_request({
 		tag_id: 1057,

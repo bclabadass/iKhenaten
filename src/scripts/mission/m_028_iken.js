@@ -742,7 +742,7 @@ function mission28_requests_and_events(ev) {
 	if (!mission.event3_oil_done && ev.years_since_start == 1 && ev.month == 8) {
 		mission.event3_oil_done = true
 		log_info("akhenaten: mission 28 oil×1168 (i=3)")
-		mission28_fire_request(2003, RESOURCE_OIL, 1168, 6, 1001, 0, 1001, 4, 0, "Farafra Oasis")
+		mission28_fire_request(2003, RESOURCE_DEBEN, 1168, 6, 1001, 0, 1001, 4, 0, "Farafra Oasis")
 	}
 
 	// pak i=8: barley×7 /12mo y2m3 → ok 1009; refuse 1032; late 1031.

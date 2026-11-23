@@ -655,7 +655,7 @@ function mission12_ensure_gift_leaves() {
 
 	mission12_make_leaf(1050, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_LUXURY_GOODS, 25, 2) // i50 ← i49.ok
 	mission12_make_leaf(1061, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_LUXURY_GOODS, 28, 2) // i61 ← i60.ok
-	mission12_make_leaf(1064, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_OIL, 21, 2) // i64 ← i63.ok
+	mission12_make_leaf(1064, EVENT_TYPE_GIFT_FROM_PHARAOH, RESOURCE_DEBEN, 21, 2) // i64 ← i63.ok
 }
 
 [es=event_mission_start, mission=mission12]

@@ -201,7 +201,7 @@
       </div>
       <div class="tutorial-step">
         <span class="step-tag">Year 6 · month 1</span>
-        <span>Pharaoh requests <strong>2 000 oil</strong> / 6 months — an unusually large amount, taken straight from the pak data.</span>
+        <span>Pharaoh requests <strong>2 000 deben</strong> / 6 months (pak item 31, deben in the base campaign).</span>
       </div>
       <div class="tutorial-step">
         <span class="step-tag">Kushite raids — years 6 to 20</span>
@@ -233,7 +233,7 @@
         <li>Fulfilling the year-4 troops request starts a self-renewing 400-troop tribute loop — keep succeeding and it keeps paying kingdom rating; fail it and Dahshur's status, kingdom rating, and copper/gem prices crash together.</li>
         <li>Keep a limestone buffer at all times; the ladder recurs at years 1, 3, 4, 7, 9, and 11, each fulfilled request worth +6 kingdom rating toward the goal of 75.</li>
         <li>Temples of Seth (god of the desert and war) matter here — Osiris and Ra have no presence at Buhen at all, so don't budget for their festivals.</li>
-        <li>The year-6 oil request (2 000!) and the granite demand spikes at years 5 and 10 can catch an unprepared Storage Yard off guard — keep spare capacity.</li>
+        <li>The year-6 request for 2 000 deben and the granite demand spikes at years 5 and 10 can catch an unprepared Storage Yard off guard — keep spare capacity.</li>
       </ul>
 
       <h2 id="buildings">Available buildings</h2>
@@ -311,7 +311,7 @@
               <li>
                 <span class="ev-name">Once calendar roots</span>
                 <span class="ev-line">lines 664–867</span>
-                <span class="ev-desc">Limestone ladder y1m6 / y3m2 / y4m10 / y7m2 / y9m11 / y11m7; troops y4m7; granite demand y5m1 / y10m0; oil y6m1; beer festival y7m4 (granite gift chain).</span>
+                <span class="ev-desc">Limestone ladder y1m6 / y3m2 / y4m10 / y7m2 / y9m11 / y11m7; troops y4m7; granite demand y5m1 / y10m0; deben y6m1; beer festival y7m4 (granite gift chain).</span>
                 <span class="ev-fn">mission13_event_i&lt;n&gt;_*</span>
               </li>
               <li>
@@ -354,7 +354,7 @@
               <li><strong>Troops request (OG):</strong> dispatched empire-service companies are away for the route travel months (12 without a route); at the deadline they win when their strength covers the amount (losses by <code>troops_loss_brackets</code>, none under Seth’s blessing) and fire the ok chain, else they are lost and fire the defeat chain (i=36→47); still more than 2 months away they come back too late (late chain). Never sent → refuse chain. Winners return after the travel months. Source: <code>src/scenario/request.cpp</code> <code>troops_request_process</code>; test <code>tests/474_troops_request_og.js</code>.</li>
               <li><strong>Troops MESSAGE / CITY_STATUS subtypes:</strong> i=33 MESSAGE subtype 0 = city saved (already handled). i=34/36 CITY_STATUS subtype 0 = Egyptian city falls — as in OG the city turns foreign (a trading one stays trading, the route stays open) and the "city falls" message (MM 338) is posted; a city that is not Egyptian is left alone.</li>
               <li><strong>Empire routes 8/9/10 skipped:</strong> the pak polylines exist but no map object references them — orphan data, the same pattern seen in earlier missions.</li>
-              <li><strong>Oil×2000:</strong> the year-6 request amount is unusually large but matches the pak value exactly — not a transcription error.</li>
+              <li><strong>Deben×2000:</strong> pak item 31 in a request is deben in the base campaign (Timna's 885 deben uses it too), not oil, which the base campaign lacks.</li>
               <li><strong>Invasions</strong> are proxied in JS (<code>city.start_foreign_army_invasion</code>) rather than the native <code>EVENT_TYPE_INVASION</code> — same pattern as every mission before B2-migrate. <strong>Pharaoh's favour</strong> is native (<code>events[]</code>, <code>event_manager_t::update_kingdom_favour</code>).</li>
               <li><strong>Next mission 15</strong> (North Dahshur) is scripted (<code>m_015_north_dahshur.js</code>); both Buhen and South Dahshur set <code>next_mission : 15</code>.</li>
             </ul>

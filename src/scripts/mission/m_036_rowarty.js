@@ -291,7 +291,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 		{ // pak i=9
 			type : EVENT_TYPE_REQUEST
 			time { year : 12, month : 8 }
-			item { value : RESOURCE_OIL }
+			item { value : RESOURCE_DEBEN }
 			amount { value : 656 }
 			months_initial : 2
 			location_fields [ 2, 2, -1, -1 ]
@@ -684,7 +684,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 		{ // pak i=32
 			type : EVENT_TYPE_REQUEST
 			time { year : 34, month : 7 }
-			item { value : RESOURCE_OIL }
+			item { value : RESOURCE_DEBEN }
 			amount { value : 19 }
 			months_initial : 6
 			location_fields [ 5, 5, -1, -1 ]
@@ -735,7 +735,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 		{ // pak i=35
 			type : EVENT_TYPE_REQUEST
 			time { year : 17, month : 8 }
-			item { value : RESOURCE_OIL }
+			item { value : RESOURCE_DEBEN }
 			amount { value : 8 }
 			months_initial : 6
 			location_fields [ 5, 5, -1, -1 ]
@@ -1111,7 +1111,7 @@ mission36 { // Rowarty (Avaris) — The Sea People
 		{ // pak i=57
 			type : EVENT_TYPE_GIFT_FROM_PHARAOH
 			time { year : 1, month : 0 }
-			item { value : RESOURCE_OIL }
+			item { value : RESOURCE_DEBEN }
 			amount { value : 8 }
 			months_initial : 2
 			location_fields [ 4, -1, 1, 8 ]

@@ -176,7 +176,7 @@
 
       <h2 id="events">Scripted events</h2>
       <p>Full empire redefine + event schedule verified against original campaign scenario 14. Empire id <strong>13</strong> (same fork map as Buhen). Scenario enemy is <strong>Hyksos</strong> (<code>ENEMY_5_HYKSOS</code>); there are <strong>no</strong> timed enemy raids — only Pharaoh's favour punishment (size <strong>49 → 21</strong>, <code>BY_FAVOUR</code> events in <code>events[]</code>, pak i=37→38). At Kingdom rating 0 the engine sends the <code>BY_FAVOUR</code> invasion from <code>events[]</code> (OG <code>city/kingdom.c</code>): warnings over its <code>months_initial</code>, then the attack; the chained wave attacks together with it. It is called off if the rating reaches 15 before the attack, and can come again 12 months later.</p>
-      <div class="tutorial-step"><span class="step-tag">Year 1 · month 6</span><span>Oil ladder root: <strong>500 oil</strong> / 12 months. Success KR steps chain further oil asks (1 000 → 2 000 → 4 000); refuse/late branches escalate amounts up to <strong>8 000</strong> and eventually land on CITY_UNDER_SIEGE Dahshur → Byblos falls → copper/gems price &amp; demand cascade.</span></div>
+      <div class="tutorial-step"><span class="step-tag">Year 1 · month 6</span><span>Deben ladder root: <strong>500 deben</strong> / 12 months. Success KR steps chain further oil asks (1 000 → 2 000 → 4 000); refuse/late branches escalate amounts up to <strong>8 000</strong> and eventually land on CITY_UNDER_SIEGE Dahshur → Byblos falls → copper/gems price &amp; demand cascade.</span></div>
       <div class="tutorial-step"><span class="step-tag">Year 2 · month 10+</span><span>Recurring Pharaoh request: <strong>10 grain</strong> / 24 months (idle-gated). Completing +8 kingdom; refuse −8; late −4.</span></div>
       <div class="tutorial-step"><span class="step-tag">Year 4 · month 8</span><span>Limestone <strong>×32</strong> / 24 months → ok: KR+8 then stone gift ×64; refuse: KR−15 then stone demand −8; late: KR−5 then stone gift ×32.</span></div>
       <div class="tutorial-step"><span class="step-tag">Year 5+</span><span>Recurring wage decrease (−1) from year 5, coming back in years 10, 20, 40, as in the original.</span></div>
@@ -193,7 +193,7 @@
       <h3>Tips</h3>
       <ul>
         <li>Import plain stone in bulk before upper pyramid phases — a full Storage Yard prevents stalls.</li>
-        <li>Oil amounts in the ladder are enormous (pak values) — stockpile oil or refuse carefully; the refuse path sieges Dahshur and collapses Byblos trade flavor.</li>
+        <li>The deben ladder asks for large sums (500 up to 8 000) — keep the treasury ready or refuse carefully; the refuse path sieges Dahshur and collapses Byblos trade flavor.</li>
         <li>Prosperity 25 and housing 19 need gems/jewelry from Serabit Khadim and evolved homes.</li>
       </ul>
 
@@ -255,7 +255,7 @@
           <div class="details-body">
             <ul class="event-list">
               <li><span class="ev-name">event_mission_start</span><span class="ev-desc">Start message; <code>empire.set_id(13)</code>; <code>ENEMY_5_HYKSOS</code>; wire oil / limestone / grain chain leaves.</span><span class="ev-fn">mission14_on_start</span></li>
-              <li><span class="ev-name">Oil ladder (i=2…8)</span><span class="ev-desc">y1m6 oil×500 root; chain-only asks 1000/2000/4000/8000; refuse/late → siege Dahshur → Byblos fell → copper/gems cascade.</span><span class="ev-fn">mission14_event_i2_oil_request / mission14_ensure_oil_ladder_leaves</span></li>
+              <li><span class="ev-name">Oil ladder (i=2…8)</span><span class="ev-desc">y1m6 deben×500 root (pak item 31, deben in the base campaign); chain-only asks 1000/2000/4000/8000; refuse/late → siege Dahshur → Byblos fell → copper/gems cascade.</span><span class="ev-fn">mission14_event_i2_oil_request / mission14_ensure_oil_ladder_leaves</span></li>
               <li><span class="ev-name">Grain recurring (i=9)</span><span class="ev-desc">y2m10+ grain×10/24mo, idle-gated, Pharaoh sender.</span><span class="ev-fn">mission14_event_i9_grain_recurring</span></li>
               <li><span class="ev-name">Limestone once (i=10)</span><span class="ev-desc">y4m8 limestone×32 → stone gift / demand leaves.</span><span class="ev-fn">mission14_event_i10_limestone_request</span></li>
               <li><span class="ev-name">Wage decrease (i=11)</span><span class="ev-desc">y5m0+ amount 1 recurring.</span><span class="ev-fn">mission14_event_i11_wage_decrease</span></li>
