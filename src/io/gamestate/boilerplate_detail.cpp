@@ -114,6 +114,11 @@ void GamestateLoadDetail::post_load() {
     js_register_mission_vars(g_scenario.vars);
 
     g_empire.load_mission_metadata(missionid, /*preserve_runtime=*/!is_new_mission);
+    bool has_sea_route = false;
+    for (const auto& city : g_empire.get_cities()) {
+        has_sea_route |= city.in_use && city.is_sea_trade;
+    }
+    scenario_apply_og_dock_rule(missionid._id, has_sea_route);
     js_register_game_handlers(missionid.value());
 
     // camera

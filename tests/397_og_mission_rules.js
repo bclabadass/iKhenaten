@@ -3,12 +3,14 @@
 // names only the medium stepped pyramid). The original's per-mission rules, decoded from mission1.pak by
 // tools/og_mission_rules.py into scripts/mission_og_rules.js, now apply when a mission loads: buildings the editor
 // turned off stay off (from Timna on), the temple complexes are the original's, and only the briefing's monuments
-// are offered.
+// are offered. Missions that trade by sea get the dock where the original allows it (Brendan: no dock on Saqqara);
+// Bahariya, where the original turns it off, stays without.
 // Markers:
 //   [test-marker] og_rules_table_loaded
 //   [test-marker] og_rules_selima
 //   [test-marker] og_rules_abu
 //   [test-marker] og_rules_saqqara
+//   [test-marker] og_rules_sea_missions_have_dock
 
 var __test397_ok = false
 
@@ -59,10 +61,21 @@ function run_test() {
     if (!t397_check(10, {
         small_mastaba: [BUILDING_SMALL_MASTABA, false], medium_stepped: [BUILDING_MEDIUM_STEPPED_PYRAMID, true],
         complex_seth: [BUILDING_TEMPLE_COMPLEX_SETH, false], complex_ptah: [BUILDING_TEMPLE_COMPLEX_PTAH, true],
-        recruiter: [BUILDING_RECRUITER, false], fort_charioteers: [BUILDING_FORT_CHARIOTEERS, false]
+        recruiter: [BUILDING_RECRUITER, false], fort_charioteers: [BUILDING_FORT_CHARIOTEERS, false],
+        dock: [BUILDING_DOCK, true]
     }, 'og_rules_saqqara')) {
         return t397_fail('Saqqara')
     }
+    var dock_menu = building_menu_ctrl.is_enabled(BUILDING_DOCK)
+    __log_info_native('[test:397] Saqqara dock in the build menu: ' + dock_menu)
+    if (!dock_menu) {
+        return t397_fail('Saqqara dock not in the build menu')
+    }
+    if (!t397_check(12, { dock: [BUILDING_DOCK, true] }, 'og_rules_meidum_dock')
+        || !t397_check(19, { dock: [BUILDING_DOCK, false] }, 'og_rules_bahariya_no_dock')) {
+        return t397_fail('sea missions dock')
+    }
+    __log_marker('og_rules_sea_missions_have_dock')
 
     __test397_ok = true
     __test_signal_ready()
@@ -72,7 +85,7 @@ function check_valid() {
     if (!__test397_ok) {
         return false
     }
-    var markers = ['og_rules_table_loaded', 'og_rules_selima', 'og_rules_abu', 'og_rules_saqqara']
+    var markers = ['og_rules_table_loaded', 'og_rules_selima', 'og_rules_abu', 'og_rules_saqqara', 'og_rules_sea_missions_have_dock']
     for (var i = 0; i < markers.length; i++) {
         if (!__test_find_inlog('[test-marker] ' + markers[i])) {
             return false

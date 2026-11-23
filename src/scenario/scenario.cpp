@@ -134,6 +134,23 @@ namespace {
 
 } // namespace
 
+// Mission scripts leave the dock out of missions that trade by sea (Saqqara, Meidum, Buhen ...: Brendan on the Duo,
+// no dock to trade on Saqqara), while the original's editor allows it there. Run after the mission's empire cities are
+// set up, on every load, so a game already in progress gets its dock too.
+void scenario_apply_og_dock_rule(int mission, bool has_sea_route) {
+    if (mission < OG_RULES_FIRST_MISSION || !has_sea_route) {
+        return;
+    }
+    const auto rule = std::find_if(og_mission_rules.missions.begin(), og_mission_rules.missions.end(),
+      [mission](const og_mission_rule& r) { return r.id == mission; });
+    if (rule == og_mission_rules.missions.end()) {
+        return;
+    }
+    if (std::find(rule->off.begin(), rule->off.end(), (int)BUILDING_DOCK) == rule->off.end()) {
+        scenario_building_allow(BUILDING_DOCK, true);
+    }
+}
+
 // The mission scripts' building lists drifted from the original (Brendan on the Duo: Fort: Charioteers on Selima,
 // a Seth temple complex and a mastaba on Saqqara). Applied after a mission's list is read, so a script's own unlocks
 // later in the game still work: buildings the original's editor turned off stay off, the temple complexes are the

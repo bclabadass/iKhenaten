@@ -403,6 +403,7 @@ int scenario_property_player_rank();
 
 bool scenario_building_allowed(e_building_type btype);
 void scenario_apply_og_mission_rules(int mission);
+void scenario_apply_og_dock_rule(int mission, bool has_sea_route);
 void scenario_building_allow(e_building_type btype, bool allow);
 
 int scenario_editor_allow_mapped_types(int slot, e_building_type *out, int max_out);
