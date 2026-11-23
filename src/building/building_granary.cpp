@@ -672,11 +672,10 @@ void building_granary::update_graphic() {
         return;
     }
 
-    const bool is_fancy = g_desirability.get(base.tile) > current_params().fancy_treshold_desirability;
-    base.set_flag(e_building_fancy, is_fancy);
-
-    const xstring &animkey = is_fancy ? animkeys().fancy : animkeys().base;
-    map_building_tiles_add(base.id, base.tile, base.size, first_img(animkey), TERRAIN_BUILDING);
+    // The original has one granary picture: frame 1 of the group (the old "fancy" one) is a small sprite, and a
+    // granary in a desirable area drew as a black square.
+    base.set_flag(e_building_fancy, false);
+    map_building_tiles_add(base.id, base.tile, base.size, first_img(animkeys().base), TERRAIN_BUILDING);
 
     building_impl::update_graphic();
 }
