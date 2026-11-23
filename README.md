@@ -30,7 +30,7 @@ the two.
   <tr><td>8</td><td>Abedju (or 7)</td><td>$\color{green}{\textbf{Yes}}$</td></tr>
   <tr><td>9</td><td rowspan="15">Old Kingdom</td><td>Selima (or 10)</td><td>$\color{green}{\textbf{Yes}}$</td></tr>
   <tr><td>10</td><td>Abu (or 9)</td><td>No</td></tr>
-  <tr><td>11</td><td>Saqqara</td><td>No</td></tr>
+  <tr><td>11</td><td>Saqqara</td><td>$\color{green}{\textbf{Yes}}$</td></tr>
   <tr><td>12</td><td>Serabit Khadim (or 13)</td><td>No</td></tr>
   <tr><td>13</td><td>Meidum (or 12)</td><td>No</td></tr>
   <tr><td>14</td><td>Buhen (or 15)</td><td>No</td></tr>
