@@ -1001,13 +1001,52 @@ grid_area building_pyramid::get_area() const {
     return { begin, end };
 }
 
-// Draw after the pyramid's front row, so the courses in front never cover a worker standing on top.
+static vec2i pyramid_part_ground_pixel(building* part) {
+    const vec2i a = g_camera.lookup_tile_to_pixel(part->tile);
+    const vec2i b = g_camera.lookup_tile_to_pixel(part->tile.shifted(part->size - 1, part->size - 1));
+    return {(a.x + b.x) / 2, (a.y + b.y) / 2};
+}
+
+// Where a worker stands on a part: on the ramp at its climb height, else on top of the course picture.
+static int pyramid_part_stand_lift(building* part, int climb_height) {
+    constexpr int pixels_per_block = 15;
+    const int climb_lift = std::max(0, climb_height) * pixels_per_block;
+    auto* ps = pyramid_part_state_get(part->id);
+    if (ps && ps->ramp_image_id) {
+        return climb_lift;
+    }
+    auto* pyr = part->dcast_pyramid();
+    const int top = pyr ? pyr->course_top_lift(map_view_orientation() / 2) : -1;
+    return top >= 0 ? top : climb_lift;
+}
+
+// A worker on the courses is drawn between the part it left and the part it walks to (its tile only hops from part
+// to part), standing on each as pyramid_part_stand_lift says, and after the pyramid's front row so the courses in
+// front never cover it.
 bool building_pyramid::lift_figure_on_courses(figure& f, vec2i& pixel, vec2i& sort_pixel) {
-    const int lift = pyramid_figure_draw_lift(&f);
-    if (lift <= 0) {
+    if (!pyramid_figure_on_own_pyramid(&f)) {
         return false;
     }
-    building* head = g_monument_pyramid_engine.chain_head(building_get(pyramid_figure_work_data(&f)->part));
+    const pyramid_figure_work_t* work = pyramid_figure_work_data(&f);
+    building* to = building_get(work->part);
+    building* from = work->previous_part ? building_get(work->previous_part) : to;
+    if (!from || !from->id) {
+        from = to;
+    }
+    const bool moving = work->total > 0 && work->progress < work->total;
+    const int num = moving ? work->progress : 1;
+    const int den = moving ? work->total : 1;
+    const vec2i from_px = pyramid_part_ground_pixel(from);
+    const vec2i to_px = pyramid_part_ground_pixel(to);
+    const vec2i ground = {from_px.x + (to_px.x - from_px.x) * num / den, from_px.y + (to_px.y - from_px.y) * num / den};
+    const int to_lift = pyramid_part_stand_lift(to, work->height);
+    int lift = to_lift;
+    if (moving) {
+        const int from_lift = pyramid_part_stand_lift(from, work->previous_height);
+        lift = from_lift + (to_lift - from_lift) * num / den;
+    }
+
+    building* head = g_monument_pyramid_engine.chain_head(to);
     svector<building*, PYRAMID_PARTS_CAPACITY> parts;
     g_monument_pyramid_engine.collect_parts(head, parts);
     int bottom = sort_pixel.y;
@@ -1018,7 +1057,8 @@ bool building_pyramid::lift_figure_on_courses(figure& f, vec2i& pixel, vec2i& so
             }
         }
     }
-    pixel.y -= lift;
+    const vec2i crowd = f.crowd_pixel_offset();
+    pixel = {ground.x + 29 + crowd.x, ground.y + 23 - lift + crowd.y};
     sort_pixel.y = bottom;
     return true;
 }
@@ -2304,6 +2344,20 @@ int building_stepped_pyramid::height_part_image(tile2i tile, int view) {
     auto layer_area = get_layer_area(L);
     return get_masonry_image(base.orientation, tile, layer_area.begin, layer_area.end, remake_part_course(L, polished),
       polished);
+}
+
+int building_stepped_pyramid::course_top_lift(int view) {
+    const e_pyramid_style style = pyramid_params().pyramide_type;
+    auto* ps = pyramid_part_state_get(base.id);
+    if (!ps || !pyramid_style_draws_og_parts_while_building(style, is_finished())) {
+        return -1;
+    }
+    const int layer_lift = style == PYRAMID_STYLE_BENT
+                             ? g_monument_pyramid_engine.bent_layer_pixel_height((int)ps->size_variant, (int)ps->layer)
+                             : (int)ps->layer * TILE_HEIGHT_PIXELS * 3;
+    const int img = og_pyramid_part_image(base, *ps, is_finished(), style, view);
+    const image_t* image = img > 0 ? image_get(img) : nullptr;
+    return layer_lift + (image ? image->isometric_top_height : 0);
 }
 
 void building_stepped_pyramid::update_tile_heights() {

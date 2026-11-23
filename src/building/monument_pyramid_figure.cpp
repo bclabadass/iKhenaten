@@ -591,27 +591,19 @@ pyramid_figure_work_t *monument_pyramid_figure::work_data(figure *f) const {
 }
 
 // OG draws a pyramid worker on the course it stands on; the tile height grid stays at ground level for them.
-int monument_pyramid_figure::draw_lift(figure* f) const {
-    constexpr int pixels_per_block = 15;
+bool monument_pyramid_figure::on_own_pyramid(figure* f) const {
     auto* work = work_data(f);
     if (!work || !work->part) {
-        return 0;
+        return false;
     }
     building* part = building_get(work->part);
     building* head = part ? chain_head_for(part) : nullptr;
     if (!head || mastaba_engine_is(head) || !g_monument_pyramid_engine.uses_block_engine(head)) {
-        return 0;
+        return false;
     }
     const building_id at = map_building_at(f->tile);
     building* under = at ? building_get(at) : nullptr;
-    if (!under || chain_head_for(under) != head) {
-        return 0;
-    }
-    int height = work->height;
-    if (work->total > 0 && work->progress < work->total) {
-        height = work->previous_height + (work->height - work->previous_height) * work->progress / work->total;
-    }
-    return std::max(0, height) * pixels_per_block;
+    return under && chain_head_for(under) == head;
 }
 
 uint8_t &monument_pyramid_figure::walk_mode(figure *f) const {
@@ -672,15 +664,28 @@ void monument_pyramid_figure::start_climb(figure_id fid) {
         return;
     }
     walk_mode(f) = PYRAMID_WALK_START;
-    // access_point can sit just outside the footprint — fall back to destination head.
     building_id part_id = map_building_at(f->destination_tile);
     if (!part_id) {
         part_id = map_building_at(f->tile);
     }
+    // access_point can sit just outside the footprint: start from the part beside it, where the worker stands (the
+    // head is at the far corner, and the climb would set off from there).
     if (!part_id) {
         if (building *dest = f->destination()) {
             if (building *head = chain_head_for(dest)) {
                 part_id = head->id;
+                svector<building*, PYRAMID_PARTS_CAPACITY> parts;
+                if (!mastaba_engine_is(head) && g_monument_pyramid_engine.uses_block_engine(head)) {
+                    g_monument_pyramid_engine.collect_parts(head, parts);
+                }
+                int best = INT_MAX;
+                for (building* part : parts) {
+                    const int d = calc_maximum_distance(f->tile, part->tile.shifted(part->size / 2, part->size / 2));
+                    if (d < best) {
+                        best = d;
+                        part_id = part->id;
+                    }
+                }
             }
         }
     }

@@ -23,8 +23,10 @@ public:
     building_pyramid(building &b) : building_monument(b) {}
     virtual building_pyramid *dcast_pyramid() override { return this; }
 
-    // Draws a pyramid worker on the course it stands on; false when it stands on no raised course.
+    // Draws a pyramid worker on the course it stands on; false when it is not on its pyramid.
     static bool lift_figure_on_courses(figure& f, vec2i& pixel, vec2i& sort_pixel);
+    // Pixels from a part's ground to the top of the course picture drawn on it; -1 when it is not drawn by part.
+    virtual int course_top_lift(int view) { return -1; }
 
     virtual bool get_route_citizen_land_type(int grid_offset, int &land_result) const override;
     virtual bool target_route_tile_blocked(int grid_offset) const override;
@@ -119,6 +121,7 @@ public:
     bool draw_unfinished_height_ornaments(painter &ctx, vec2i point, tile2i tile, color mask, const vec2i tiles_size);
     bool draw_completed_height_ornaments(painter &ctx, vec2i point, tile2i tile, color mask, const vec2i tiles_size);
     int height_part_image(tile2i tile, int view);
+    virtual int course_top_lift(int view) override;
     void update_tile_heights();
     int remake_part_course(int layer, bool polished) const;
     virtual bool use_polish_sprites_for_layer(int layer) const { return false; }

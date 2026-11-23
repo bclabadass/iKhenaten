@@ -84,6 +84,8 @@
 #include "figuretype/figure_javelin.h"
 #include "figuretype/figure_hunter.h"
 #include "figuretype/figure_stonemason.h"
+
+#include <unordered_map>
 #include "figuretype/figure_tomb_artisan.h"
 #include "figuretype/animal_lion.h"
 #include "figuretype/animal_asp.h"
@@ -976,10 +978,16 @@ static xstring __test_figure_draw_position(int fid) {
 }
 ANK_FUNCTION_1(__test_figure_draw_position);
 
-// Workers standing on a raised pyramid course: "on,raised" where raised counts those drawn at least their course's
-// height above the ground spot and sorted behind the pyramid's front row. Needs a rendered frame with them on screen.
+static vec2i test_pyramid_part_ground(building* part) {
+    const vec2i a = g_camera.lookup_tile_to_pixel(part->tile);
+    const vec2i b = g_camera.lookup_tile_to_pixel(part->tile.shifted(part->size - 1, part->size - 1));
+    return {(a.x + b.x) / 2 + 29, (a.y + b.y) / 2 + 23};
+}
+
+// Workers standing on a raised pyramid course: "on,raised" where raised counts those drawn on top of the course
+// picture of their part (middle of the part, its top surface) and sorted behind the pyramid's front row. Needs a
+// rendered frame with them on screen.
 static xstring __test_pyramid_workers_raised() {
-    constexpr int pixels_per_block = 15;
     int on = 0;
     int raised = 0;
     for (int i = 1; i < MAX_FIGURES; i++) {
@@ -988,25 +996,89 @@ static xstring __test_pyramid_workers_raised() {
         if (!w || w->height <= 0 || w->progress < w->total) {
             continue;
         }
+        building* part = building_get(w->part);
         building* under = building_get(map_building_at(f->tile));
-        if (!under || !under->id || !under->dcast_pyramid() || under->main() != building_get(w->part)->main()) {
+        if (!under || !under->id || !under->dcast_pyramid() || under->main() != part->main()) {
             continue;
         }
-        const vec2i ground = f->adjust_pixel_offset(f->main_sprite_pixel());
+        const int top = part->dcast_pyramid()->course_top_lift(map_view_orientation() / 2);
+        const vec2i stand = test_pyramid_part_ground(part) - vec2i{0, top} + f->crowd_pixel_offset();
         const figure_draw_state& st = map_figure_draw_state(i);
         on++;
-        const bool up = ground.y - st.main_pos.y >= w->height * pixels_per_block;
-        const bool behind = st.sort_pixel.y > ground.y;
-        raised += (up && behind);
-        logs::info("[pyramid-worker] fig %d type %d action %d part %d height %d drawn %d above ground, sort %d vs %d",
-          i, (int)f->type, (int)f->action_state, (int)w->part, (int)w->height, ground.y - st.main_pos.y,
-          st.sort_pixel.y, ground.y);
+        const bool on_top
+          = top >= 0 && std::abs(st.main_pos.x - stand.x) <= 1 && std::abs(st.main_pos.y - stand.y) <= 1;
+        const bool behind = st.sort_pixel.y > stand.y + top;
+        raised += (on_top && behind);
+        logs::info("[pyramid-worker] fig %d type %d action %d part %d height %d drawn at %d,%d, course top at %d,%d", i,
+          (int)f->type, (int)f->action_state, (int)w->part, (int)w->height, st.main_pos.x, st.main_pos.y, stand.x,
+          stand.y);
     }
     bstring64 out;
     out.printf("%d,%d", on, raised);
     return xstring(out.c_str());
 }
 ANK_FUNCTION(__test_pyramid_workers_raised);
+
+// Workers walking between parts on a pyramid: "samples,max_jump" — the largest move of one worker's sprite since the
+// previous call while it kept walking to the same part (call once per rendered frame).
+static xstring __test_pyramid_walk_jump() {
+    struct last_t {
+        bool moving = false;
+        vec2i pos;
+    };
+    static std::unordered_map<int, last_t> last;
+    std::unordered_map<int, last_t> now;
+    int samples = 0;
+    int max_jump = 0;
+    for (int i = 1; i < MAX_FIGURES; i++) {
+        figure* f = figure_get(i);
+        auto* w = f->is_valid() ? pyramid_figure_work_data(f) : nullptr;
+        if (!w || !pyramid_figure_on_own_pyramid(f)) {
+            continue;
+        }
+        const vec2i pos = map_figure_draw_state(i).main_pos;
+        const bool moving = w->progress < w->total;
+        now[i] = {moving, pos};
+        auto it = last.find(i);
+        if (it != last.end() && (moving || it->second.moving)) {
+            samples++;
+            const int jump = std::abs(pos.x - it->second.pos.x) + std::abs(pos.y - it->second.pos.y);
+            max_jump = std::max(max_jump, jump);
+        }
+    }
+    last = std::move(now);
+    bstring64 out;
+    out.printf("%d,%d", samples, max_jump);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION(__test_pyramid_walk_jump);
+
+// Stonemasons on a pyramid waiting for their block: "waiting,changed" — changed counts those whose sprite differs from
+// the previous call (they stand still until the sled arrives; call once per game tick).
+static xstring __test_pyramid_waiting_masons() {
+    static std::unordered_map<int, int> last;
+    std::unordered_map<int, int> now;
+    int waiting = 0;
+    int changed = 0;
+    for (int i = 1; i < MAX_FIGURES; i++) {
+        figure* f = figure_get(i);
+        if (!f->is_valid() || f->type != FIGURE_STONEMASON || f->action_state != ACTION_19_MASON_WAIT_FOR_BLOCK
+            || !pyramid_figure_on_own_pyramid(f)) {
+            continue;
+        }
+        now[i] = f->main_image_id;
+        auto it = last.find(i);
+        if (it != last.end()) {
+            waiting++;
+            changed += it->second != f->main_image_id;
+        }
+    }
+    last = std::move(now);
+    bstring64 out;
+    out.printf("%d,%d", waiting, changed);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION(__test_pyramid_waiting_masons);
 
 // Parts of one pyramid of the same layout kind on the same course but with different block counts: "pairs,same_image"
 // where same_image counts the pairs drawn with one picture (the whole ring showed one course).
