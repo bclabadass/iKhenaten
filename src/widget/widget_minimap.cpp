@@ -7,6 +7,7 @@
 #include "graphics/screen.h"
 #include "graphics/view/lookup.h"
 #include "graphics/view/view.h"
+#include "graphics/window.h"
 #include "grid/bridge.h"
 #include "grid/figure.h"
 #include "grid/property.h"
@@ -428,6 +429,7 @@ struct minimap_preview_cache {
     vec2i native_size = {0, 0};
     vec2i generate_size = {0, 0}; // {0,0} = full map pixels; otherwise aspect-fit into this box
     bool dirty = true;
+    float built_at_scale = 1.0f; // window UI scale the last rebuild drew under (tests)
 };
 
 minimap_preview_cache g_minimap_preview;
@@ -475,6 +477,7 @@ void rebuild_minimap_preview() {
     if (g_camera.screentile_lookup.tables.empty()) {
         g_camera.init();
     }
+    g_minimap_preview.built_at_scale = window_ui_scale_current();
 
     // Drop the previous preview texture. graphics_save_to_texture only reuses a
     // texture of the same size, and the saved-texture pool holds 8 entries, so
@@ -568,6 +571,10 @@ void rebuild_minimap_preview() {
 
 } // namespace
 
+float widget_minimap_preview_built_scale() {
+    return g_minimap_preview.built_at_scale;
+}
+
 void widget_minimap_invalidate_preview() {
     g_minimap_preview.generate_size = {0, 0};
     g_minimap_preview.dirty = true;
@@ -589,7 +596,12 @@ void widget_minimap_queue_preview(vec2i box_pos, vec2i box_size, vec2i generate_
     }
 
     if (g_minimap_preview.dirty || g_minimap_preview.texture_id <= 0) {
+        // The preview is drawn to the canvas and copied back at its pixel size: inside a scaled pop-up (the inner
+        // screen's 1.5x) it was drawn larger than the copy, which kept only a corner of the map.
+        const float popup_scale = window_ui_scale_current();
+        window_ui_scale_apply(1.0f, false);
         rebuild_minimap_preview();
+        window_ui_scale_apply(popup_scale, false);
     }
 
     if (g_minimap_preview.texture_id <= 0 || g_minimap_preview.native_size.x <= 0) {

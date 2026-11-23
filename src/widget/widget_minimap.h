@@ -73,3 +73,4 @@ bool widget_minimap_handle_mouse(const mouse* m);
 void widget_minimap_invalidate_preview();
 void widget_minimap_invalidate_preview(vec2i generate_size);
 void widget_minimap_queue_preview(vec2i box_pos, vec2i box_size, vec2i generate_size = {});
+float widget_minimap_preview_built_scale();

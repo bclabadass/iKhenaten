@@ -123,18 +123,18 @@ function window_scenario_selection_draw_minimap(ev) {
 function window_scenario_selection_on_update_scores(ev) {
     var sid = scenario.campaign_scenario_id
     if (__game_mission_scenario_beaten(sid)) {
-        ev.side_scores_intro.text = __loc(297, sid)
-        ev.side_scores_intro.font = FONT_NORMAL_BLACK_ON_DARK
-
-        var lines = []
+        // One text block: the intro wraps to a varying number of lines, and the results follow it.
+        ev.side_scores_intro.text = ""
+        var lines = [__loc(297, sid), ""]
         lines.push(__loc(298, 6) + " " + scenario_selection_score_months_suffix(__game_player_scenario_record_completion_months(sid)))
         lines.push(__loc(298, 4) + " " + String(__game_player_scenario_record_final_population(sid)))
         lines.push(__loc(298, 5) + " " + String(__game_player_scenario_record_final_funds(sid)))
         lines.push(__loc(298, 0) + " " + String(__game_player_scenario_record_rating_culture(sid)))
         lines.push(__loc(298, 1) + " " + String(__game_player_scenario_record_rating_prosperity(sid)))
         lines.push(__loc(298, 3) + " " + String(__game_player_scenario_record_rating_kingdom(sid)))
-        var diff = __game_player_scenario_record_difficulty(sid)
-        lines.push(__loc(298, 7) + " " + __loc(153, 1 + diff))
+        var diff = Math.max(0, Math.min(4, __game_player_scenario_record_difficulty(sid)))
+        var difficulty_keys = ["very_easy", "easy", "normal", "hard", "very_hard"]
+        lines.push(__loc(298, 7) + " " + __loc("#difficulty_" + difficulty_keys[diff]))
         lines.push(__loc(298, 8) + " " + String(__game_player_scenario_record_score(sid)))
 
         ev.side_scores_body.text = lines.join("\n")
@@ -148,9 +148,9 @@ function window_scenario_selection_on_update_scores(ev) {
 
 function scenario_info_time_suffix(months) {
     if (months >= 24) {
-        return String((months / 12) | 0) + __loc(298, 9)
+        return scenario_selection_number_and_unit((months / 12) | 0, __loc(298, 9))
     }
-    return String(months) + __loc(148, 15)
+    return scenario_selection_number_and_unit(months, __loc(148, 15))
 }
 
 function scenario_info_goal_line(value, group, id) {
@@ -193,11 +193,16 @@ function scenario_selection_format_start_year(y) {
     return String(-y) + " " + __loc(20, 0)
 }
 
+// The data's "years" text starts with a space and its "months" doesn't ("1months").
+function scenario_selection_number_and_unit(n, unit) {
+    return String(n) + " " + unit.replace(/^\s+/, "")
+}
+
 function scenario_selection_score_months_suffix(m) {
     if (m >= 24) {
-        return String((m / 12) | 0) + __loc(298, 9)
+        return scenario_selection_number_and_unit((m / 12) | 0, __loc(298, 9))
     }
-    return String(m) + __loc(148, 15)
+    return scenario_selection_number_and_unit(m, __loc(148, 15))
 }
 
 [es=(window_scenario_selection, mission_changed)]
@@ -250,6 +255,7 @@ function window_scenario_selection_update_climate(ev) {
 [es=(window_scenario_selection, mission_changed)]
 function window_scenario_selection_update_file_schema(ev) {
     ev.debug_file_schema.text = __loc("#scenario_selection_file_schema") + " " + String(__game_io_file_schema_version())
+    ev.debug_file_schema.enabled = !!game.debug_properties
 }
 
 [es=(window_scenario_selection, mission_changed)]
@@ -383,7 +389,7 @@ window_scenario_selection {
         side_year              : text_center({ pos[545, 245], size[265, 17], align:"center", text:"", font:FONT_NORMAL_BLACK_ON_DARK })
 
         side_scores_intro      : text({ pos[545, 280], size[265, 100], wrap:px(16), text:"", font:FONT_NORMAL_BLACK_ON_DARK, multiline:true, clip_area:true })
-        side_scores_body       : text({ pos[545, 280], size[265, 130], wrap:px(16), text:"", font:FONT_NORMAL_BLACK_ON_DARK, multiline:true, clip_area:true })
+        side_scores_body       : text({ pos[545, 280], size[265, 255], wrap:px(16), text:"", font:FONT_NORMAL_BLACK_ON_DARK, multiline:true, clip_area:true })
 
         info_hdr_mission       : text_center({ pos[545, 272], size[265, 17], align:"center", text[44, 10], font:FONT_NORMAL_WHITE_ON_DARK })
         info_line_climate      : text({ pos[545, 292], size[265, 17], font:FONT_NORMAL_BLACK_ON_DARK })

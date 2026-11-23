@@ -84,6 +84,7 @@
 #include "figuretype/figure_javelin.h"
 #include "figuretype/figure_hunter.h"
 #include "figuretype/figure_stonemason.h"
+#include "widget/widget_minimap.h"
 
 #include <unordered_map>
 #include "figuretype/figure_tomb_artisan.h"
@@ -307,6 +308,12 @@ static xstring __test_last_background_rect() {
 }
 ANK_FUNCTION(__test_last_background_rect);
 
+// Window UI scale the mission-select minimap preview was last built under (100 = canvas scale).
+static int __test_minimap_preview_built_scale() {
+    return (int)(widget_minimap_preview_built_scale() * 100.0f + 0.5f);
+}
+ANK_FUNCTION(__test_minimap_preview_built_scale);
+
 static bool __test_sound_ready() {
     return g_sound.is_initialized();
 }
@@ -336,6 +343,13 @@ static xstring __test_window_element_text(xstring section, xstring id) {
     return (w && w->contains(id)) ? (*w)[id].text() : xstring();
 }
 ANK_FUNCTION_2(__test_window_element_text);
+
+// 1 shown, 0 hidden, -1 missing.
+static int __test_window_element_enabled(xstring section, xstring id) {
+    autoconfig_window* w = autoconfig_window::find(section);
+    return (w && w->contains(id)) ? ((*w)[id].enabled ? 1 : 0) : -1;
+}
+ANK_FUNCTION_2(__test_window_element_enabled);
 
 static vec2i __test_window_element_size(xstring section, xstring id) {
     autoconfig_window* w = autoconfig_window::find(section);
