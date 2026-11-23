@@ -2,6 +2,7 @@
 #include "grid/orientation.h"
 
 #include "monuments.h"
+#include "building/monument_pyramid_figure.h"
 #include "core/direction.h"
 #include "core/custom_span.hpp"
 #include "graphics/image.h"
@@ -75,6 +76,12 @@ bool building_type_is_grand_pyramid_complex(e_building_type t) {
 
 static bool pyramid_style_draws_og_parts(e_pyramid_style style) {
     return style == PYRAMID_STYLE_BENT || style == PYRAMID_STYLE_TRUE || style == PYRAMID_STYLE_MUDBRICK;
+}
+
+// OG draws a stepped pyramid under construction part by part too; its finished steps keep the ring drawing (the
+// part pictures of a finished pyramid are the polished casing a stepped pyramid never gets).
+static bool pyramid_style_draws_og_parts_while_building(e_pyramid_style style, bool finished) {
+    return pyramid_style_draws_og_parts(style) || (style == PYRAMID_STYLE_STEPPED && !finished);
 }
 
 static int og_pyramid_part_image(building& part, const pyramid_part_state& ps, bool finished, e_pyramid_style style,
@@ -994,6 +1001,28 @@ grid_area building_pyramid::get_area() const {
     return { begin, end };
 }
 
+// Draw after the pyramid's front row, so the courses in front never cover a worker standing on top.
+bool building_pyramid::lift_figure_on_courses(figure& f, vec2i& pixel, vec2i& sort_pixel) {
+    const int lift = pyramid_figure_draw_lift(&f);
+    if (lift <= 0) {
+        return false;
+    }
+    building* head = g_monument_pyramid_engine.chain_head(building_get(pyramid_figure_work_data(&f)->part));
+    svector<building*, PYRAMID_PARTS_CAPACITY> parts;
+    g_monument_pyramid_engine.collect_parts(head, parts);
+    int bottom = sort_pixel.y;
+    for (building* part : parts) {
+        for (int dy = 0; dy < part->size; dy++) {
+            for (int dx = 0; dx < part->size; dx++) {
+                bottom = std::max(bottom, g_camera.lookup_tile_to_pixel(part->tile.shifted(dx, dy)).y + 1);
+            }
+        }
+    }
+    pixel.y -= lift;
+    sort_pixel.y = bottom;
+    return true;
+}
+
 void building_pyramid::sync_visuals() {
     if (pyramid_params().pyramide_type == PYRAMID_STYLE_NONE) {
         return;
@@ -1051,7 +1080,8 @@ void building_stepped_pyramid::sync_ring_layers() {
     }
     // OG bent draws per-part via layout kind + bent_pixel_heights — remake rings
     // lift the tip twice and hollow the polish base.
-    if (pyramid_style_draws_og_parts(ms->style) || pyramid_style_draws_og_parts(pyramid_params().pyramide_type)) {
+    if (pyramid_style_draws_og_parts_while_building(ms->style, false)
+        || pyramid_style_draws_og_parts_while_building(pyramid_params().pyramide_type, false)) {
         return;
     }
     const int total = g_monument_pyramid_engine.block_total(&base);
@@ -2262,7 +2292,7 @@ int building_stepped_pyramid::remake_part_course(int layer, bool polished) const
 int building_stepped_pyramid::height_part_image(tile2i tile, int view) {
     const e_pyramid_style style = pyramid_params().pyramide_type;
     auto* ps = pyramid_part_state_get(base.id);
-    if (pyramid_style_draws_og_parts(style) && ps) {
+    if (pyramid_style_draws_og_parts_while_building(style, is_finished()) && ps) {
         return og_pyramid_part_image(base, *ps, is_finished(), style, view);
     }
     const int L = runtime_data().layer;
@@ -2321,7 +2351,7 @@ bool building_stepped_pyramid::draw_completed_height_ornaments(painter &ctx, vec
     }
     const vec2i anchor_px = g_camera.lookup_tile_to_pixel(anchor);
 
-    if (pyramid_style_draws_og_parts(style) && ps) {
+    if (pyramid_style_draws_og_parts_while_building(style, is_finished()) && ps) {
         const bool bent = style == PYRAMID_STYLE_BENT;
         const int img = height_part_image(tile, map_view_orientation() / 2);
         if (img <= 0) {

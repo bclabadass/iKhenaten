@@ -2,6 +2,7 @@
 #include "grid/figure.h"
 
 #include "building/monument_mastaba.h"
+#include "building/monument_pyramid.h"
 
 #include "figure/figure.h"
 #include "figuretype/figure_cartpusher.h"
@@ -664,5 +665,7 @@ const figure_impl::static_params &figure_impl::params() const {
 }
 
 void figure_impl::adjust_draw_position(vec2i& pixel, vec2i& sort_pixel) {
-    building_mastaba::lift_figure_on_footprint(base.tile, pixel, sort_pixel);
+    if (!building_mastaba::lift_figure_on_footprint(base.tile, pixel, sort_pixel)) {
+        building_pyramid::lift_figure_on_courses(base, pixel, sort_pixel);
+    }
 }

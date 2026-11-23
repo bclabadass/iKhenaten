@@ -950,6 +950,12 @@ static int __test_mastaba_lay_blocks(int bid, int count) {
 }
 ANK_FUNCTION_2(__test_mastaba_lay_blocks);
 
+// Lays up to `count` pyramid blocks through the block engine (as the construction blessing does).
+static int __test_pyramid_lay_blocks(int bid, int count) {
+    return pyramid_engine_boost_blocks(building_get(bid), count);
+}
+ANK_FUNCTION_2(__test_pyramid_lay_blocks);
+
 static int __test_mastaba_part_courses(int part_id) {
     building* b = building_get(part_id);
     auto* m = b ? b->dcast_mastaba() : nullptr;
@@ -969,3 +975,73 @@ static xstring __test_figure_draw_position(int fid) {
     return xstring(out.c_str());
 }
 ANK_FUNCTION_1(__test_figure_draw_position);
+
+// Workers standing on a raised pyramid course: "on,raised" where raised counts those drawn at least their course's
+// height above the ground spot and sorted behind the pyramid's front row. Needs a rendered frame with them on screen.
+static xstring __test_pyramid_workers_raised() {
+    constexpr int pixels_per_block = 15;
+    int on = 0;
+    int raised = 0;
+    for (int i = 1; i < MAX_FIGURES; i++) {
+        figure* f = figure_get(i);
+        auto* w = f->is_valid() ? pyramid_figure_work_data(f) : nullptr;
+        if (!w || w->height <= 0 || w->progress < w->total) {
+            continue;
+        }
+        building* under = building_get(map_building_at(f->tile));
+        if (!under || !under->id || !under->dcast_pyramid() || under->main() != building_get(w->part)->main()) {
+            continue;
+        }
+        const vec2i ground = f->adjust_pixel_offset(f->main_sprite_pixel());
+        const figure_draw_state& st = map_figure_draw_state(i);
+        on++;
+        const bool up = ground.y - st.main_pos.y >= w->height * pixels_per_block;
+        const bool behind = st.sort_pixel.y > ground.y;
+        raised += (up && behind);
+        logs::info("[pyramid-worker] fig %d type %d action %d part %d height %d drawn %d above ground, sort %d vs %d",
+          i, (int)f->type, (int)f->action_state, (int)w->part, (int)w->height, ground.y - st.main_pos.y,
+          st.sort_pixel.y, ground.y);
+    }
+    bstring64 out;
+    out.printf("%d,%d", on, raised);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION(__test_pyramid_workers_raised);
+
+// Parts of one pyramid of the same layout kind on the same course but with different block counts: "pairs,same_image"
+// where same_image counts the pairs drawn with one picture (the whole ring showed one course).
+static xstring __test_pyramid_part_images(int bid) {
+    building* b = building_get(bid);
+    building* head = b ? b->main() : nullptr;
+    svector<building*, PYRAMID_PARTS_CAPACITY> parts;
+    g_monument_pyramid_engine.collect_parts(head, parts);
+    struct entry {
+        int kind, layer, blocks, image;
+    };
+    svector<entry, PYRAMID_PARTS_CAPACITY> inner;
+    for (building* p : parts) {
+        auto* ps = pyramid_part_state_get(p->id);
+        auto* pyr = p->dcast_pyramid();
+        if (!ps || !pyr || ps->stage != PYRAMID_STAGE_MAIN_MATERIAL) {
+            continue;
+        }
+        auto* stepped = static_cast<building_stepped_pyramid*>(pyr);
+        inner.push_back({g_monument_pyramid_engine.layout_kind(head, ps->subtype), (int)ps->layer, (int)ps->blocks,
+          stepped->height_part_image(p->tile, 0)});
+    }
+    int pairs = 0;
+    int same = 0;
+    for (size_t i = 0; i < inner.size(); i++) {
+        for (size_t j = i + 1; j < inner.size(); j++) {
+            if (inner[i].kind == inner[j].kind && inner[i].layer == inner[j].layer
+                && inner[i].blocks != inner[j].blocks) {
+                pairs++;
+                same += inner[i].image == inner[j].image;
+            }
+        }
+    }
+    bstring64 out;
+    out.printf("%d,%d", pairs, same);
+    return xstring(out.c_str());
+}
+ANK_FUNCTION_1(__test_pyramid_part_images);

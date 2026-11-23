@@ -56,6 +56,7 @@ public:
     building_id next_on_ring(building_id part_id) const;
 
     pyramid_figure_work_t *work_data(figure *f) const;
+    int draw_lift(figure* f) const;
     uint8_t &walk_mode(figure *f) const;
     building_id work_part_bid(figure *f) const;
     void set_work_part_bid(figure *f, building_id part_id) const;
@@ -141,6 +142,9 @@ inline void pyramid_figure_spawn_single_sled(figure_id laborer_fid) {
 }
 inline pyramid_figure_work_t *pyramid_figure_work_data(figure *f) {
     return g_monument_pyramid_figure.work_data(f);
+}
+inline int pyramid_figure_draw_lift(figure* f) {
+    return g_monument_pyramid_figure.draw_lift(f);
 }
 inline uint8_t &pyramid_figure_walk_mode(figure *f) {
     return g_monument_pyramid_figure.walk_mode(f);

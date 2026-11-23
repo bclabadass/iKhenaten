@@ -590,6 +590,30 @@ pyramid_figure_work_t *monument_pyramid_figure::work_data(figure *f) const {
     return nullptr;
 }
 
+// OG draws a pyramid worker on the course it stands on; the tile height grid stays at ground level for them.
+int monument_pyramid_figure::draw_lift(figure* f) const {
+    constexpr int pixels_per_block = 15;
+    auto* work = work_data(f);
+    if (!work || !work->part) {
+        return 0;
+    }
+    building* part = building_get(work->part);
+    building* head = part ? chain_head_for(part) : nullptr;
+    if (!head || mastaba_engine_is(head) || !g_monument_pyramid_engine.uses_block_engine(head)) {
+        return 0;
+    }
+    const building_id at = map_building_at(f->tile);
+    building* under = at ? building_get(at) : nullptr;
+    if (!under || chain_head_for(under) != head) {
+        return 0;
+    }
+    int height = work->height;
+    if (work->total > 0 && work->progress < work->total) {
+        height = work->previous_height + (work->height - work->previous_height) * work->progress / work->total;
+    }
+    return std::max(0, height) * pixels_per_block;
+}
+
 uint8_t &monument_pyramid_figure::walk_mode(figure *f) const {
     static uint8_t dummy = PYRAMID_WALK_NONE;
     if (!f) {

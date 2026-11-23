@@ -23,6 +23,9 @@ public:
     building_pyramid(building &b) : building_monument(b) {}
     virtual building_pyramid *dcast_pyramid() override { return this; }
 
+    // Draws a pyramid worker on the course it stands on; false when it stands on no raised course.
+    static bool lift_figure_on_courses(figure& f, vec2i& pixel, vec2i& sort_pixel);
+
     virtual bool get_route_citizen_land_type(int grid_offset, int &land_result) const override;
     virtual bool target_route_tile_blocked(int grid_offset) const override;
 
