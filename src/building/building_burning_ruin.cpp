@@ -19,8 +19,6 @@
 #include "grid/routing/routing.h"
 #include "js/js_register.h"
 #include "core/log.h"
-#include "graphics/image.h"
-#include "graphics/image_groups.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_burning_ruin);
 
