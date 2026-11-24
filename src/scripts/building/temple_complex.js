@@ -57,8 +57,8 @@ building_temple_complex_osiris {
     fire_risk[0]
     damage_risk[2]
 
-    allowed_altar [ BUILDING_TEMPLE_COMPLEX_ALTAR_AMON ]
-    allowed_oracle [ BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH ]
+    allowed_altar [ BUILDING_TEMPLE_COMPLEX_ALTAR_SEBEK ]
+    allowed_oracle [ BUILDING_TEMPLE_COMPLEX_ORACLE_MIN ]
 
     flags {
       is_temple_complex: true
@@ -71,7 +71,7 @@ building_temple_complex_osiris {
   building_temple_complex_altar_amon {
     // BUILDING_TEMPLE_COMPLEX_ALTAR_AMON
     animations  {
-      _pack { pack:PACK_TEMPLE_NILE }
+      _pack { pack:PACK_TEMPLE_PTAH }
       preview { id:7}
     }
     build_menu_text [ 189, 4 ]
@@ -89,7 +89,7 @@ building_temple_complex_osiris {
   building_temple_complex_oracle_thoth {
     // BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH
     animations {
-      _pack { pack:PACK_TEMPLE_NILE }
+      _pack { pack:PACK_TEMPLE_PTAH }
       preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 5 ]
@@ -235,8 +235,8 @@ building_temple_complex_osiris {
     fire_risk[0]
     damage_risk[2]
 
-    allowed_altar [ BUILDING_TEMPLE_COMPLEX_ALTAR_SEBEK ]
-    allowed_oracle [ BUILDING_TEMPLE_COMPLEX_ORACLE_MIN ]
+    allowed_altar [ BUILDING_TEMPLE_COMPLEX_ALTAR_MAAT ]
+    allowed_oracle [ BUILDING_TEMPLE_COMPLEX_ORACLE_HORUS ]
 
     flags {
       is_temple_complex: true
@@ -248,7 +248,7 @@ building_temple_complex_osiris {
 
   building_temple_complex_altar_sebek {
     animations  {
-      _pack { pack:PACK_TEMPLE_RA }
+      _pack { pack:PACK_TEMPLE_NILE }
       preview { id:7}
     }
     build_menu_text [ 189, 0 ]
@@ -265,7 +265,7 @@ building_temple_complex_osiris {
 
   building_temple_complex_oracle_min {
     animations {
-      _pack { pack:PACK_TEMPLE_RA }
+      _pack { pack:PACK_TEMPLE_NILE }
       preview { id:7, offset:2 }
 
 
@@ -324,8 +324,8 @@ building_temple_complex_osiris {
     fire_risk[0]
     damage_risk[2]
 
-    allowed_altar [ BUILDING_TEMPLE_COMPLEX_ALTAR_MAAT ]
-    allowed_oracle [ BUILDING_TEMPLE_COMPLEX_ORACLE_HORUS ]
+    allowed_altar [ BUILDING_TEMPLE_COMPLEX_ALTAR_AMON ]
+    allowed_oracle [ BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH ]
 
     flags {
       is_temple_complex: true
@@ -337,7 +337,7 @@ building_temple_complex_osiris {
 
   building_temple_complex_altar_maat {
     animations  {
-      _pack { pack:PACK_TEMPLE_PTAH }
+      _pack { pack:PACK_TEMPLE_RA }
       preview { id:7}
     }
     build_menu_text [ 189, 2 ]
@@ -354,7 +354,7 @@ building_temple_complex_osiris {
 
   building_temple_complex_oracle_horus {
     animations {
-      _pack { pack:PACK_TEMPLE_PTAH }
+      _pack { pack:PACK_TEMPLE_RA }
       preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 3 ]

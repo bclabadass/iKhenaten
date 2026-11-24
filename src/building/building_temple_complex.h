@@ -75,6 +75,7 @@ public:
     };
     int facing() const;
     part_images_t part_images() const;
+    void retype_upgrade_parts();
     void refresh_part_images();
 
     virtual const base_params_t &base_params() const = 0;

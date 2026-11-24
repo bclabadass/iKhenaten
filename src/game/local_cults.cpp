@@ -4,12 +4,12 @@
 
 namespace {
 
-const local_cult_static_t g_local_cult_registry[LOCAL_CULT_MAX] = {
-    {LOCAL_CULT_NONE, "none", GOD_UNKNOWN, BUILDING_NONE, false},
-    {LOCAL_CULT_ANUBIS, "anubis", GOD_SETH, BUILDING_TEMPLE_COMPLEX_ALTAR_ANUBIS, true},
-    {LOCAL_CULT_THOTH, "thoth", GOD_OSIRIS, BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH, true},
-    {LOCAL_CULT_HATHOR, "hathor", GOD_BAST, BUILDING_TEMPLE_COMPLEX_ORACLE_HATHOR, true},
-};
+    const local_cult_static_t g_local_cult_registry[LOCAL_CULT_MAX] = {
+      {LOCAL_CULT_NONE, "none", GOD_UNKNOWN, BUILDING_NONE, false},
+      {LOCAL_CULT_ANUBIS, "anubis", GOD_SETH, BUILDING_TEMPLE_COMPLEX_ALTAR_ANUBIS, true},
+      {LOCAL_CULT_THOTH, "thoth", GOD_PTAH, BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH, true},
+      {LOCAL_CULT_HATHOR, "hathor", GOD_BAST, BUILDING_TEMPLE_COMPLEX_ORACLE_HATHOR, true},
+    };
 
 } // namespace
 

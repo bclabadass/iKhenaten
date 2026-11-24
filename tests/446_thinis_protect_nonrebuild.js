@@ -15,10 +15,10 @@ function check_valid() {
         return "personal mansion must not be rebuildable"
     }
     // Upgrades for the pre-placed complex stay allowed.
-    if (!__scenario_building_allowed(BUILDING_TEMPLE_COMPLEX_ALTAR_AMON)) {
+    if (!__scenario_building_allowed(BUILDING_TEMPLE_COMPLEX_ALTAR_SEBEK)) {
         return "Osiris altar upgrade should be allowed"
     }
-    if (!__scenario_building_allowed(BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH)) {
+    if (!__scenario_building_allowed(BUILDING_TEMPLE_COMPLEX_ORACLE_MIN)) {
         return "Osiris oracle upgrade should be allowed"
     }
     return true

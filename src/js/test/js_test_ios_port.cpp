@@ -446,6 +446,16 @@ static int __test_routing_citizen_value(int x, int y) {
 }
 ANK_FUNCTION_2(__test_routing_citizen_value);
 
+// Give a building another type in place (to stand in for a save made with other part types).
+static void __test_building_set_type(int bid, int type) {
+    building* b = building_get(bid);
+    if (b && b->id) {
+        b->clear_impl();
+        b->set_type((e_building_type)type);
+    }
+}
+ANK_FUNCTION_2(__test_building_set_type);
+
 // Set a game feature back to its built-in default (ignoring akhenaten.conf); false if there is no such feature.
 static bool __test_game_feature_reset(xstring name) {
     game_features::game_feature* feature = game_features::find(name);

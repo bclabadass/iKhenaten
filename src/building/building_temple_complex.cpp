@@ -1,4 +1,5 @@
 #include "building_temple_complex.h"
+#include "building/building_temple_complex_upgrade.h"
 #include "grid/orientation.h"
 
 #include "city/city.h"
@@ -376,8 +377,32 @@ void building_temple_complex::on_create(int orientation) {
     g_city.buildings.track_building(base, false);
 }
 
+// Ra, Ptah and Osiris had each other's altar and oracle (Osiris got Amon and Thoth, which are Ptah's), and a complex
+// keeps the part types it was built with: a save from then holds the old ones, which get_altar/get_oracle no longer
+// find.
+void building_temple_complex::retype_upgrade_parts() {
+    const auto& params = base_params();
+    for (building* part = base.has_next() ? base.next() : nullptr; part;
+      part = part->has_next() ? part->next() : nullptr) {
+        e_building_type wanted = BUILDING_NONE;
+        if (part->dcast()->dcast_temple_complex_altar() && !building_type_any_of(part->type, params.allowed_altar)) {
+            wanted = params.allowed_altar.front();
+        } else if (
+          part->dcast()->dcast_temple_complex_oracle() && !building_type_any_of(part->type, params.allowed_oracle)) {
+            wanted = params.allowed_oracle.front();
+        }
+        if (wanted != BUILDING_NONE) {
+            part->clear_impl();
+            part->set_type(wanted);
+        }
+    }
+}
+
 void building_temple_complex::on_post_load() {
     building_impl::on_post_load();
+    if (is_main()) {
+        retype_upgrade_parts();
+    }
 
     const bool is_active = num_workers() > 0;
     g_city.buildings.track_building(base, is_active);
