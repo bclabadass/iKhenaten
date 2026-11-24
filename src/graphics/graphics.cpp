@@ -1,6 +1,7 @@
 #include "graphics/graphics.h"
 #include "graphics/image.h"
 #include "graphics/painter.h"
+#include <string>
 
 #include "core/profiler.h"
 #include "core/log.h"
@@ -267,6 +268,20 @@ void ImageDraw::clear_render_commands() {
     g_render_subcommands.clear();
 }
 
+static std::string g_trace_pass;
+static std::vector<int> g_traced_pass_images;
+
+void ImageDraw::trace_pass_images(std::string_view pass) {
+    g_trace_pass = pass;
+    if (!pass.empty()) {
+        g_traced_pass_images.clear();
+    }
+}
+
+const std::vector<int>& ImageDraw::traced_pass_images() {
+    return g_traced_pass_images;
+}
+
 void ImageDraw::apply_render_commands(painter& ctx, std::string_view p) {
     OZZY_PROFILER_SECTION(_, p);
     render_stats::recorded_scope recorded;
@@ -350,6 +365,12 @@ void ImageDraw::apply_render_commands(painter& ctx, std::string_view p) {
 
     {
         OZZY_PROFILER_SECTION(_, "draw");
+        if (!g_trace_pass.empty() && g_trace_pass == p) {
+            g_traced_pass_images.clear();
+            for (const auto& command : g_render_commands) {
+                g_traced_pass_images.push_back(command.image_id);
+            }
+        }
         for (const auto &command : g_render_commands) {
             execute_render_command(ctx, command);
         }

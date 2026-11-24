@@ -84,6 +84,7 @@ public:
     virtual void on_place_update_tiles(int orientation, int variant) override;
     virtual void update_map_orientation(int orientation) override;
     virtual void spawn_figure() override;
+    virtual bool draw_ornaments_and_animations_height(painter& ctx, vec2i point, tile2i tile, color mask) override;
 };
 
 class building_mud_gatehouse : public building_gatehouse_5x2 {

@@ -628,6 +628,36 @@ void building_gatehouse_5x2::spawn_figure() {
     common_spawn_labor_seeker(base.params().min_houses_coverage);
 }
 
+// Walkers in the gate pass under its arch: the cover (the front gate picture's door frame, cut out flush with its
+// right edge in frame 0 and its left edge in frame 1) is drawn again over walkers on the front gate tile. A walker
+// sorts up to 7 px below his tile's pixel, and from 8 px below it he stands on the tile in front, over the frame;
+// the larger x puts the cover first when both sort at 8.
+bool building_gatehouse_5x2::draw_ornaments_and_animations_height(painter& ctx, vec2i point, tile2i tile, color mask) {
+    const bool drawn = building_impl::draw_ornaments_and_animations_height(ctx, point, tile, mask);
+    const auto& params = current_params();
+    const int front = params.first_img("gate_front");
+    const int frame = map_image_at(tile.grid_offset()) - front;
+    if (front <= 0 || (frame != 0 && frame != 1)) {
+        return drawn;
+    }
+
+    const int cover_id = params.first_img("gate_cover") + frame;
+    const image_t* gate = image_get(front + frame);
+    const image_t* cover = image_get(cover_id);
+    vec2i pixel = point;
+    if (gate && cover) {
+        pixel += vec2i{frame == 0 ? gate->width - cover->width : 0, TILE_HEIGHT_PIXELS - gate->height};
+    }
+    auto& command = ImageDraw::create_command(ctx, render_command_t::ert_generic);
+    command.image_id = cover_id;
+    command.pixel = pixel;
+    command.mask = mask;
+    command.use_sort_pixel = true;
+    command.sort_pixel = point + vec2i{TILE_WIDTH_PIXELS, HALF_TILE_HEIGHT_PIXELS / 2 + 1};
+    command.location = SOURCE_LOCATION;
+    return drawn;
+}
+
 // A map's walls can carry gatehouses as bare terrain: two 2x2 pylons with the road between them and no building.
 int building_gatehouse_5x2::map_gatehouses_to_buildings() {
     auto bare_gatehouse = [](tile2i tile) {

@@ -110,6 +110,10 @@ void apply_render_commands(painter& ctx, std::string_view p);
 void execute_render_command(painter& ctx, const render_command_t& command);
 void finalize_render(painter &ctx);
 void clear_render_commands();
+// Tests: remember the image ids, in draw order, of the top-level commands the named pass draws next ("" stops and keeps
+// the last trace).
+void trace_pass_images(std::string_view pass);
+const std::vector<int>& traced_pass_images();
 render_command_t& create_command(painter& ctx, render_command_t::e_render_type rt);
 render_command_t& create_dcommand(render_command_t::e_render_type rt);
 render_command_t& active_command(painter& ctx);

@@ -5,6 +5,7 @@
 
 #include "figure/formation_batalion.h"
 #include "building/building_statue.h"
+#include "graphics/graphics.h"
 #include "graphics/window.h"
 #include "graphics/elements/rich_text.h"
 #include "graphics/elements/ui.h"
@@ -1152,3 +1153,20 @@ static xstring __test_pyramid_part_images(int bid) {
     return xstring(out.c_str());
 }
 ANK_FUNCTION_1(__test_pyramid_part_images);
+
+static void __test_render_trace_pass(pcstr pass) {
+    ImageDraw::trace_pass_images(pass ? pass : "");
+}
+ANK_FUNCTION_1(__test_render_trace_pass);
+
+// Position of the first command drawing `image_id` in the traced pass's draw order, or -1.
+static int __test_render_traced_index(int image_id) {
+    const std::vector<int>& images = ImageDraw::traced_pass_images();
+    for (size_t i = 0; i < images.size(); ++i) {
+        if (images[i] == image_id) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
+ANK_FUNCTION_1(__test_render_traced_index);
