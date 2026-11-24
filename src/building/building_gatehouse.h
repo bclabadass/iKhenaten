@@ -52,28 +52,51 @@ public:
 };
 ANK_CONFIG_STRUCT(building_strong_gatehouse::static_params, ghost)
 
-class building_mud_gatehouse : public building_gatehouse {
+// The gatehouse a player builds, and the ones a map places on its walls: a 2x2 pylon, the 1x2 gate the road runs
+// through and another 2x2 pylon along the wall line (5x2). The main building is the gate tile it was placed on; the
+// other gate tile and the two pylons are its parts. orientation 0: the wall runs along x, 1: along y.
+class building_gatehouse_5x2 : public building_impl {
 public:
-    BUILDING_METAINFO(BUILDING_MUD_GATEHOUSE, building_mud_gatehouse, building_gatehouse)
+    building_gatehouse_5x2(building& b) : building_impl(b) {}
 
-    virtual bool draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color color_mask) override;
+    struct layout_t {
+        tile2i gate[2];
+        tile2i pylon[2];
+        int axis = 0;
+    };
+    static layout_t layout_at(tile2i gate, int axis);
+    static bool layout_blocked(const layout_t& layout, blocked_tile_vec* blocked_tiles);
+    static void refresh_images(building& main);
+    static int pylon_image(e_building_type type, int frame);
+    static int map_gatehouses_to_buildings();
 
-    struct static_params : public gatehouse_params_t, public building_static_params {
-    } BUILDING_STATIC_DATA_T;
-};
-ANK_CONFIG_STRUCT(building_mud_gatehouse::static_params, ghost)
-
-class building_decorative_gatehouse : public building_impl {
-public:
-    BUILDING_METAINFO(BUILDING_DECORATIVE_GATEHOUSE, building_decorative_gatehouse, building_impl)
-
-    static void update_footprint(building &b);
-    static tile2i footprint_anchor(tile2i end, int layout_orientation);
+    struct preview : public building_planer_renderer {
+        virtual void collect_site(build_planner& p, tile2i end) const override;
+        virtual void ghost_preview(build_planner& p, painter& ctx, tile2i tile, tile2i end, vec2i pixel) const override;
+        virtual void ghost_blocked(build_planner& p, painter& ctx, tile2i tile, tile2i end, vec2i pixel,
+          bool fully_blocked) const override;
+        virtual int can_place(build_planner& p, tile2i tile, tile2i end, int state) const override;
+        virtual int finalize_check(build_planner& p, tile2i tile, tile2i end, int state) const override;
+    };
 
     virtual void on_create(int orientation) override;
+    virtual void on_place(int orientation, int variant) override;
     virtual void on_place_update_tiles(int orientation, int variant) override;
     virtual void update_map_orientation(int orientation) override;
     virtual void spawn_figure() override;
+};
+
+class building_mud_gatehouse : public building_gatehouse_5x2 {
+public:
+    BUILDING_METAINFO(BUILDING_MUD_GATEHOUSE, building_mud_gatehouse, building_gatehouse_5x2)
+
+    struct static_params : public building_static_params {
+    } BUILDING_STATIC_DATA_T;
+};
+
+class building_decorative_gatehouse : public building_gatehouse_5x2 {
+public:
+    BUILDING_METAINFO(BUILDING_DECORATIVE_GATEHOUSE, building_decorative_gatehouse, building_gatehouse_5x2)
 
     struct static_params : public building_static_params {
     } BUILDING_STATIC_DATA_T;

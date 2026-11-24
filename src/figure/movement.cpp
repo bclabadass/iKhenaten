@@ -229,7 +229,8 @@ void figure::advance_route_tile(int roaming_enabled) {
             direction = DIR_FIGURE_REROUTE;
         } else if (roaming_enabled && map_terrain_is(target_grid_offset, TERRAIN_BUILDING)) {
             building* b = building_at(target_grid_offset);
-            if (b->type == BUILDING_MUD_GATEHOUSE || b->type == BUILDING_ROADBLOCK) {
+            if (b->type == BUILDING_MUD_GATEHOUSE || b->type == BUILDING_DECORATIVE_GATEHOUSE
+                || b->type == BUILDING_ROADBLOCK) {
                 // do not allow roaming through gatehouses or roadblocks
                 if (roaming_enabled)
                     direction = DIR_FIGURE_REROUTE;

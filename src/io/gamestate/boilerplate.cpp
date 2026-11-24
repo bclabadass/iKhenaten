@@ -1,5 +1,6 @@
 #include "boilerplate.h"
 #include "boilerplate_detail.h"
+#include "building/building_gatehouse.h"
 #include "io/og_save/og_save.h"
 #include "io/og_save/og_load.h"
 
@@ -578,6 +579,7 @@ void GamestateIO::start_loaded_file() {
         map_tiles_update_all_roads();
         map_tiles_update_all_plazas();
         map_canal_update_all_tiles(0);
+        building_gatehouse_5x2::map_gatehouses_to_buildings();
 
         //        map_natives_init();
         g_city.fishing_points.create();

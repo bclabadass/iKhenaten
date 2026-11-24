@@ -1,6 +1,5 @@
-// Mud gatehouse OG: Pharaoh_Model cost/damage by difficulty; size-2 footprint claims
-// four GATEHOUSE tiles (road pair + flanking sides); gatehouses do not request tower
-// sentries (towers do).
+// Mud gatehouse OG: Pharaoh_Model cost/damage by difficulty; the 5x2 footprint (pylon, 1x2 gate, pylon) claims
+// ten GATEHOUSE tiles; gatehouses do not request tower sentries (towers do).
 
 var __test167_ok = false
 
@@ -35,12 +34,20 @@ function run_test() {
 
     var cx = (__scenario_map.width / 2) | 0
     var cy = (__scenario_map.height / 2) | 0
-    var gate_tiles = __test_mud_gatehouse_place_2x2(cx, cy)
-    if (gate_tiles != 4) {
-        test167_fail('2x2 footprint must claim 4 GATEHOUSE tiles, got ' + gate_tiles)
+    var first = __test_building_create(BUILDING_MUD_GATEHOUSE, cx, cy)
+    var gate_tiles = 0
+    for (var y = cy - 3; y <= cy + 3; y++) {
+        for (var x = cx - 3; x <= cx + 3; x++) {
+            if (terrain.is({ x: x, y: y }, TERRAIN_GATEHOUSE) && __building_type(__building_at(x, y)) == BUILDING_MUD_GATEHOUSE) {
+                gate_tiles++
+            }
+        }
+    }
+    if (!first || gate_tiles != 10) {
+        test167_fail('5x2 footprint must claim 10 GATEHOUSE tiles, got ' + gate_tiles)
         return
     }
-    __log_marker('test167_footprint_2x2')
+    __log_marker('test167_footprint_5x2')
 
     __test_tower_sentry_request_clear()
     var gid = __test_building_create(BUILDING_MUD_GATEHOUSE, cx + 8, cy)
@@ -64,6 +71,6 @@ function run_test() {
 function check_valid() {
     return __test167_ok
         && __test_find_inlog('[test-marker] test167_og_model')
-        && __test_find_inlog('[test-marker] test167_footprint_2x2')
+        && __test_find_inlog('[test-marker] test167_footprint_5x2')
         && __test_find_inlog('[test-marker] test167_gate_no_sentry')
 }

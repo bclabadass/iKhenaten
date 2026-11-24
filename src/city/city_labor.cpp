@@ -362,6 +362,10 @@ static bool should_have_workers(building* b, int category, int check_access) {
     if (category < 0)
         return false;
 
+    if (b->prev_part_building_id && (b->type == BUILDING_MUD_GATEHOUSE || b->type == BUILDING_DECORATIVE_GATEHOUSE)) {
+        return false;
+    }
+
     if (category == LABOR_CATEGORY_ENTERTAINMENT) {
         if (b->type == BUILDING_SENET_HOUSE && b->prev_part_building_id)
             return false;

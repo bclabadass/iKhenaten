@@ -601,20 +601,16 @@ building_tower_gatehouse = {
 building_mud_gatehouse = {
   animations : {
     preview : { pack:PACK_GENERAL, id:218 },
-    base_n : { pack:PACK_GENERAL, id:218 },
-    base_second_n : { pack:PACK_GENERAL, id:219 },
-    base_cover_n : { pack:PACK_GENERAL, id:220 },
-
-    base_w : { pack:PACK_GENERAL, id:218, offset:1 },
-    base_second_w : { pack:PACK_GENERAL, id:219, offset:1 },
-    base_cover_w : { pack:PACK_GENERAL, id:220, offset:1 },
+    pylon : { pack:PACK_GENERAL, id:161 },
+    pylon_ra : { pack:PACK_GENERAL, id:213 },
+    pylon_seth : { pack:PACK_GENERAL, id:214 },
+    pylon_bast : { pack:PACK_GENERAL, id:215 },
+    pylon_ptah : { pack:PACK_GENERAL, id:216 },
+    pylon_osiris : { pack:PACK_GENERAL, id:217 },
+    gate_front : { pack:PACK_GENERAL, id:218 },
+    gate_back : { pack:PACK_GENERAL, id:219 },
+    gate_cover : { pack:PACK_GENERAL, id:220 },
   }
-
-  ghost : {
-      main_view_offset : [[0, 0], [0, 2], [-28, -14], [0, 0], [0, 0], [-28, -15], [-28, -15]]
-      part_view_offset : [[28, -15], [28, 15], [0, 0], [28, -15], [28, -15], [-0, -2], [0, -2]]
-  }
-
   building_size : 1
   meta : { text_id:90, help_link:"message_building_defensive_structures" }
   cost : [ 50, 200, 250, 300, 375 ]
@@ -624,30 +620,30 @@ building_mud_gatehouse = {
     no_map_edge_margin: true
     is_defense: true
     is_wall: true
+    allow_rotate: true
   }
 }
 
-// Decorative composite gatehouse (original type 202): 2x2 special wall + 1x2 gate + 2x2 special wall (5x2).
+// A gatehouse a map places on its walls (original type 202): looks like the one a player builds, needs no workers.
 building_decorative_gatehouse = {
   animations : {
-    preview : { pack:PACK_TERRAIN, id:318 },
-    wall_left_0_0 : { pack:PACK_TERRAIN, id:314 },
-    wall_left_1_0 : { pack:PACK_TERRAIN, id:315 },
-    gate_0_0 : { pack:PACK_TERRAIN, id:318 },
-    wall_right_0_0 : { pack:PACK_TERRAIN, id:316 },
-    wall_right_1_0 : { pack:PACK_TERRAIN, id:317 },
-    wall_left_0_1 : { pack:PACK_TERRAIN, id:324 },
-    wall_left_1_1 : { pack:PACK_TERRAIN, id:325 },
-    gate_0_1 : { pack:PACK_TERRAIN, id:319 },
-    wall_right_0_1 : { pack:PACK_TERRAIN, id:326 },
-    wall_right_1_1 : { pack:PACK_TERRAIN, id:327 },
+    preview : { pack:PACK_GENERAL, id:218 },
+    pylon : { pack:PACK_GENERAL, id:161 },
+    pylon_ra : { pack:PACK_GENERAL, id:213 },
+    pylon_seth : { pack:PACK_GENERAL, id:214 },
+    pylon_bast : { pack:PACK_GENERAL, id:215 },
+    pylon_ptah : { pack:PACK_GENERAL, id:216 },
+    pylon_osiris : { pack:PACK_GENERAL, id:217 },
+    gate_front : { pack:PACK_GENERAL, id:218 },
+    gate_back : { pack:PACK_GENERAL, id:219 },
+    gate_cover : { pack:PACK_GENERAL, id:220 },
   }
 
-  building_size : 5
+  building_size : 1
   meta : { text_id:90, help_link:"message_building_defensive_structures" }
-  cost : [ 100, 150, 200, 300, 400 ]
-  desirability : { value:[-6], step:[1], step_size:[2], range: [6] }
-  laborers:[3], fire_risk:[0], damage_risk: [3]
+  cost : [ 400, 400, 400, 400, 400 ]
+  desirability : { value:[-4], step:[1], step_size:[1], range: [4] }
+  laborers:[0], fire_risk:[0], damage_risk: [0]
   flags {
     no_map_edge_margin: true
     is_defense: true

@@ -20,6 +20,9 @@
 #include "grid/orientation.h"
 #include "grid/routing/routing_terrain.h"
 #include "building/building_wall.h"
+#include "city/city.h"
+#include "game/gods.h"
+#include "game/undo.h"
 
 #include "js/js_register.h"
 
@@ -32,11 +35,16 @@ REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_decorative_gatehouse);
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_tower_gatehouse);
 
 namespace archive_helper {
-template<>
-inline void reader<building_decorative_gatehouse::static_params>(archive arch, building_decorative_gatehouse::static_params &params) {
-    building_static_params &bparams = (building_static_params &)params;
-    archive_helper::reader(arch, bparams);
-}
+    template <>
+    inline void reader<building_mud_gatehouse::static_params>(archive arch,
+      building_mud_gatehouse::static_params& params) {
+        archive_helper::reader(arch, (building_static_params&)params);
+    }
+    template <>
+    inline void reader<building_decorative_gatehouse::static_params>(archive arch,
+      building_decorative_gatehouse::static_params& params) {
+        archive_helper::reader(arch, (building_static_params&)params);
+    }
 } // namespace archive_helper
 
 building_gatehouse::back_tile_orientation building_gatehouse::second_part_tile(tile2i end, int city_orientation) {
@@ -423,277 +431,311 @@ void building_gatehouse::spawn_figure() {
     main_impl->common_spawn_labor_seeker(main_building->params().min_houses_coverage);
 }
 
-bool building_mud_gatehouse::draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color color_mask) {
-    // OG city_without_overlay skips special overlays for mud/brick gatehouses;
-    // flanking cover lives on the side tiles of the 2x2 footprint (base_cover_*).
-    return true;
-}
-
 namespace {
 
-enum class composite_part { wall_left, gate, wall_right };
-
-struct composite_tile_desc {
-    composite_part part;
-    uint8_t ix;
-    uint8_t iy;
-};
-
-constexpr composite_tile_desc COMPOSITE_TILES[] = {
-    { composite_part::wall_left, 0, 0 },
-    { composite_part::wall_left, 1, 0 },
-    { composite_part::gate, 0, 0 },
-    { composite_part::wall_right, 0, 0 },
-    { composite_part::wall_right, 1, 0 },
-    { composite_part::wall_left, 0, 1 },
-    { composite_part::wall_left, 1, 1 },
-    { composite_part::gate, 0, 1 },
-    { composite_part::wall_right, 0, 1 },
-    { composite_part::wall_right, 1, 1 },
-};
-
-static const xstring COMPOSITE_ANIM_KEYS[] = {
-    "wall_left_0_0",
-    "wall_left_1_0",
-    "gate_0_0",
-    "wall_right_0_0",
-    "wall_right_1_0",
-    "wall_left_0_1",
-    "wall_left_1_1",
-    "gate_0_1",
-    "wall_right_0_1",
-    "wall_right_1_1",
-};
-
-static tile2i composite_world_tile(tile2i anchor, int layout_orientation, const composite_tile_desc &desc) {
-    if (layout_orientation == 0) {
-        switch (desc.part) {
-        case composite_part::wall_left:
-            return tile2i(anchor.x() + desc.ix, anchor.y() + desc.iy);
-        case composite_part::gate:
-            return tile2i(anchor.x() + 2, anchor.y() + desc.iy);
-        case composite_part::wall_right:
-            return tile2i(anchor.x() + 3 + desc.ix, anchor.y() + desc.iy);
+    int gatehouse_view_depth(tile2i tile) {
+        switch (map_view_orientation()) {
+        case DIR_0_TOP_RIGHT:
+            return tile.x() + tile.y();
+        case DIR_2_BOTTOM_RIGHT:
+            return tile.y() - tile.x();
+        case DIR_4_BOTTOM_LEFT:
+            return -tile.x() - tile.y();
+        default:
+            return tile.x() - tile.y();
         }
     }
 
-    switch (desc.part) {
-    case composite_part::wall_left:
-        return tile2i(anchor.x() + desc.ix, anchor.y() + desc.iy);
-    case composite_part::gate:
-        return tile2i(anchor.x() + desc.iy, anchor.y() + 2);
-    case composite_part::wall_right:
-        return tile2i(anchor.x() + desc.ix, anchor.y() + 3 + desc.iy);
-    }
-
-    return tile2i::invalid;
-}
-
-static uint32_t composite_tile_terrain(const composite_tile_desc &desc) {
-    if (desc.part == composite_part::gate) {
-        return TERRAIN_GATEHOUSE | TERRAIN_BUILDING | TERRAIN_ROAD;
-    }
-    return TERRAIN_GATEHOUSE | TERRAIN_BUILDING;
-}
-
-static void collect_building_tiles(int building_id, svector<tile2i, 16> &out) {
-    out.clear();
-    if (building_id <= 0) {
-        return;
-    }
-
-    for (int grid_offset = 0; grid_offset < GRID_SIZE_TOTAL; grid_offset++) {
-        if (map_building_at(grid_offset) != building_id) {
-            continue;
+    vec2i gatehouse_view_offset(int dx, int dy) {
+        int sx = 0;
+        int sy = 0;
+        switch (map_view_orientation()) {
+        case DIR_0_TOP_RIGHT:
+            sx = dx - dy;
+            sy = dx + dy;
+            break;
+        case DIR_2_BOTTOM_RIGHT:
+            sx = dx + dy;
+            sy = dy - dx;
+            break;
+        case DIR_4_BOTTOM_LEFT:
+            sx = dy - dx;
+            sy = -dx - dy;
+            break;
+        default:
+            sx = -dx - dy;
+            sy = dx - dy;
+            break;
         }
+        return {sx * 30, sy * 15};
+    }
 
-        tile2i tile(grid_offset);
-        if (!map_grid_is_inside(tile, 1)) {
-            continue;
+    // The tile a multi-tile picture is anchored on (as map_building_tiles_add marks it).
+    tile2i gatehouse_draw_tile(tile2i tile, int size) {
+        const int last = size - 1;
+        switch (map_view_orientation()) {
+        case DIR_0_TOP_RIGHT:
+            return tile.shifted(0, last);
+        case DIR_2_BOTTOM_RIGHT:
+            return tile;
+        case DIR_4_BOTTOM_LEFT:
+            return tile.shifted(last, 0);
+        default:
+            return tile.shifted(last, last);
         }
-
-        out.push_back(tile);
-    }
-}
-
-static bool cluster_footprint(const svector<tile2i, 16> &tiles, tile2i &anchor, int &layout_orientation) {
-    if (tiles.size() != 10) {
-        return false;
     }
 
-    int min_x = tiles[0].x();
-    int min_y = tiles[0].y();
-    int max_x = min_x;
-    int max_y = min_y;
-    for (const tile2i &tile : tiles) {
-        min_x = std::min(min_x, tile.x());
-        min_y = std::min(min_y, tile.y());
-        max_x = std::max(max_x, tile.x());
-        max_y = std::max(max_y, tile.y());
+    // Each picture comes in two frames: frame 0 for a wall running along the screen's x, frame 1 along its y.
+    int gatehouse_frame(int axis) {
+        return (axis + map_view_orientation() / 2) % 2;
     }
 
-    const int width = max_x - min_x + 1;
-    const int height = max_y - min_y + 1;
-    if (width == 5 && height == 2) {
-        anchor = tile2i(min_x, min_y);
-        layout_orientation = 0;
-        return true;
-    }
-
-    if (width == 2 && height == 5) {
-        anchor = tile2i(min_x, min_y);
-        layout_orientation = 1;
-        return true;
-    }
-
-    return false;
-}
-
-static void apply_composite_footprint(building &b, tile2i anchor, int layout_orientation) {
-    const auto &params = building_static_params::get(BUILDING_DECORATIVE_GATEHOUSE);
-
-    for (int i = 0; i < (int)(sizeof(COMPOSITE_TILES) / sizeof(COMPOSITE_TILES[0])); i++) {
-        const composite_tile_desc &desc = COMPOSITE_TILES[i];
-        const tile2i world_tile = composite_world_tile(anchor, layout_orientation, desc);
-        if (!world_tile.valid()) {
-            continue;
+    int city_patron_god() {
+        for (int god = GOD_OSIRIS; god < MAX_GODS; ++god) {
+            if (g_city.religion.is_god_known((e_god)god) == GOD_STATUS_PATRON) {
+                return god;
+            }
         }
-
-        const int image_id = params.first_img(COMPOSITE_ANIM_KEYS[i]);
-        const uint32_t terrain = composite_tile_terrain(desc);
-        const int grid_offset = world_tile.grid_offset();
-
-        map_terrain_remove(grid_offset, TERRAIN_CLEARABLE);
-        map_terrain_add(grid_offset, terrain);
-        map_building_set(grid_offset, b.id);
-        map_image_set(grid_offset, image_id);
-        map_property_clear_constructing(grid_offset);
-        map_property_set_multi_tile_size(grid_offset, 1);
-        map_property_set_multi_tile_xy(grid_offset, 0, 0, false);
-        map_property_mark_draw_tile(grid_offset);
+        return -1;
     }
 
-    b.orientation = layout_orientation;
-    b.tile = anchor;
-}
+    struct gatehouse_piece {
+        tile2i tile;
+        int size;
+        int image_id;
+        uint32_t terrain;
+    };
+
+    // Pieces in drawing order, back to front: gate[0..1], pylon[0..1] by the camera's depth.
+    svector<gatehouse_piece, 4> gatehouse_pieces(e_building_type type, const building_gatehouse_5x2::layout_t& layout) {
+        const auto& params = building_static_params::get(type);
+        const int frame = gatehouse_frame(layout.axis);
+        const bool first_gate_near = gatehouse_view_depth(layout.gate[0]) > gatehouse_view_depth(layout.gate[1]);
+        const tile2i near_gate = first_gate_near ? layout.gate[0] : layout.gate[1];
+        const tile2i far_gate = first_gate_near ? layout.gate[1] : layout.gate[0];
+        const int pylon = building_gatehouse_5x2::pylon_image(type, frame);
+        const uint32_t gate_terrain = TERRAIN_BUILDING | TERRAIN_GATEHOUSE | TERRAIN_ROAD;
+        const uint32_t pylon_terrain = TERRAIN_BUILDING | TERRAIN_GATEHOUSE;
+
+        svector<gatehouse_piece, 4> pieces;
+        pieces.push_back({far_gate, 1, params.first_img("gate_back") + frame, gate_terrain});
+        pieces.push_back({near_gate, 1, params.first_img("gate_front") + frame, gate_terrain});
+        pieces.push_back({layout.pylon[0], 2, pylon, pylon_terrain});
+        pieces.push_back({layout.pylon[1], 2, pylon, pylon_terrain});
+        std::sort(pieces.begin(), pieces.end(), [](const gatehouse_piece& a, const gatehouse_piece& b) {
+            return gatehouse_view_depth(gatehouse_draw_tile(a.tile, a.size))
+                   < gatehouse_view_depth(gatehouse_draw_tile(b.tile, b.size));
+        });
+        return pieces;
+    }
 
 } // namespace
 
-tile2i building_decorative_gatehouse::footprint_anchor(tile2i end, int layout_orientation) {
-    const int width = layout_orientation == 0 ? 5 : 2;
-    const int height = layout_orientation == 0 ? 2 : 5;
-    tile2i anchor = end;
-
-    switch (map_view_orientation()) {
-    case DIR_2_BOTTOM_RIGHT:
-        anchor.set_x(anchor.x() - width + 1);
-        break;
-    case DIR_4_BOTTOM_LEFT:
-        anchor.set_x(anchor.x() - width + 1);
-        // fall-through
-    case DIR_6_TOP_LEFT:
-        anchor.set_y(anchor.y() - height + 1);
-        break;
+building_gatehouse_5x2::layout_t building_gatehouse_5x2::layout_at(tile2i gate, int axis) {
+    layout_t layout;
+    layout.axis = axis % 2;
+    layout.gate[0] = gate;
+    if (layout.axis == 0) {
+        layout.gate[1] = gate.shifted(0, 1);
+        layout.pylon[0] = gate.shifted(-2, 0);
+        layout.pylon[1] = gate.shifted(1, 0);
+    } else {
+        layout.gate[1] = gate.shifted(1, 0);
+        layout.pylon[0] = gate.shifted(0, -2);
+        layout.pylon[1] = gate.shifted(0, 1);
     }
-
-    return anchor;
+    return layout;
 }
 
-void building_decorative_gatehouse::update_footprint(building &b) {
-    if (b.type != BUILDING_DECORATIVE_GATEHOUSE || b.state == BUILDING_STATE_UNUSED) {
-        return;
-    }
-
-    svector<tile2i, 16> tiles;
-    collect_building_tiles(b.id, tiles);
-    if (tiles.empty()) {
-        return;
-    }
-
-    svector<tile2i, 16> cluster;
-    svector<tile2i, 16> queue;
-    svector<uint8_t, 16> visited(tiles.size(), 0);
-
-    for (size_t start = 0; start < tiles.size(); start++) {
-        if (visited[start]) {
-            continue;
+bool building_gatehouse_5x2::layout_blocked(const layout_t& layout, blocked_tile_vec* blocked_tiles) {
+    blocked_tile_vec tiles;
+    bool blocked = false;
+    auto check = [&](tile2i tile, uint32_t restricted) {
+        if (!map_grid_is_inside(tile, 1)) {
+            tiles.push_back({tile, true});
+            blocked = true;
+            return;
         }
-
-        cluster.clear();
-        queue.clear();
-        queue.push_back(tiles[start]);
-        visited[start] = 1;
-
-        while (!queue.empty()) {
-            const tile2i tile = queue.back();
-            queue.pop_back();
-            cluster.push_back(tile);
-
-            for (size_t i = 0; i < tiles.size(); i++) {
-                if (visited[i]) {
-                    continue;
-                }
-
-                const tile2i &other = tiles[i];
-                const int dx = std::abs(other.x() - tile.x());
-                const int dy = std::abs(other.y() - tile.y());
-                if (dx + dy != 1) {
-                    continue;
-                }
-
-                visited[i] = 1;
-                queue.push_back(other);
+        blocked |= build_planner::is_blocked_for_building(tile, 1, tiles, restricted) > 0;
+    };
+    for (const tile2i& gate : layout.gate) {
+        check(gate, TERRAIN_ALL - TERRAIN_ROAD);
+    }
+    for (tile2i pylon : layout.pylon) {
+        for (int dy = 0; dy < 2; ++dy) {
+            for (int dx = 0; dx < 2; ++dx) {
+                check(pylon.shifted(dx, dy), TERRAIN_ALL);
             }
         }
+    }
+    if (blocked_tiles) {
+        *blocked_tiles = tiles;
+    }
+    return blocked;
+}
 
-        tile2i anchor;
-        int layout_orientation = 0;
-        if (!cluster_footprint(cluster, anchor, layout_orientation)) {
-            continue;
+int building_gatehouse_5x2::pylon_image(e_building_type type, int frame) {
+    static const xstring god_keys[MAX_GODS] = {"pylon_osiris", "pylon_ra", "pylon_ptah", "pylon_seth", "pylon_bast"};
+    const auto& params = building_static_params::get(type);
+    const int god = city_patron_god();
+    const int image_id = god >= 0 ? params.first_img(god_keys[god]) : 0;
+    return (image_id > 0 ? image_id : params.first_img("pylon")) + frame;
+}
+
+void building_gatehouse_5x2::refresh_images(building& main) {
+    building* parts[4] = {&main, nullptr, nullptr, nullptr};
+    for (int i = 1; i < 4; ++i) {
+        building* next = parts[i - 1]->next_part_building_id > 0 ? parts[i - 1]->next() : nullptr;
+        if (!next || next->id <= 0) {
+            return;
         }
+        parts[i] = next;
+    }
 
-        apply_composite_footprint(b, anchor, layout_orientation);
+    const layout_t layout = layout_at(main.tile, main.orientation);
+    for (const gatehouse_piece& piece : gatehouse_pieces(main.type, layout)) {
+        for (building* part : parts) {
+            if (part->tile == piece.tile) {
+                map_building_tiles_add(part->id, piece.tile, piece.size, piece.image_id, piece.terrain);
+            }
+        }
     }
 }
 
-void building_decorative_gatehouse::on_create(int orientation) {
-    building_impl::on_create(orientation);
-
-    const int gate_orientation = map_orientation_for_gatehouse(tile().x(), tile().y());
-    base.orientation = gate_orientation == 1 ? 1 : 0;
+void building_gatehouse_5x2::on_create(int orientation) {
+    base.orientation = orientation % 2;
 }
 
-void building_decorative_gatehouse::on_place_update_tiles(int orientation, int variant) {
-    const tile2i anchor = footprint_anchor(tile(), base.orientation);
-    base.tile = anchor;
-    base.size = 1;
-    apply_composite_footprint(base, anchor, base.orientation);
+void building_gatehouse_5x2::on_place(int orientation, int variant) {
+    base.orientation = orientation % 2;
+    if (base.next_part_building_id == 0) {
+        const layout_t layout = layout_at(tile(), base.orientation);
+        const tile2i part_tiles[3] = {layout.gate[1], layout.pylon[0], layout.pylon[1]};
+        const int part_sizes[3] = {1, 2, 2};
+        building* prev = &base;
+        for (int i = 0; i < 3; ++i) {
+            building* part = building_create(type(), part_tiles[i], base.orientation);
+            if (!part || part->id <= 0) {
+                break;
+            }
+            part->size = part_sizes[i];
+            part->orientation = base.orientation;
+            part->prev_part_building_id = prev->id;
+            prev->next_part_building_id = part->id;
+            prev = part;
+        }
+    }
+
+    building_impl::on_place(orientation, variant);
     building_mud_wall::update_all_walls();
     map_routing_update_land();
     map_routing_update_walls();
 }
 
-void building_decorative_gatehouse::update_map_orientation(int orientation) {
-    if (!base.is_main()) {
-        return;
+void building_gatehouse_5x2::on_place_update_tiles(int orientation, int variant) {
+    if (is_main()) {
+        refresh_images(base);
     }
-
-    update_footprint(base);
-    building_mud_wall::update_all_walls();
 }
 
-void building_decorative_gatehouse::spawn_figure() {
-    if (!base.is_valid()) {
+void building_gatehouse_5x2::update_map_orientation(int orientation) {
+    if (is_main()) {
+        refresh_images(base);
+    }
+}
+
+void building_gatehouse_5x2::spawn_figure() {
+    if (!is_main()) {
         return;
     }
 
     check_labor_problem();
-    tile2i road = map_get_road_access_tile(base.tile, 5);
-    if (!road.valid()) {
+    if (!map_get_road_access_tile(tile(), 1).valid()) {
         return;
     }
-
     common_spawn_labor_seeker(base.params().min_houses_coverage);
+}
+
+// A map's walls can carry gatehouses as bare terrain: two 2x2 pylons with the road between them and no building.
+int building_gatehouse_5x2::map_gatehouses_to_buildings() {
+    auto bare_gatehouse = [](tile2i tile) {
+        return map_grid_is_inside(tile, 1) && map_terrain_is(tile, TERRAIN_GATEHOUSE) && map_building_at(tile) == 0;
+    };
+    auto bare_pylon = [&](tile2i tile) {
+        return bare_gatehouse(tile) && bare_gatehouse(tile.shifted(1, 0)) && bare_gatehouse(tile.shifted(0, 1))
+               && bare_gatehouse(tile.shifted(1, 1));
+    };
+
+    int created = 0;
+    for (int y = 0; y < GRID_LENGTH; y++) {
+        for (int x = 0; x < GRID_LENGTH; x++) {
+            tile2i tile(x, y);
+            if (!bare_pylon(tile)) {
+                continue;
+            }
+            for (int axis = 0; axis < 2; ++axis) {
+                const tile2i gate = axis == 0 ? tile.shifted(2, 0) : tile.shifted(0, 2);
+                const layout_t layout = layout_at(gate, axis);
+                if (!bare_pylon(layout.pylon[1]) || bare_gatehouse(layout.gate[0]) || bare_gatehouse(layout.gate[1])) {
+                    continue;
+                }
+                for (tile2i pylon : layout.pylon) {
+                    for (int dy = 0; dy < 2; ++dy) {
+                        for (int dx = 0; dx < 2; ++dx) {
+                            map_terrain_remove(pylon.shifted(dx, dy), TERRAIN_GATEHOUSE);
+                        }
+                    }
+                }
+                building* b = building_create(BUILDING_DECORATIVE_GATEHOUSE, gate, axis);
+                if (b && b->id > 0) {
+                    add_building(b, axis, 0);
+                    b->state = BUILDING_STATE_VALID;
+                    for (building* part = b; part->next_part_building_id > 0;) {
+                        part = part->next();
+                        part->state = BUILDING_STATE_VALID;
+                    }
+                    created++;
+                }
+                break;
+            }
+        }
+    }
+    return created;
+}
+
+void building_gatehouse_5x2::preview::collect_site(build_planner& planer, tile2i end) const {
+    const layout_t layout = layout_at(end, planer.absolute_orientation);
+    planer.site_orientation = layout.axis;
+    planer.site_blocked = layout_blocked(layout, nullptr);
+}
+
+void building_gatehouse_5x2::preview::ghost_preview(build_planner& planer, painter& ctx, tile2i start, tile2i end,
+  vec2i pixel) const {
+    const layout_t layout = layout_at(end, planer.absolute_orientation);
+    for (const gatehouse_piece& piece : gatehouse_pieces(planer.build_type, layout)) {
+        const tile2i draw_tile = gatehouse_draw_tile(piece.tile, piece.size);
+        const vec2i offset = gatehouse_view_offset(draw_tile.x() - end.x(), draw_tile.y() - end.y());
+        ghost_draw::draw_building_ghost(ctx, piece.image_id, pixel + offset, COLOR_MASK_GREEN);
+    }
+}
+
+void building_gatehouse_5x2::preview::ghost_blocked(build_planner& planer, painter& ctx, tile2i start, tile2i end,
+  vec2i pixel, bool fully_blocked) const {
+    blocked_tile_vec tiles;
+    layout_blocked(layout_at(end, planer.absolute_orientation), &tiles);
+    for (const blocked_tile& t : tiles) {
+        const vec2i offset = gatehouse_view_offset(t.tile.x() - end.x(), t.tile.y() - end.y());
+        ghost_draw::draw_ground_tile(ctx, pixel + offset,
+          (fully_blocked || t.blocked) ? COLOR_MASK_RED_30 : COLOR_MASK_GREEN_30);
+    }
+}
+
+int building_gatehouse_5x2::preview::can_place(build_planner& planer, tile2i start, tile2i end, int state) const {
+    return planer.site_blocked ? CAN_NOT_PLACE : state;
+}
+
+int building_gatehouse_5x2::preview::finalize_check(build_planner& planer, tile2i start, tile2i end, int state) const {
+    return layout_blocked(layout_at(end, planer.absolute_orientation), nullptr) ? CAN_NOT_PLACE : state;
 }
 
 void building_tower_gatehouse::update_map_orientation(int map_orientation) {

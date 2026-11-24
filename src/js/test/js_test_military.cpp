@@ -259,11 +259,6 @@ static int __test_gatehouse_place_2x2(int type, int x, int y) {
 }
 ANK_FUNCTION_3(__test_gatehouse_place_2x2);
 
-static int __test_mud_gatehouse_place_2x2(int x, int y) {
-    return __test_gatehouse_place_2x2(BUILDING_MUD_GATEHOUSE, x, y);
-}
-ANK_FUNCTION_2(__test_mud_gatehouse_place_2x2);
-
 extern int g_tower_sentry_request;
 
 static void __test_tower_sentry_request_clear() {
