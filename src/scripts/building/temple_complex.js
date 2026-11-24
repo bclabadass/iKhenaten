@@ -20,16 +20,16 @@ building_temple_complex_osiris {
     animations : {
       _pack { pack:PACK_TEMPLE_NILE }
       preview { pack:PACK_GENERAL, id:42}
-      back_0 { id:1 }
-      back_1 { id:1, offset:3 }
-      middle_0 { id:2 }
-      middle_1 { id:2, offset:3 }
-      front_0 { id:3 }
-      front_1 { id:3, offset:3 }
-      altar_0 { id:7 }
-      altar_1 { id:7, offset:1 }
-      oracle_0 { id:7, offset:2 }
-      oracle_1 { id:7, offset:3 }
+      back_0 { id:1, offset:3 }
+      back_1 { id:1 }
+      middle_0 { id:2, offset:3 }
+      middle_1 { id:2 }
+      front_0 { id:3, offset:3 }
+      front_1 { id:3 }
+      altar_0 { id:7, offset:1 }
+      altar_1 { id:7 }
+      oracle_0 { id:7, offset:3 }
+      oracle_1 { id:7, offset:2 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -109,16 +109,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_SETH }
       preview { pack:PACK_GENERAL, id:42}
-      back_0 { id:1 }
-      back_1 { id:1, offset:3 }
-      middle_0 { id:2 }
-      middle_1 { id:2, offset:3 }
-      front_0 { id:3 }
-      front_1 { id:3, offset:3 }
-      altar_0 { id:7 }
-      altar_1 { id:7, offset:1 }
-      oracle_0 { id:7, offset:2 }
-      oracle_1 { id:7, offset:3 }
+      back_0 { id:1, offset:3 }
+      back_1 { id:1 }
+      middle_0 { id:2, offset:3 }
+      middle_1 { id:2 }
+      front_0 { id:3, offset:3 }
+      front_1 { id:3 }
+      altar_0 { id:7, offset:1 }
+      altar_1 { id:7 }
+      oracle_0 { id:7, offset:3 }
+      oracle_1 { id:7, offset:2 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -198,16 +198,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_RA }
       preview { pack:PACK_GENERAL, id:42}
-      back_0 { id:1 }
-      back_1 { id:1, offset:3 }
-      middle_0 { id:2 }
-      middle_1 { id:2, offset:3 }
-      front_0 { id:3 }
-      front_1 { id:3, offset:3 }
-      altar_0 { id:7 }
-      altar_1 { id:7, offset:1 }
-      oracle_0 { id:7, offset:2 }
-      oracle_1 { id:7, offset:3 }
+      back_0 { id:1, offset:3 }
+      back_1 { id:1 }
+      middle_0 { id:2, offset:3 }
+      middle_1 { id:2 }
+      front_0 { id:3, offset:3 }
+      front_1 { id:3 }
+      altar_0 { id:7, offset:1 }
+      altar_1 { id:7 }
+      oracle_0 { id:7, offset:3 }
+      oracle_1 { id:7, offset:2 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -287,16 +287,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_PTAH }
       preview { pack:PACK_GENERAL, id:42}
-      back_0 { id:1 }
-      back_1 { id:1, offset:3 }
-      middle_0 { id:2 }
-      middle_1 { id:2, offset:3 }
-      front_0 { id:3 }
-      front_1 { id:3, offset:3 }
-      altar_0 { id:7 }
-      altar_1 { id:7, offset:1 }
-      oracle_0 { id:7, offset:2 }
-      oracle_1 { id:7, offset:3 }
+      back_0 { id:1, offset:3 }
+      back_1 { id:1 }
+      middle_0 { id:2, offset:3 }
+      middle_1 { id:2 }
+      front_0 { id:3, offset:3 }
+      front_1 { id:3 }
+      altar_0 { id:7, offset:1 }
+      altar_1 { id:7 }
+      oracle_0 { id:7, offset:3 }
+      oracle_1 { id:7, offset:2 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -374,16 +374,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_BAST }
       preview { pack:PACK_GENERAL, id:42}
-      back_0 { id:1 }
-      back_1 { id:1, offset:3 }
-      middle_0 { id:2 }
-      middle_1 { id:2, offset:3 }
-      front_0 { id:3 }
-      front_1 { id:3, offset:3 }
-      altar_0 { id:7 }
-      altar_1 { id:7, offset:1 }
-      oracle_0 { id:7, offset:2 }
-      oracle_1 { id:7, offset:3 }
+      back_0 { id:1, offset:3 }
+      back_1 { id:1 }
+      middle_0 { id:2, offset:3 }
+      middle_1 { id:2 }
+      front_0 { id:3, offset:3 }
+      front_1 { id:3 }
+      altar_0 { id:7, offset:1 }
+      altar_1 { id:7 }
+      oracle_0 { id:7, offset:3 }
+      oracle_1 { id:7, offset:2 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
