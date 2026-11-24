@@ -189,7 +189,7 @@ advisor_monuments_window {
                     onrender_item: monuments_advisor_on_render_item
                     onclick_event: "click_monument"
                 })
-                no_monuments : label({pos[120, 110], text:"${53.69}", font:FONT_NORMAL_WHITE_ON_DARK })
+                no_monuments : label({pos[120, 110], text{group:53, id:69}, font:FONT_NORMAL_WHITE_ON_DARK })
 
                 burial_title  : text({pos[60, 200], text{group:199, id:10}, font:FONT_NORMAL_BLACK_ON_LIGHT })
                 burial_hint   : text({pos[60, 218], text{group:199, id:3}, font:FONT_NORMAL_BLACK_ON_LIGHT })
@@ -208,7 +208,7 @@ advisor_monuments_window {
                     onrender_item: burial_provisions_on_render_item
                     onclick_event: "click_burial"
                 })
-                no_burial : label({pos[100, 280], text:"${199.12}", font:FONT_NORMAL_WHITE_ON_DARK })
+                no_burial : label({pos[100, 280], text{group:199, id:12}, font:FONT_NORMAL_WHITE_ON_DARK })
 
                 button_help   : help_button({})
             }
