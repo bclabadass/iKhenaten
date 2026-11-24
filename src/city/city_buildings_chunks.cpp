@@ -187,7 +187,8 @@ namespace {
     }
 
     // OG figure_movement_can_launch_cross_country_missile (movement.c) traces the missile path in figure 0,
-    // so these fields legitimately change; they are masked out of the comparison.
+    // so these fields legitimately change (set_cross_country_direction sets its direction too); they are masked out
+    // of the comparison.
     std::vector<uint8_t> serialize_figure0_masked() {
         figure* f = figure_get(0);
         const vec2i cc_coords = f->cc_coords;
@@ -195,6 +196,7 @@ namespace {
         const vec2i cc_delta = f->cc_delta;
         const short cc_delta_xy = f->cc_delta_xy;
         const uint8_t cc_direction = f->cc_direction;
+        const uint8_t direction = f->direction;
         const tile2i tile = f->tile;
 
         f->cc_coords = {};
@@ -202,6 +204,7 @@ namespace {
         f->cc_delta = {};
         f->cc_delta_xy = 0;
         f->cc_direction = 0;
+        f->direction = 0;
         f->tile = tile2i(0, 0);
         auto bytes = serialize_record(bind_figure0);
 
@@ -210,6 +213,7 @@ namespace {
         f->cc_delta = cc_delta;
         f->cc_delta_xy = cc_delta_xy;
         f->cc_direction = cc_direction;
+        f->direction = direction;
         f->tile = tile;
         return bytes;
     }
