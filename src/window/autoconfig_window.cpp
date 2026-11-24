@@ -53,7 +53,12 @@ void ANK_REGISTER_CONFIG_ITERATOR(config_load_autoconfig_windows) {
 }
 
 void autoconfig_window::refresh_all() {
+    // Outside a full config refresh (a relayout, a font change) a window is reloaded only as a ui::widget, so the
+    // fields its own struct reads would be reported as unknown keys; the full refresh checks every window.
+    const bool report_keys = archive_check::report_keys;
+    archive_check::report_keys = false;
     config_load_autoconfig_windows();
+    archive_check::report_keys = report_keys;
 }
 
 // Skips strings and comments starting at i; returns true if it moved past one.

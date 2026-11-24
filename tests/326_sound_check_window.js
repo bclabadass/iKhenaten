@@ -69,7 +69,7 @@ function run_test() {
     var options_button = __test_window_element_pos('sound_options_window', 'btn_sound_check')
     sound_options_btn_sound_check()
     __test_pump_frames(3)
-    sound_check_window.page = 0
+    sound_check_state.page = 0
     __test_pump_frames(3)
     var page_text = __test_window_element_text('sound_check_window', 'page_label')
     __log_info_native('[test:326] options button ' + JSON.stringify(options_button) + ' open '

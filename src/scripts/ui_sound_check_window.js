@@ -92,6 +92,8 @@ function sound_check_rows() {
     return rows
 }
 
+var sound_check_state = { page : 0 }
+
 // Pages never mix sections, so a section always starts on a new page.
 function sound_check_pages() {
     var rows = sound_check_rows()
@@ -157,7 +159,6 @@ sound_check_window {
     allow_rmb_goback : true
     draw_underlying : true
     pos [(sw(0) - px(40))/2, (sh(0) - px(26))/2]
-    page : 0
 
     ui {
         background  : outer_panel({size[40, 26]})
@@ -175,12 +176,12 @@ sound_check_window {
 [es=(sound_check_window, btn_prev)]
 function sound_check_window_prev(window) {
     var n = sound_check_pages().length
-    sound_check_window.page = (sound_check_window.page - 1 + n) % n
+    sound_check_state.page = (sound_check_state.page - 1 + n) % n
 }
 
 [es=(sound_check_window, btn_next)]
 function sound_check_window_next(window) {
-    sound_check_window.page = (sound_check_window.page + 1) % sound_check_pages().length
+    sound_check_state.page = (sound_check_state.page + 1) % sound_check_pages().length
 }
 
 [es=(sound_check_window, btn_close)]
@@ -191,7 +192,7 @@ function sound_check_window_close(window) {
 [es=(sound_check_window, ui_draw_foreground)]
 function sound_check_window_draw(window) {
     var pages = sound_check_pages()
-    var page_index = Math.min(sound_check_window.page, pages.length - 1)
+    var page_index = Math.min(sound_check_state.page, pages.length - 1)
     var page = pages[page_index]
     window.section.text = sound_check_sections[page.section].title
         + (game_features.gameopt_sound_effects_enabled ? "" : "  (effects are off in Sound options)")

@@ -69,11 +69,6 @@ sidebar_window_expanded {
 
     extra_block_x      : -24
     expanded_offset_x  : 186
-    // Duo: the Overlays label is drawn this far into the sidebar; on the inner screen at the top menu bar's size.
-    overlays_text_x    : 20
-    overlays_text_dy   : -3
-    // Folded screen: the label sits this much further right than the link's own text did.
-    overlays_folded_text_dx : 10
 
     slider {
         deceleration_offset_x : 125
@@ -254,9 +249,17 @@ function window_build_menu_on_draw(window) {
     }
 }
 
+var sidebar_overlays_label = {
+    // Duo: the Overlays label is drawn this far into the sidebar; on the inner screen at the top menu bar's size.
+    text_x : 20
+    text_dy : -3
+    // Folded screen: the label sits this much further right than the link's own text did.
+    folded_text_dx : 10
+}
+
 // Offset of the label from the link's left edge.
 function sidebar_window_overlays_label_x(link, scale) {
-    return scale == 1 ? 1 + sidebar_window_expanded.overlays_folded_text_dx : sidebar_window_expanded.overlays_text_x - link.pos.x
+    return scale == 1 ? 1 + sidebar_overlays_label.folded_text_dx : sidebar_overlays_label.text_x - link.pos.x
 }
 
 function sidebar_window_overlays_label(window) {
@@ -286,7 +289,7 @@ function sidebar_window_expanded_draw_overlays_label(window) {
     var hovered = __mouse.x >= left && __mouse.x < left + link.size.x && __mouse.y >= top && __mouse.y < top + link.size.y
     var font = hovered ? FONT_NORMAL_YELLOW : FONT_NORMAL_BLACK_ON_LIGHT
     // Folded screen: same height as the link's own centered text.
-    var dy = scale == 1 ? ((link.size.y - __ui_font_line_height(FONT_NORMAL_BLACK_ON_LIGHT)) / 2) | 0 : sidebar_window_expanded.overlays_text_dy
+    var dy = scale == 1 ? ((link.size.y - __ui_font_line_height(FONT_NORMAL_BLACK_ON_LIGHT)) / 2) | 0 : sidebar_overlays_label.text_dy
     __ui_label_scaled(ui.sidebar_overlay_link_text(), { x: left + sidebar_window_overlays_label_x(link, scale), y: top + dy }, font, scale)
 }
 

@@ -1,8 +1,6 @@
 # Known config key issues (category | context.key) from a full integral suite run with
 # --no-resource. Regenerate with --integraltests --config-keys-baseline PATH --config-keys-update.
 # Remove lines as issues get fixed; never add lines by hand to silence a new one.
-unknown | advisor_population_window:ui::widget._info_panel_full_lines
-unknown | advisor_population_window:ui::widget._info_panel_lines
 unknown | advisor_population_window:ui::widget.graph_order
 unknown | advisor_religion_window:ui::widget.needs_sync
 unknown | build_menu_widget:ui::widget.btn_item_h
@@ -382,17 +380,6 @@ unknown | scenario_data_t::meta_t.sounds
 unknown | scenario_data_t::meta_t.stages
 unknown | scenario_data_t::meta_t.vars
 unknown | scenario_data_t::meta_t.win_criteria
-unknown | sidebar_window_collapsed:ui::widget.expanded_offset_x
-unknown | sidebar_window_collapsed:ui::widget.extra_block
-unknown | sidebar_window_collapsed:ui::widget.extra_block_x
-unknown | sidebar_window_collapsed:ui::widget.relief_block
-unknown | sidebar_window_collapsed:ui::widget.slider
-unknown | sidebar_window_expanded:ui::widget.def_image
-unknown | sidebar_window_expanded:ui::widget.expanded_offset_x
-unknown | sidebar_window_expanded:ui::widget.extra_block
-unknown | sidebar_window_expanded:ui::widget.extra_block_x
-unknown | sidebar_window_expanded:ui::widget.relief_block
-unknown | sidebar_window_expanded:ui::widget.slider
 unknown | sound_options_window:ui::widget.orig_city_en
 unknown | sound_options_window:ui::widget.orig_city_vol
 unknown | sound_options_window:ui::widget.orig_effects_en
@@ -438,7 +425,6 @@ unknown | window_scenario_selection:ui::widget.campaign_sub_dialog
 unknown | window_scenario_selection:ui::widget.free_play
 unknown | window_scenario_selection:ui::widget.individual_missions
 unknown | window_scenario_selection:ui::widget.scores_or_goals
-unknown | window_scenario_selection:ui::widget.selected_mission_index
 unknown | window_scenario_selection_campaign:ui::widget.active_tab
 unknown | window_scenario_selection_campaign:ui::widget.period_hover
 unknown | window_scenario_selection_campaign:ui::widget.period_selected
@@ -448,12 +434,6 @@ zeroed | animation_t.max_frames
 zeroed | animation_t.offset
 zeroed | animation_t.start_frame
 zeroed | building_clay_pit:building_overlay_anim.max_count
-zeroed | building_grand_pyramid_complex:animation_t.can_reverse
-zeroed | building_grand_pyramid_complex:animation_t.duration
-zeroed | building_grand_pyramid_complex:animation_t.id
-zeroed | building_grand_pyramid_complex:animation_t.max_frames
-zeroed | building_grand_pyramid_complex:animation_t.pack
-zeroed | building_grand_pyramid_complex:animation_t.start_frame
 zeroed | building_hunting_lodge:building_overlay_anim.max_count
 zeroed | building_mine_copper:building_overlay_anim.max_count
 zeroed | building_mine_gems:building_overlay_anim.max_count

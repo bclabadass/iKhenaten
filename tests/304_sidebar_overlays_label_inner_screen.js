@@ -39,9 +39,9 @@ function run_test() {
     __test_pretend_ios(true)
     __test_pump_frames(4)
     var folded = t304_link()
-    var folded_want = 1 + sidebar_window_expanded.overlays_folded_text_dx + __ui_text_width(label, FONT_NORMAL_BLACK_ON_LIGHT)
+    var folded_want = 1 + sidebar_overlays_label.folded_text_dx + __ui_text_width(label, FONT_NORMAL_BLACK_ON_LIGHT)
     __log_info_native('[test:304] folded unfolded=' + __screen_inner_unfolded() + ' text "' + folded.text + '" size ' + folded.size.x + ' want >= ' + folded_want)
-    if (!__screen_inner_unfolded() && folded.text == '' && sidebar_window_expanded.overlays_folded_text_dx == 10 && folded.size.x >= folded_want) {
+    if (!__screen_inner_unfolded() && folded.text == '' && sidebar_overlays_label.folded_text_dx == 10 && folded.size.x >= folded_want) {
         __log_marker('folded_link_text_drawn_separately')
     }
 
@@ -50,10 +50,10 @@ function run_test() {
     __test_screen_resize(951, 669)
     __test_pump_frames(4)
     var inner = t304_link()
-    var want = sidebar_window_expanded.overlays_text_x - inner.pos.x + Math.ceil(__ui_text_width(label, FONT_NORMAL_BLACK_ON_LIGHT) * top_menu_text_scale())
+    var want = sidebar_overlays_label.text_x - inner.pos.x + Math.ceil(__ui_text_width(label, FONT_NORMAL_BLACK_ON_LIGHT) * top_menu_text_scale())
     __log_info_native('[test:304] inner unfolded=' + __screen_inner_unfolded() + ' text "' + inner.text + '" size ' + inner.size.x + ' want >= ' + want
-        + ' text_x ' + sidebar_window_expanded.overlays_text_x)
-    if (__screen_inner_unfolded() && inner.text == '' && sidebar_window_expanded.overlays_text_x == 20 && sidebar_window_expanded.overlays_text_dy == -3) {
+        + ' text_x ' + sidebar_overlays_label.text_x)
+    if (__screen_inner_unfolded() && inner.text == '' && sidebar_overlays_label.text_x == 20 && sidebar_overlays_label.text_dy == -3) {
         __log_marker('inner_link_text_drawn_separately')
     }
     if (inner.size.x >= want) {
