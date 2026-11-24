@@ -24,6 +24,8 @@ const e_routed_mode_tokens_t ANK_CONFIG_ENUM(e_routed_mode_tokens);
 
 struct routing_state_data_t {
     int through_building_id;
+    tile2i around_min;
+    tile2i around_max;
 };
 
 routing_state_data_t g_routing_state_data;
@@ -467,6 +469,37 @@ bool map_routing_citizen_can_travel_over_land(tile2i src, tile2i dst, bool allow
     int dst_offset = dst.grid_offset();
     ++xvalue<routing_stats_t>::ref().total_routes_calculated;
     route_queue(src_offset, dst_offset, allow_ferry ? callback_travel_citizen_land_ferry : callback_travel_citizen_land);
+    return map_grid_get(routing_distance, dst_offset) != 0;
+}
+
+static bool in_area_to_go_around(int grid_offset) {
+    const tile2i t(grid_offset);
+    const auto& state = g_routing_state_data;
+    return t.x() >= state.around_min.x() && t.x() <= state.around_max.x() && t.y() >= state.around_min.y()
+           && t.y() <= state.around_max.y();
+}
+
+static void callback_travel_citizen_land_around(int next_offset, int dist) {
+    if (!in_area_to_go_around(next_offset)) {
+        callback_travel_citizen_land(next_offset, dist);
+    }
+}
+
+static void callback_travel_citizen_land_ferry_around(int next_offset, int dist) {
+    if (!in_area_to_go_around(next_offset)) {
+        callback_travel_citizen_land_ferry(next_offset, dist);
+    }
+}
+
+bool map_routing_citizen_can_travel_over_land_around(tile2i src, tile2i dst, tile2i area_min, tile2i area_max,
+  bool allow_ferry) {
+    int src_offset = src.grid_offset();
+    int dst_offset = dst.grid_offset();
+    g_routing_state_data.around_min = area_min;
+    g_routing_state_data.around_max = area_max;
+    ++xvalue<routing_stats_t>::ref().total_routes_calculated;
+    route_queue(src_offset, dst_offset,
+      allow_ferry ? callback_travel_citizen_land_ferry_around : callback_travel_citizen_land_around);
     return map_grid_get(routing_distance, dst_offset) != 0;
 }
 

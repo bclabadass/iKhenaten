@@ -3,6 +3,8 @@ log_info("akhenaten: figure stonemason started")
 figure_stonemason {
 	animations {
 		walk { pack:PACK_SPR_MAIN, id:150, max_frames:12 }
+		// The original has no standing group for him: walk frame 9 is the one with his feet together.
+		idle { pack:PACK_SPR_MAIN, id:150, offset:72, max_frames:1 }
 		death { pack:PACK_SPR_MAIN, id:151, max_frames:8, loop:false }
 		work_ground { pack:PACK_SPR_MAIN, id:152, max_frames:7 }
 		work_wall { pack:PACK_SPR_MAIN, id:153, max_frames:7 }

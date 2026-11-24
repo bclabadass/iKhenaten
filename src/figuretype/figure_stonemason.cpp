@@ -490,8 +490,7 @@ void figure_stonemason::update_animation() {
         break;
 
     case ACTION_19_MASON_WAIT_FOR_BLOCK:
-        image_set_animation(animkeys().walk);
-        base.animctx.frame = 0;
+        image_set_animation(animkeys().idle);
         break;
 
     case ACTION_21_MASON_PYRAMID_WORK:

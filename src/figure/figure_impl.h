@@ -83,6 +83,8 @@ public:
     virtual void debug_draw(painter &ctx) {}
     virtual bool is_home(const building *b) const;
     virtual bool is_destination(const building *b) const;
+    // An area (corners inclusive) this figure's land routes keep out of when they can.
+    virtual bool route_goes_around(tile2i& area_min, tile2i& area_max) const;
     virtual empire_city_handle empire_city() const { return empire_city_handle{}; }
     virtual void formation_reset_to_initial(const formation *m) {}
     virtual void apply_damage(int hit_dmg, figure_id attaker_id);

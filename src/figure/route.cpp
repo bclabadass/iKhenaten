@@ -2,6 +2,7 @@
 #include "core/xvalue.h"
 
 #include "city/city_figures.h"
+#include "figure/figure_impl.h"
 #include "grid/routing/queue.h"
 #include "grid/routing/routing.h"
 
@@ -114,6 +115,17 @@ void figure::map_figure_remove() {
     next_figure = 0;
 }
 
+bool figure::citizen_can_travel_over_land() {
+    tile2i around_min;
+    tile2i around_max;
+    if (dcast()->route_goes_around(around_min, around_max)
+        && map_routing_citizen_can_travel_over_land_around(tile, destination_tile, around_min, around_max,
+          can_cross_ferry())) {
+        return true;
+    }
+    return map_routing_citizen_can_travel_over_land(tile, destination_tile, can_cross_ferry());
+}
+
 void figure::figure_route_add() {
     auto& data = xvalue<figure_route_data_t>::ref();
     routing_path_id = 0;
@@ -166,7 +178,7 @@ void figure::figure_route_add() {
         case TERRAIN_USAGE_PREFER_ROADS:
             can_travel = map_routing_citizen_can_travel_over_road(tile, destination_tile, can_cross_ferry());
             if (!can_travel) {
-                can_travel = map_routing_citizen_can_travel_over_land(tile, destination_tile, can_cross_ferry());
+                can_travel = citizen_can_travel_over_land();
             }
             break;
 
@@ -175,7 +187,7 @@ void figure::figure_route_add() {
             break;
 
         default:
-            can_travel = map_routing_citizen_can_travel_over_land(tile, destination_tile, can_cross_ferry());
+            can_travel = citizen_can_travel_over_land();
             break;
         }
 

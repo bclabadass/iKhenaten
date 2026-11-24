@@ -639,6 +639,25 @@ bool figure_impl::is_destination(const building *b) const {
     return base.destination_building_id > 0 && base.destination_building_id == (b ? b->id : 0);
 }
 
+// A pyramid under construction is open ground in the routing grid (its ground is levelled first, and workers come
+// down onto it), so a route to its entry cut across the laid courses: sled trains walked through the base to the ramp.
+bool figure_impl::route_goes_around(tile2i& area_min, tile2i& area_max) const {
+    building* dest = destination();
+    building* head = dest ? dest->main() : nullptr;
+    auto* pyramid = head ? head->dcast_pyramid() : nullptr;
+    if (!pyramid || pyramid->is_finished() || pyramid->phase() < 2) {
+        return false;
+    }
+    const vec2i size = pyramid->footprint_params().init_tiles;
+    tile2i nw = pyramid->footprint_nw();
+    if (pyramid->tile_in_monument_footprint(base.destination_tile) || pyramid->tile_in_monument_footprint(base.tile)) {
+        return false;
+    }
+    area_min = nw;
+    area_max = nw.shifted(size.x - 1, size.y - 1);
+    return true;
+}
+
 void figure_impl::apply_damage(int hit_dmg, figure_id attaker_id) {
     if (invasion_auto_resolve_figure_immune(&base)) {
         return;

@@ -321,6 +321,7 @@ public:
     void map_figure_update();
     void map_figure_remove();
     void figure_route_add();
+    bool citizen_can_travel_over_land();
     void route_remove();
 
     void reset_flags();
