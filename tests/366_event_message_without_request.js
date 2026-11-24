@@ -1,7 +1,8 @@
 // An event message that requests nothing shows no request line (Brendan on the Duo: "Perfect Flood Expected" and
 // many other alerts ended "800 Nothing Month 0 to comply"). Event messages on the general template open in the
 // window built for Pharaoh's requests, which always added the requested good, amount and months; for a flood the
-// event's amount filled in and the good was "Nothing". The line now shows only when a good is requested.
+// event's amount filled in and the good was "Nothing". The line now shows only on a request (to-do 2d: a trade change
+// names a good too, see test 922).
 // Markers:
 //   [test-marker] flood_message_has_no_request_line
 //   [test-marker] request_message_keeps_request_line
@@ -27,8 +28,15 @@ function run_test() {
         __log_marker('flood_message_has_no_request_line')
     }
 
-    var request = t366_post(RESOURCE_GRAIN, 5)
-    __log_info_native('[test:366] message with a good requested: ' + JSON.stringify(request.text))
+    ui.window_city_show()
+    __test_pump_frames(2)
+    __test_post_request_message(RESOURCE_GRAIN, 5, 12, PHRASE_general_request_title_P,
+        PHRASE_general_request_initial_announcement_P, PHRASE_general_request_no_reason_P_A)
+    __test_process_events()
+    __test_pump_frames(6)
+    var request_section = __test_message_dialog_section()
+    var request = { section: request_section, text: '' + __test_window_element_text(request_section, 'content_text') }
+    __log_info_native('[test:366] request message: ' + JSON.stringify(request.text))
     if (request.text.indexOf(comply) >= 0) {
         __log_marker('request_message_keeps_request_line')
     }

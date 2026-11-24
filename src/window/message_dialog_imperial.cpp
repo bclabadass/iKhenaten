@@ -21,9 +21,10 @@ void ui::message_dialog_imperial::draw_city_message_text(const lang_message& msg
 
     const auto& city_msg = city_message_get(message_id);
     bstring1024 full_text;
-    // Most event messages (floods and the like) use the general template, which opens here: only a request names a
-    // good, and without one the line read "800 Nothing Month 0 to comply".
-    if (city_msg.req_resource == RESOURCE_NONE) {
+    // Event news (floods, trade and price changes and the like) uses the general template, which opens here too; only
+    // a request has a good to send and months to comply. Without the check a flood read "800 Nothing Month 0 to
+    // comply" and Selima's yearly timber demand "200 Timber Month 0 to comply".
+    if (city_msg.req_resource == RESOURCE_NONE || msg.id == lang_get_message(xstring("message_template_general")).id) {
         full_text.printf("%s @P@P%s", header.c_str(), text.c_str());
         ui["content_text"] = full_text;
         return;

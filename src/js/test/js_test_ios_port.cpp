@@ -572,6 +572,16 @@ static void __test_post_event_message(int item, int amount, int title_id, int bo
 }
 ANK_FUNCTION_5(__test_post_event_message);
 
+// Post a request message as request.cpp does: the request template, its good, amount and months to comply.
+static void __test_post_request_message(int item, int amount, int months, int title_id, int body_id, int phrase_id) {
+    event_ph_t event{};
+    event.item.value = item;
+    event.amount.value = amount;
+    event.months_initial = (uint8_t)months;
+    city_message_post_full(true, "message_template_request", &event, -1, title_id, body_id, phrase_id, 0, 0);
+}
+ANK_FUNCTION_6(__test_post_request_message);
+
 
 static int __test_formation_figure_type(int formation_id) {
     formation* m = formation_get(formation_id);
