@@ -26,10 +26,10 @@ building_temple_complex_osiris {
       middle_1 { id:2 }
       front_0 { id:3, offset:3 }
       front_1 { id:3 }
-      altar_0 { id:7, offset:1 }
-      altar_1 { id:7 }
-      oracle_0 { id:7, offset:3 }
-      oracle_1 { id:7, offset:2 }
+      altar_0 { id:7, offset:3 }
+      altar_1 { id:7, offset:2 }
+      oracle_0 { id:7, offset:1 }
+      oracle_1 { id:7 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -72,7 +72,7 @@ building_temple_complex_osiris {
     // BUILDING_TEMPLE_COMPLEX_ALTAR_AMON
     animations  {
       _pack { pack:PACK_TEMPLE_PTAH }
-      preview { id:7}
+      preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 4 ]
 
@@ -90,7 +90,7 @@ building_temple_complex_osiris {
     // BUILDING_TEMPLE_COMPLEX_ORACLE_THOTH
     animations {
       _pack { pack:PACK_TEMPLE_PTAH }
-      preview { id:7, offset:2 }
+      preview { id:7 }
     }
     build_menu_text [ 189, 5 ]
 
@@ -115,10 +115,10 @@ building_temple_complex_osiris {
       middle_1 { id:2 }
       front_0 { id:3, offset:3 }
       front_1 { id:3 }
-      altar_0 { id:7, offset:1 }
-      altar_1 { id:7 }
-      oracle_0 { id:7, offset:3 }
-      oracle_1 { id:7, offset:2 }
+      altar_0 { id:7, offset:3 }
+      altar_1 { id:7, offset:2 }
+      oracle_0 { id:7, offset:1 }
+      oracle_1 { id:7 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -161,7 +161,7 @@ building_temple_complex_osiris {
     // BUILDING_TEMPLE_COMPLEX_ALTAR_ANUBIS
     animations  {
       _pack { pack:PACK_TEMPLE_SETH }
-      preview { id:7 }
+      preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 6 ]
 
@@ -179,7 +179,7 @@ building_temple_complex_osiris {
     // BUILDING_TEMPLE_COMPLEX_ORACLE_SEKHMET
     animations {
       _pack { pack:PACK_TEMPLE_SETH }
-      preview { id:7, offset:2 }
+      preview { id:7 }
     }
     build_menu_text [ 189, 7 ]
 
@@ -204,10 +204,10 @@ building_temple_complex_osiris {
       middle_1 { id:2 }
       front_0 { id:3, offset:3 }
       front_1 { id:3 }
-      altar_0 { id:7, offset:1 }
-      altar_1 { id:7 }
-      oracle_0 { id:7, offset:3 }
-      oracle_1 { id:7, offset:2 }
+      altar_0 { id:7, offset:3 }
+      altar_1 { id:7, offset:2 }
+      oracle_0 { id:7, offset:1 }
+      oracle_1 { id:7 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -249,7 +249,7 @@ building_temple_complex_osiris {
   building_temple_complex_altar_sebek {
     animations  {
       _pack { pack:PACK_TEMPLE_NILE }
-      preview { id:7}
+      preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 0 ]
 
@@ -266,7 +266,7 @@ building_temple_complex_osiris {
   building_temple_complex_oracle_min {
     animations {
       _pack { pack:PACK_TEMPLE_NILE }
-      preview { id:7, offset:2 }
+      preview { id:7 }
 
 
     }
@@ -293,10 +293,10 @@ building_temple_complex_osiris {
       middle_1 { id:2 }
       front_0 { id:3, offset:3 }
       front_1 { id:3 }
-      altar_0 { id:7, offset:1 }
-      altar_1 { id:7 }
-      oracle_0 { id:7, offset:3 }
-      oracle_1 { id:7, offset:2 }
+      altar_0 { id:7, offset:3 }
+      altar_1 { id:7, offset:2 }
+      oracle_0 { id:7, offset:1 }
+      oracle_1 { id:7 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -338,7 +338,7 @@ building_temple_complex_osiris {
   building_temple_complex_altar_maat {
     animations  {
       _pack { pack:PACK_TEMPLE_RA }
-      preview { id:7}
+      preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 2 ]
 
@@ -355,7 +355,7 @@ building_temple_complex_osiris {
   building_temple_complex_oracle_horus {
     animations {
       _pack { pack:PACK_TEMPLE_RA }
-      preview { id:7, offset:2 }
+      preview { id:7 }
     }
     build_menu_text [ 189, 3 ]
 
@@ -380,10 +380,10 @@ building_temple_complex_osiris {
       middle_1 { id:2 }
       front_0 { id:3, offset:3 }
       front_1 { id:3 }
-      altar_0 { id:7, offset:1 }
-      altar_1 { id:7 }
-      oracle_0 { id:7, offset:3 }
-      oracle_1 { id:7, offset:2 }
+      altar_0 { id:7, offset:3 }
+      altar_1 { id:7, offset:2 }
+      oracle_0 { id:7, offset:1 }
+      oracle_1 { id:7 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -430,7 +430,7 @@ building_temple_complex_osiris {
   building_temple_complex_altar_isis {
     animations  {
       _pack { pack:PACK_TEMPLE_BAST }
-      preview { id:7}
+      preview { id:7, offset:2 }
     }
     build_menu_text [ 189, 8 ]
 
@@ -447,7 +447,7 @@ building_temple_complex_osiris {
   building_temple_complex_oracle_hathor {
     animations {
       _pack { pack:PACK_TEMPLE_BAST }
-      preview { id:7, offset:2 }
+      preview { id:7 }
     }
     build_menu_text [ 189, 9 ]
 

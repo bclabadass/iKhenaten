@@ -513,7 +513,8 @@ int building_temple_complex::facing() const {
 
 // The pack draws the complex by depth, not by part: its tall temple ("BACK") goes on the part farthest from the
 // camera, the colonnade ("MIDD") in the middle and the shrine ("FRONT") on the nearest part, each in two frames (one
-// per axis). A built altar changes the middle picture and a built oracle the nearest one.
+// per axis). A built oracle changes the colonnade and a built altar the shrine: Sebek's crocodiles and Isis flank the
+// shrine's door, Min and Hathor stand in the colonnade.
 building_temple_complex::part_images_t building_temple_complex::part_images() const {
     part_images_t images;
     const int axis = (facing() + map_view_orientation() / 2) % 2;
@@ -533,13 +534,13 @@ building_temple_complex::part_images_t building_temple_complex::part_images() co
     std::sort(std::begin(parts), std::end(parts), [](building* a, building* b) {
         return map_view_tile_depth(a->tile.shifted(1, 1)) < map_view_tile_depth(b->tile.shifted(1, 1));
     });
-    const int middle_image = params.first_img(has_upgrade(etc_upgrade_altar) ? altar[axis] : middle[axis]);
-    const int front_image = params.first_img(has_upgrade(etc_upgrade_oracle) ? oracle[axis] : front[axis]);
+    const int middle_image = params.first_img(has_upgrade(etc_upgrade_oracle) ? oracle[axis] : middle[axis]);
+    const int front_image = params.first_img(has_upgrade(etc_upgrade_altar) ? altar[axis] : front[axis]);
     images.parts.push_back({parts[0], params.first_img(back[axis])});
     images.parts.push_back({parts[1], middle_image});
     images.parts.push_back({parts[2], front_image});
-    images.altar = {parts[1], params.first_img(altar[axis])};
-    images.oracle = {parts[2], params.first_img(oracle[axis])};
+    images.altar = {parts[2], params.first_img(altar[axis])};
+    images.oracle = {parts[1], params.first_img(oracle[axis])};
     return images;
 }
 

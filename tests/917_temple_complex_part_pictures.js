@@ -1,10 +1,11 @@
 // A temple complex's three big pictures (Brendan, to-do 2b: "the altar and oracle visuals"). The pack draws the complex
 // by depth: the tall temple on the part farthest from the camera, the colonnade in the middle, the shrine on the
 // nearest part, all in the same axis, each facing along the complex (frame 0 when the complex runs down-right on
-// screen; Brendan, build 14176: every piece was turned 90 degrees); a built altar changes the colonnade, a built
-// oracle the shrine. The parts took
-// their facing from the planner's Rotate setting (turning it for a statue redrew the complex), and with the camera
-// or the complex turned the temple stood in front of the colonnade or showed twice.
+// screen; Brendan, build 14176: every piece was turned 90 degrees). A built oracle changes the colonnade and a built
+// altar the shrine (Brendan, build 14183: "the altar builds the oracle and vice versa"): Sebek's crocodiles and Isis
+// flank the shrine's door, Min and Hathor stand in the colonnade. The altar is placed alone first, so a swap shows.
+// The parts took their facing from the planner's Rotate setting (turning it for a statue redrew the complex), and with
+// the camera or the complex turned the temple stood in front of the colonnade or showed twice.
 // Markers:
 //   [test-marker] t917_by_depth_every_view
 //   [test-marker] t917_planner_rotation_ignored
@@ -53,8 +54,8 @@ function t917_parts(bid) {
 function t917_axis(parts, altar, oracle) {
     for (var axis = 0; axis < 2; axis++) {
         var off = axis * 3
-        var middle = altar ? t917_img(7, axis) : t917_img(2, off)
-        var front = oracle ? t917_img(7, 2 + axis) : t917_img(3, off)
+        var middle = oracle ? t917_img(7, axis) : t917_img(2, off)
+        var front = altar ? t917_img(7, 2 + axis) : t917_img(3, off)
         if (parts.length == 3 && parts[0].image == t917_img(1, off) && parts[1].image == middle && parts[2].image == front) {
             return axis
         }
