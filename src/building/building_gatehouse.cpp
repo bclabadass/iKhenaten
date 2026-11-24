@@ -433,19 +433,6 @@ void building_gatehouse::spawn_figure() {
 
 namespace {
 
-    int gatehouse_view_depth(tile2i tile) {
-        switch (map_view_orientation()) {
-        case DIR_0_TOP_RIGHT:
-            return tile.x() + tile.y();
-        case DIR_2_BOTTOM_RIGHT:
-            return tile.y() - tile.x();
-        case DIR_4_BOTTOM_LEFT:
-            return -tile.x() - tile.y();
-        default:
-            return tile.x() - tile.y();
-        }
-    }
-
     vec2i gatehouse_view_offset(int dx, int dy) {
         int sx = 0;
         int sy = 0;
@@ -468,21 +455,6 @@ namespace {
             break;
         }
         return {sx * 30, sy * 15};
-    }
-
-    // The tile a multi-tile picture is anchored on (as map_building_tiles_add marks it).
-    tile2i gatehouse_draw_tile(tile2i tile, int size) {
-        const int last = size - 1;
-        switch (map_view_orientation()) {
-        case DIR_0_TOP_RIGHT:
-            return tile.shifted(0, last);
-        case DIR_2_BOTTOM_RIGHT:
-            return tile;
-        case DIR_4_BOTTOM_LEFT:
-            return tile.shifted(last, 0);
-        default:
-            return tile.shifted(last, last);
-        }
     }
 
     // Each picture comes in two frames: frame 0 for a wall running along the screen's x, frame 1 along its y.
@@ -510,7 +482,7 @@ namespace {
     svector<gatehouse_piece, 4> gatehouse_pieces(e_building_type type, const building_gatehouse_5x2::layout_t& layout) {
         const auto& params = building_static_params::get(type);
         const int frame = gatehouse_frame(layout.axis);
-        const bool first_gate_near = gatehouse_view_depth(layout.gate[0]) > gatehouse_view_depth(layout.gate[1]);
+        const bool first_gate_near = map_view_tile_depth(layout.gate[0]) > map_view_tile_depth(layout.gate[1]);
         const tile2i near_gate = first_gate_near ? layout.gate[0] : layout.gate[1];
         const tile2i far_gate = first_gate_near ? layout.gate[1] : layout.gate[0];
         const int pylon = building_gatehouse_5x2::pylon_image(type, frame);
@@ -523,8 +495,8 @@ namespace {
         pieces.push_back({layout.pylon[0], 2, pylon, pylon_terrain});
         pieces.push_back({layout.pylon[1], 2, pylon, pylon_terrain});
         std::sort(pieces.begin(), pieces.end(), [](const gatehouse_piece& a, const gatehouse_piece& b) {
-            return gatehouse_view_depth(gatehouse_draw_tile(a.tile, a.size))
-                   < gatehouse_view_depth(gatehouse_draw_tile(b.tile, b.size));
+            return map_view_tile_depth(map_view_draw_tile(a.tile, a.size))
+                   < map_view_tile_depth(map_view_draw_tile(b.tile, b.size));
         });
         return pieces;
     }
@@ -713,7 +685,7 @@ void building_gatehouse_5x2::preview::ghost_preview(build_planner& planer, paint
   vec2i pixel) const {
     const layout_t layout = layout_at(end, planer.absolute_orientation);
     for (const gatehouse_piece& piece : gatehouse_pieces(planer.build_type, layout)) {
-        const tile2i draw_tile = gatehouse_draw_tile(piece.tile, piece.size);
+        const tile2i draw_tile = map_view_draw_tile(piece.tile, piece.size);
         const vec2i offset = gatehouse_view_offset(draw_tile.x() - end.x(), draw_tile.y() - end.y());
         ghost_draw::draw_building_ghost(ctx, piece.image_id, pixel + offset, COLOR_MASK_GREEN);
     }

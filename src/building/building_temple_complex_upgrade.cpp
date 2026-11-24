@@ -22,116 +22,68 @@ REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_temple_complex_oracle_horus);
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_temple_complex_altar_isis);
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_temple_complex_oracle_hathor);
 
-void building_temple_complex_altar::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i tile, tile2i end, vec2i pixel) const {
-    const auto &params = building_static_params::get(planer.build_type);
+namespace {
 
-    int city_orientation = map_view_orientation() / 2;
-    int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
-    pcstr orienation_key_fancy[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
-
-    int image_id = params.first_img(orienation_key_fancy[orientation]);
-    auto complex = building_at_ex<building_temple_complex>(end);
-    building *upgrade_base = complex ? complex->get_altar() : nullptr;
-    if (!upgrade_base) {
-        return;
+    building_temple_complex* complex_at(tile2i tile) {
+        building* b = building_at(tile);
+        return b ? b->main()->dcast_temple_complex() : nullptr;
     }
 
-    tile2i offset = { 0, 0 };
-    int bsize = params.building_size - 1;
-    switch (city_orientation) {
-    case 0: offset = { 0, bsize }; break;
-    case 1: offset = { 0, 0 }; break;
-    case 2: offset = { bsize, 0 }; break;
-    case 3: offset = { bsize, bsize }; break;
+    void draw_upgrade_ghost(painter& ctx, tile2i end, e_temple_compex_upgrade upgrade) {
+        auto complex = complex_at(end);
+        if (!complex) {
+            return;
+        }
+        const auto images = complex->part_images();
+        const auto& part = upgrade == etc_upgrade_altar ? images.altar : images.oracle;
+        if (!part.b) {
+            return;
+        }
+        const vec2i pixel = g_camera.lookup_tile_to_pixel(map_view_draw_tile(part.b->tile, 3));
+        ghost_draw::draw_building_ghost(ctx, part.image_id, pixel);
     }
 
-    vec2i pixel_upgrade = g_camera.lookup_tile_to_pixel(upgrade_base->tile.shifted(offset));
-    ghost_draw::draw_building_ghost(ctx, image_id, pixel_upgrade);
+    int place_upgrade(build_planner& p, tile2i end, e_temple_compex_upgrade upgrade) {
+        auto complex = complex_at(end);
+        if (!complex || complex->has_upgrade(upgrade)) {
+            return false;
+        }
+        complex->build_upgrade(upgrade, p.build_type);
+        return true;
+    }
+
+    void refresh_complex(building& part) {
+        if (auto complex = part.main()->dcast_temple_complex()) {
+            complex->refresh_part_images();
+        }
+    }
+
+} // namespace
+
+void building_temple_complex_altar::preview::ghost_preview(build_planner& planer, painter& ctx, tile2i tile, tile2i end,
+  vec2i pixel) const {
+    draw_upgrade_ghost(ctx, end, etc_upgrade_altar);
 }
 
-int building_temple_complex_altar::preview::construction_place(build_planner &p, tile2i tile, tile2i end, int orientation, int variant) const {
-    auto complex = building_at(end)->main()->dcast_temple_complex();
-    if (!complex) {
-        return false;
-    }
-
-    const bool upgrade_exists = complex->has_upgrade(etc_upgrade_altar);
-    if (upgrade_exists) {
-        return false;
-    }
-
-    complex->build_upgrade(etc_upgrade_altar, p.build_type);
-    return true;
+int building_temple_complex_altar::preview::construction_place(build_planner& p, tile2i tile, tile2i end,
+  int orientation, int variant) const {
+    return place_upgrade(p, end, etc_upgrade_altar);
 }
 
-void building_temple_complex_oracle::preview::ghost_preview(build_planner &planer, painter &ctx, tile2i tile, tile2i end, vec2i pixel) const {
-    const auto &params = building_static_params::get(planer.build_type);
-
-    int city_orientation = map_view_orientation() / 2;
-    int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
-    pcstr orienation_key_fancy[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
-
-    int image_id = params.first_img(orienation_key_fancy[orientation]);
-    auto complex = building_at_ex<building_temple_complex>(end);
-    building *upgrade_base = complex ? complex->get_oracle() : nullptr;
-    if (!upgrade_base) {
-        return;
-    }
-
-    tile2i offset = { 0, 0 };
-    int bsize = params.building_size - 1;
-    switch (city_orientation) {
-    case 0: offset = { 0, bsize }; break;
-    case 1: offset = { 0, 0 }; break;
-    case 2: offset = { bsize, -(bsize + params.building_size + 1) }; break;
-    case 3: offset = { bsize, -(bsize + params.building_size - 1) }; break;
-    }
-
-    vec2i pixel_upgrade = g_camera.lookup_tile_to_pixel(upgrade_base->tile.shifted(offset));
-    ghost_draw::draw_building_ghost(ctx, image_id, pixel_upgrade);
+void building_temple_complex_oracle::preview::ghost_preview(build_planner& planer, painter& ctx, tile2i tile,
+  tile2i end, vec2i pixel) const {
+    draw_upgrade_ghost(ctx, end, etc_upgrade_oracle);
 }
 
-int building_temple_complex_oracle::preview::construction_place(build_planner &p, tile2i tile, tile2i end, int orientation, int variant) const {
-    auto complex = building_at(end)->main()->dcast_temple_complex();
-    if (!complex) {
-        return false;
-    }
-
-    const bool upgrade_exists = complex->has_upgrade(etc_upgrade_oracle);
-    if (upgrade_exists) {
-        return false;
-    }
-
-    complex->build_upgrade(etc_upgrade_oracle, p.build_type);
-    return true;
+int building_temple_complex_oracle::preview::construction_place(build_planner& p, tile2i tile, tile2i end,
+  int orientation, int variant) const {
+    return place_upgrade(p, end, etc_upgrade_oracle);
 }
 
-void building_temple_complex_altar::update_map_orientation(int _) {
-    int city_orientation = map_view_orientation() / 2;
-    int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
-    auto complex = ::smart_cast<building_temple_complex *>(main());
-    pcstr orienation_key_base[] = { "base_n", "base_e", "base_s", "base_w" };
-    pcstr orienation_key_fancy[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
-
-    const bool is_altar = current_params().needs.altar;
-    pcstr *orientation_key = complex->has_upgrade(etc_upgrade_altar) ? orienation_key_fancy : orienation_key_base;
-    
-    int image_id = anim(orientation_key[orientation]).first_img();
-    map_building_tiles_add(id(), tile(), 3, image_id, TERRAIN_BUILDING);
+void building_temple_complex_altar::update_map_orientation(int orientation) {
+    refresh_complex(base);
 }
 
-void building_temple_complex_oracle::update_map_orientation(int _) {
-    int city_orientation = map_view_orientation() / 2;
-    int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
-    auto complex = ::smart_cast<building_temple_complex *>(main());
-    pcstr orienation_key_base[] = { "base_n", "base_e", "base_s", "base_w" };
-    pcstr orienation_key_fancy[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
-    pcstr *orientation_key = complex->has_upgrade(etc_upgrade_oracle) ? orienation_key_fancy : orienation_key_base;
-
-    if (orientation == 2 || orientation == 3) {
-        orientation_key = orienation_key_base;
-    }
-
-    int image_id = anim(orientation_key[orientation]).first_img();
-    map_building_tiles_add(id(), tile(), 3, image_id, TERRAIN_BUILDING);
+void building_temple_complex_oracle::update_map_orientation(int orientation) {
+    refresh_complex(base);
 }

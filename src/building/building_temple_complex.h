@@ -64,8 +64,18 @@ public:
 
     decoraive_tiles_pool_t &get_decorative_tiles_pool();
 
-    static void map_tiles_add_temple_complex_parts(building *b);
-    static int get_temple_complex_part_image(e_building_type type, int part, int orientation, int level);
+    struct part_image_t {
+        building* b = nullptr;
+        int image_id = 0;
+    };
+    struct part_images_t {
+        svector<part_image_t, 3> parts;
+        part_image_t altar;
+        part_image_t oracle;
+    };
+    int facing() const;
+    part_images_t part_images() const;
+    void refresh_part_images();
 
     virtual const base_params_t &base_params() const = 0;
 };

@@ -20,14 +20,16 @@ building_temple_complex_osiris {
     animations : {
       _pack { pack:PACK_TEMPLE_NILE }
       preview { pack:PACK_GENERAL, id:42}
-      main_n { id:1, offset:3 }
-      main_w { id:3, offset:0 }
-      main_e { id:1, offset:0 }
-      main_s { id:3, offset:3 }
-      oracle_n { id:2 }
-      oracle_w { id:2, offset:3 }
-      altar_n { id:3 }
-      altar_w { id:3, offset:3 }
+      back_0 { id:1 }
+      back_1 { id:1, offset:3 }
+      middle_0 { id:2 }
+      middle_1 { id:2, offset:3 }
+      front_0 { id:3 }
+      front_1 { id:3, offset:3 }
+      altar_0 { id:7 }
+      altar_1 { id:7, offset:1 }
+      oracle_0 { id:7, offset:2 }
+      oracle_1 { id:7, offset:3 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -71,12 +73,6 @@ building_temple_complex_osiris {
     animations  {
       _pack { pack:PACK_TEMPLE_NILE }
       preview { id:7}
-      base_n  { id:2, offset:3 }
-      base_w  { id:2 }
-      base_e  { id:2, offset:0 }
-      base_s  { id:2, offset:3 }
-      fancy_n { id:7, offset:0 }
-      fancy_w { id:7, offset:1 }
     }
     build_menu_text [ 189, 4 ]
 
@@ -95,12 +91,6 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_NILE }
       preview { id:7, offset:2 }
-      base_n  { id:3, offset:3 }
-      base_w  { id:1, offset:0 }
-      base_e  { id:3 }
-      base_s  { id:1, offset:3 }
-      fancy_n { id:7, offset:2 }
-      fancy_w { id:7, offset:3 }
     }
     build_menu_text [ 189, 5 ]
 
@@ -119,14 +109,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_SETH }
       preview { pack:PACK_GENERAL, id:42}
-      main_n { id:1, offset:3 }
-      main_w { id:3, offset:0 }
-      main_e { id:1, offset:0 }
-      main_s { id:3, offset:3 }
-      oracle_n { id:2 }
-      oracle_w { id:2, offset:3 }
-      altar_n { id:3 }
-      altar_w { id:3, offset:3 }
+      back_0 { id:1 }
+      back_1 { id:1, offset:3 }
+      middle_0 { id:2 }
+      middle_1 { id:2, offset:3 }
+      front_0 { id:3 }
+      front_1 { id:3, offset:3 }
+      altar_0 { id:7 }
+      altar_1 { id:7, offset:1 }
+      oracle_0 { id:7, offset:2 }
+      oracle_1 { id:7, offset:3 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -170,14 +162,6 @@ building_temple_complex_osiris {
     animations  {
       _pack { pack:PACK_TEMPLE_SETH }
       preview { id:7 }
-      base_n  { id:2, offset:3 }
-      base_w  { id:2, offset:0 }
-      base_e  { id:2, offset:0 }
-      base_s  { id:2, offset:3 }
-      fancy_n { id:7, offset:1 }
-      fancy_w { id:7, offset:0 }
-      fancy_e { id:7, offset:0 }
-      fancy_s { id:7, offset:1 }
     }
     build_menu_text [ 189, 6 ]
 
@@ -196,14 +180,6 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_SETH }
       preview { id:7, offset:2 }
-      base_n  { id:3, offset:3 }
-      base_w  { id:1, offset:0 }
-      base_e  { id:3 }
-      base_s  { id:1, offset:3 }
-      fancy_n { id:7, offset:3 }
-      fancy_w { id:7, offset:2 }
-      fancy_e { id:7, offset:2 }
-      fancy_s { id:7, offset:3 }
     }
     build_menu_text [ 189, 7 ]
 
@@ -222,14 +198,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_RA }
       preview { pack:PACK_GENERAL, id:42}
-      main_n { id:1, offset:3 }
-      main_w { id:3, offset:0 }
-      main_e { id:1, offset:0 }
-      main_s { id:3, offset:3 }
-      oracle_n { id:2 }
-      oracle_w { id:2, offset:3 }
-      altar_n { id:3 }
-      altar_w { id:3, offset:3 }
+      back_0 { id:1 }
+      back_1 { id:1, offset:3 }
+      middle_0 { id:2 }
+      middle_1 { id:2, offset:3 }
+      front_0 { id:3 }
+      front_1 { id:3, offset:3 }
+      altar_0 { id:7 }
+      altar_1 { id:7, offset:1 }
+      oracle_0 { id:7, offset:2 }
+      oracle_1 { id:7, offset:3 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -272,14 +250,6 @@ building_temple_complex_osiris {
     animations  {
       _pack { pack:PACK_TEMPLE_RA }
       preview { id:7}
-      base_n  { id:2, offset:3 }
-      base_w  { id:2 }
-      base_e  { id:2, offset:0 }
-      base_s  { id:2, offset:3 }
-      fancy_n { id:7, offset:1 }
-      fancy_w { id:7, offset:0 }
-      fancy_e { id:7, offset:0 }
-      fancy_s { id:7, offset:1 }
     }
     build_menu_text [ 189, 0 ]
 
@@ -298,15 +268,7 @@ building_temple_complex_osiris {
       _pack { pack:PACK_TEMPLE_RA }
       preview { id:7, offset:2 }
 
-      base_n  { id:3, offset:3 }
-      base_w  { id:1, offset:0 }
-      base_e  { id:3, offset:0 }
-      base_s  { id:1, offset:3 }
 
-      fancy_n { id:7, offset:3 }
-      fancy_w { id:7, offset:2 }
-      fancy_e { id:7, offset:2 }
-      fancy_s { id:7, offset:3 }
     }
     build_menu_text [ 189, 1 ]
 
@@ -325,14 +287,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_PTAH }
       preview { pack:PACK_GENERAL, id:42}
-      main_n { id:1, offset:3 }
-      main_w { id:3, offset:0 }
-      main_e { id:1, offset:0 }
-      main_s { id:3, offset:3 }
-      oracle_n { id:2 }
-      oracle_w { id:2, offset:3 }
-      altar_n { id:3 }
-      altar_w { id:3, offset:3 }
+      back_0 { id:1 }
+      back_1 { id:1, offset:3 }
+      middle_0 { id:2 }
+      middle_1 { id:2, offset:3 }
+      front_0 { id:3 }
+      front_1 { id:3, offset:3 }
+      altar_0 { id:7 }
+      altar_1 { id:7, offset:1 }
+      oracle_0 { id:7, offset:2 }
+      oracle_1 { id:7, offset:3 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -373,16 +337,8 @@ building_temple_complex_osiris {
 
   building_temple_complex_altar_maat {
     animations  {
-      _pack { pack:PACK_TEMPLE_RA }
+      _pack { pack:PACK_TEMPLE_PTAH }
       preview { id:7}
-      base_n  { id:2, offset:3 }
-      base_w  { id:2 }
-      base_e  { id:2, offset:0 }
-      base_s  { id:2, offset:3 }
-      fancy_n { id:7, offset:1 }
-      fancy_w { id:7, offset:0 }
-      fancy_e { id:7, offset:0 }
-      fancy_s { id:7, offset:1 }
     }
     build_menu_text [ 189, 2 ]
 
@@ -400,14 +356,6 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_PTAH }
       preview { id:7, offset:2 }
-      base_n  { id:3, offset:3 }
-      base_w  { id:1, offset:0 }
-      base_e  { id:3 }
-      base_s  { id:1, offset:3 }
-      fancy_n { id:7, offset:3 }
-      fancy_w { id:7, offset:2 }
-      fancy_e { id:7, offset:2 }
-      fancy_s { id:7, offset:3 }
     }
     build_menu_text [ 189, 3 ]
 
@@ -426,14 +374,16 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_BAST }
       preview { pack:PACK_GENERAL, id:42}
-      main_n { id:1, offset:3 }
-      main_w { id:1 }
-      main_e { id:3 }
-      main_s { id:3 }
-      oracle_n { id:2 }
-      oracle_w { id:2, offset:3 }
-      altar_n { id:3 }
-      altar_w { id:3, offset:3 }
+      back_0 { id:1 }
+      back_1 { id:1, offset:3 }
+      middle_0 { id:2 }
+      middle_1 { id:2, offset:3 }
+      front_0 { id:3 }
+      front_1 { id:3, offset:3 }
+      altar_0 { id:7 }
+      altar_1 { id:7, offset:1 }
+      oracle_0 { id:7, offset:2 }
+      oracle_1 { id:7, offset:3 }
       tiles_0 { id:4 }
       tiles_1 { id:4, offset:1 }
       tiles_2 { id:4, offset:2 }
@@ -481,14 +431,6 @@ building_temple_complex_osiris {
     animations  {
       _pack { pack:PACK_TEMPLE_BAST }
       preview { id:7}
-      base_n  { id:2, offset:3 }
-      base_w  { id:2 }
-      base_e  { id:2, offset:0 }
-      base_s  { id:2, offset:3 }
-      fancy_n { id:7, offset:1 }
-      fancy_w { id:7, offset:0 }
-      fancy_e { id:7, offset:0 }
-      fancy_s { id:7, offset:1 }
     }
     build_menu_text [ 189, 8 ]
 
@@ -506,14 +448,6 @@ building_temple_complex_osiris {
     animations {
       _pack { pack:PACK_TEMPLE_BAST }
       preview { id:7, offset:2 }
-      base_n  { id:3, offset:3 }
-      base_w  { id:1, offset:0 }
-      base_e  { id:3 }
-      base_s  { id:1, offset:3 }
-      fancy_n { id:7, offset:3 }
-      fancy_w { id:7, offset:2 }
-      fancy_e { id:7, offset:2 }
-      fancy_s { id:7, offset:3 }
     }
     build_menu_text [ 189, 9 ]
 

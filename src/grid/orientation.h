@@ -27,3 +27,8 @@ int map_view_orientation();
 void map_view_orientation_set(int orientation);
 int map_view_relative_orientation(int orientation_absolute);
 int map_view_absolute_orientation(int orientation_relative);
+
+// How near the camera a tile is in the current view (larger is nearer).
+int map_view_tile_depth(tile2i tile);
+// The tile a size x size picture is anchored on in the current view (as map_building_tiles_add marks it).
+tile2i map_view_draw_tile(tile2i tile, int size);

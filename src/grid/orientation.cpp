@@ -69,6 +69,33 @@ int map_view_absolute_orientation(int orientation_relative) {
     return (4 + orientation_relative + g_view_orientation / 2) % 4;
 }
 
+int map_view_tile_depth(tile2i tile) {
+    switch (g_view_orientation) {
+    case DIR_0_TOP_RIGHT:
+        return tile.x() + tile.y();
+    case DIR_2_BOTTOM_RIGHT:
+        return tile.y() - tile.x();
+    case DIR_4_BOTTOM_LEFT:
+        return -tile.x() - tile.y();
+    default:
+        return tile.x() - tile.y();
+    }
+}
+
+tile2i map_view_draw_tile(tile2i tile, int size) {
+    const int last = size - 1;
+    switch (g_view_orientation) {
+    case DIR_0_TOP_RIGHT:
+        return tile.shifted(0, last);
+    case DIR_2_BOTTOM_RIGHT:
+        return tile;
+    case DIR_4_BOTTOM_LEFT:
+        return tile.shifted(last, 0);
+    default:
+        return tile.shifted(last, last);
+    }
+}
+
 void map_orientation_change(int counter_clockwise) {
     map_tiles_remove_entry_exit_flags();
     game_undo_disable();

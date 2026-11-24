@@ -16,6 +16,7 @@
 #include "graphics/view/lookup.h"
 #include "construction/build_planner.h"
 
+#include <algorithm>
 #include <limits>
 #include "js/js_register.h"
 #include "game/game_pool.h"
@@ -59,12 +60,12 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
     const auto &params = building_static_params::get(planer.build_type);
 
     int EMPTY______ = 0;
-    int main______n = params.first_img("main_n");
-    int main______w = params.first_img("main_w");
-    int oracle____n = params.first_img("oracle_n");
-    int oracle____w = params.first_img("oracle_w");
-    int altar_____n = params.first_img("altar_n");
-    int altar_____w = params.first_img("altar_w");
+    int back______1 = params.first_img("back_1");
+    int back______0 = params.first_img("back_0");
+    int middle____1 = params.first_img("middle_1");
+    int middle____0 = params.first_img("middle_0");
+    int front_____1 = params.first_img("front_1");
+    int front_____0 = params.first_img("front_0");
 
     int tiles_____0 = params.first_img("tiles_0");
     int tiles_____1 = params.first_img("tiles_1");
@@ -90,6 +91,7 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
     int statue_2w_A = statue2w + 0; // west
     int statue_2w_B = statue2w + 1;
 
+    // clang-format off
     switch (planer.relative_orientation) {
     case 0:
         { // NE
@@ -100,13 +102,13 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
                 {tiles_____2, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____2},
                 {tiles_____0, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, tiles_____0},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
-                {statue____3, tiles_____0, main______w, EMPTY______, EMPTY______, tiles_____0, statue____1},
+                {statue____3, tiles_____0, back______0, EMPTY______, EMPTY______, tiles_____0, statue____1},
                 {tiles_____1, tiles_____1, EMPTY______, EMPTY______, EMPTY______, tiles_____1, tiles_____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
-                {statue____3, tiles_____0, oracle____w, EMPTY______, EMPTY______, tiles_____0, statue____1},
+                {statue____3, tiles_____0, middle____0, EMPTY______, EMPTY______, tiles_____0, statue____1},
                 {tiles_____1, tiles_____1, EMPTY______, EMPTY______, EMPTY______, tiles_____1, tiles_____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
-                {statue____3, tiles_____0, altar_____w, EMPTY______, EMPTY______, tiles_____0, statue____1},
+                {statue____3, tiles_____0, front_____0, EMPTY______, EMPTY______, tiles_____0, statue____1},
             };
             planer.set_graphics_array(make_span((int*)TEMPLE_COMPLEX_SCHEME, std::size(TEMPLE_COMPLEX_SCHEME)), vec2i(7, 13));
             planer.pivot = { 2, 10 };
@@ -120,7 +122,7 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
                 {tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____0, tiles_____0, statue_2s_B, statue_2s_B, statue_2s_B},
                 {EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue_2s_A, statue_2s_A, statue_2s_A},
                 {EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, tiles_____1, tiles_____1, tiles_____1, tiles_____1},
-                {main______n, EMPTY______, EMPTY______, oracle____n, EMPTY______, EMPTY______, altar_____n, EMPTY______, EMPTY______, tiles_____0, statue_2n_B, statue_2n_B, statue_2n_B},
+                {back______1, EMPTY______, EMPTY______, middle____1, EMPTY______, EMPTY______, front_____1, EMPTY______, EMPTY______, tiles_____0, statue_2n_B, statue_2n_B, statue_2n_B},
                 {tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____0, tiles_____0, statue_2n_F, statue_2n_F, statue_2n_F},
                 {statue____2, statue____2, tiles_____1, statue____2, statue____2, tiles_____1, statue____2, statue____2, tiles_____0, tiles_____2, tiles_____3, tiles_____2, tiles_____3},
             };
@@ -134,13 +136,13 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
             int TEMPLE_COMPLEX_SCHEME[13][7] = {
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
-                {tiles_____1, tiles_____1, main______w, EMPTY______, EMPTY______, tiles_____1, tiles_____1},
+                {tiles_____1, tiles_____1, back______0, EMPTY______, EMPTY______, tiles_____1, tiles_____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
-                {tiles_____1, tiles_____1, oracle____w, EMPTY______, EMPTY______, tiles_____1, tiles_____1},
+                {tiles_____1, tiles_____1, middle____0, EMPTY______, EMPTY______, tiles_____1, tiles_____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
                 {statue____3, tiles_____0, EMPTY______, EMPTY______, EMPTY______, tiles_____0, statue____1},
-                {tiles_____0, tiles_____0, altar_____w, EMPTY______, EMPTY______, tiles_____0, tiles_____0},
+                {tiles_____0, tiles_____0, front_____0, EMPTY______, EMPTY______, tiles_____0, tiles_____0},
                 {tiles_____2, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____2},
                 {tiles_____3, statue_2e_A, statue_2e_B, tiles_____1, statue_2w_A, statue_2w_B, tiles_____3},
                 {tiles_____2, statue_2e_A, statue_2e_B, tiles_____1, statue_2w_A, statue_2w_B, tiles_____2},
@@ -158,7 +160,7 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
                 {statue_2s_B, statue_2s_B, statue_2s_B, tiles_____0, tiles_____0, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0},
                 {statue_2s_A, statue_2s_A, statue_2s_A, tiles_____0, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______},
                 {tiles_____1, tiles_____1, tiles_____1, tiles_____1, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______, EMPTY______},
-                {statue_2n_B, statue_2n_B, statue_2n_B, tiles_____0, main______n, EMPTY______, EMPTY______, oracle____n, EMPTY______, EMPTY______, altar_____n, EMPTY______, EMPTY______},
+                {statue_2n_B, statue_2n_B, statue_2n_B, tiles_____0, back______1, EMPTY______, EMPTY______, middle____1, EMPTY______, EMPTY______, front_____1, EMPTY______, EMPTY______},
                 {statue_2n_F, statue_2n_F, statue_2n_F, tiles_____0, tiles_____0, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0, tiles_____1, tiles_____0, tiles_____0},
                 {tiles_____3, tiles_____2, tiles_____3, tiles_____2, tiles_____0, statue____2, statue____2, tiles_____1, statue____2, statue____2, tiles_____1, statue____2, statue____2},
             };
@@ -167,6 +169,7 @@ void building_temple_complex::preview::setup_preview_graphics(build_planner &pla
         }
         break;
     }
+    // clang-format on
 }
 
 void building_temple_complex::map_add_tiles(e_building_type type, tile2i north_tile, int orientation, building_temple_complex::decoraive_tiles_t& tiles_list) {
@@ -427,7 +430,7 @@ void building_temple_complex::bind_dynamic(io_buffer *iob, size_t version) {
 void building_temple_complex::build_upgrade(e_temple_compex_upgrade upgrade_param, e_building_type btype) {
     auto &d = runtime_data();
     d.temple_complex_upgrades |= upgrade_param;
-    map_tiles_add_temple_complex_parts(&base);
+    refresh_part_images();
 }
 
 static building* temple_complex_find_part(const building& base, const svector<e_building_type, 4>& allowed) {
@@ -475,117 +478,49 @@ void building_temple_complex::update_map_orientation(int orientation) {
         return;
     }
 
-    // first, add the base tiles
-    orientation = (5 - (runtime_data().variant / 2)) % 4;
-    map_add_tiles(type(), tile(), orientation, *runtime_data().decorative_tiles);
-
-    // Altar and oracle are Akhenaten-specific sub-buildings created in on_place().
-    // Missions/saves authored without them (e.g. original Pharaoh mission packs that
-    // store the temple complex as a single building) have no linked parts, so
-    // get_altar()/get_oracle() return null. Skip them rather than dereferencing null.
-    building *altar = get_altar();
-    if (altar) {
-        altar->dcast()->update_map_orientation(orientation);
-    }
-
-    building *oracle = get_oracle();
-    if (oracle) {
-        oracle->dcast()->update_map_orientation(orientation);
-    }
-
-    building *building_main = &main()->base;
-    if (building_main) {
-        int city_orientation = map_view_orientation() / 2;
-        int orientation = (building_rotation_global_rotation() + city_orientation) % 4;
-        pcstr orient_key[] = { "main_n", "main_e", "main_s", "main_w" };
-        int image_id = anim(orient_key[orientation]).first_img();
-        const bool fancy_oracle = !!(runtime_data().temple_complex_upgrades & etc_upgrade_oracle);
-        if (fancy_oracle && oracle && (orientation == 2 || orientation == 3)) {
-            pcstr orient_key[] = { "fancy_n", "fancy_e", "fancy_s", "fancy_w" };
-            const auto &params = oracle->params();
-            image_id = params.first_img(orient_key[orientation]);
-        }
-
-        map_building_tiles_add(id(), tile(), current_params().building_size, image_id, TERRAIN_BUILDING);
-    }
+    map_add_tiles(type(), tile(), facing(), *runtime_data().decorative_tiles);
+    refresh_part_images();
 }
 
-tile2i temple_complex_part_target(building *main, int part) {
-    building *b = main;
-    if (part == 1) {
-        b = b->next();          // altar (first linked part)
-    } else if (part == 2) {
-        b = b->next()->next();  // oracle / front-facing part (second linked part)
-    }
-
-    int x = b->tile.x();
-    int y = b->tile.y();
-    switch (map_view_orientation() / 2) {
-    case 1:  x += 2; break; // east
-    case 2:  x += 2; y += 2; break; // south
-    case 3:  y += 2; break; // west
-    }
-    return tile2i(x, y);
+int building_temple_complex::facing() const {
+    return (5 - (runtime_data().variant / 2)) % 4;
 }
 
+// The pack draws the complex by depth, not by part: its tall temple ("BACK") goes on the part farthest from the
+// camera, the colonnade ("MIDD") in the middle and the shrine ("FRONT") on the nearest part, each in two frames (one
+// per axis). A built altar changes the middle picture and a built oracle the nearest one.
+building_temple_complex::part_images_t building_temple_complex::part_images() const {
+    part_images_t images;
+    const int axis = (facing() + map_view_orientation() / 2) % 2;
+    static const xstring back[2] = {"back_0", "back_1"};
+    static const xstring middle[2] = {"middle_0", "middle_1"};
+    static const xstring front[2] = {"front_0", "front_1"};
+    static const xstring altar[2] = {"altar_0", "altar_1"};
+    static const xstring oracle[2] = {"oracle_0", "oracle_1"};
+    const auto& params = current_params();
 
-int building_temple_complex::get_temple_complex_part_image(e_building_type type, int part, int orientation, int level) {
-    int packid = -1;
-
-    switch (type) {
-    case BUILDING_TEMPLE_COMPLEX_OSIRIS: packid = PACK_TEMPLE_NILE; break;
-    case BUILDING_TEMPLE_COMPLEX_RA: packid = PACK_TEMPLE_RA; break;
-    case BUILDING_TEMPLE_COMPLEX_PTAH: packid = PACK_TEMPLE_PTAH; break;
-    case BUILDING_TEMPLE_COMPLEX_SETH: packid = PACK_TEMPLE_SETH; break;
-    case BUILDING_TEMPLE_COMPLEX_BAST: packid = PACK_TEMPLE_BAST; break;
-        break;
-    default:
-        break;
+    building* parts[3] = {&base, get_altar(), get_oracle()};
+    if (!parts[1] || !parts[2]) {
+        images.parts.push_back({&base, params.first_img(back[axis])});
+        return images;
     }
 
-    if (packid == -1) {
-        return 0;
-    }
-
-    if (level == 0) {
-        switch (part) {
-        case 0: return image_id_from_group(packid, 1) + 3 * orientation;
-        case 1: return image_id_from_group(packid, 2) + 3 * orientation;
-        case 2: return image_id_from_group(packid, 3) + 3 * orientation;
-        }
-    } else if (level == 1) {
-        switch (part) {
-        case 0: return image_id_from_group(packid, 1) + orientation;
-        case 1: return image_id_from_group(packid, 7) + orientation;
-        case 2: return image_id_from_group(packid, 7) + 2 + orientation;
-        }
-    }
-
-    return 0;
+    std::sort(std::begin(parts), std::end(parts), [](building* a, building* b) {
+        return map_view_tile_depth(a->tile.shifted(1, 1)) < map_view_tile_depth(b->tile.shifted(1, 1));
+    });
+    const int middle_image = params.first_img(has_upgrade(etc_upgrade_altar) ? altar[axis] : middle[axis]);
+    const int front_image = params.first_img(has_upgrade(etc_upgrade_oracle) ? oracle[axis] : front[axis]);
+    images.parts.push_back({parts[0], params.first_img(back[axis])});
+    images.parts.push_back({parts[1], middle_image});
+    images.parts.push_back({parts[2], front_image});
+    images.altar = {parts[1], params.first_img(altar[axis])};
+    images.oracle = {parts[2], params.first_img(oracle[axis])};
+    return images;
 }
 
-void building_temple_complex::map_tiles_add_temple_complex_parts(building *b) {
-    auto complex = b->dcast_temple_complex();
-    if (!complex) {
-        return;
-    }
-
-    auto &d = complex->runtime_data();
-    int orientation = (5 - (d.variant / 2)) % 4;
-    int orientation_rel = map_view_relative_orientation(orientation);
-    int orientation_binary = (1 + orientation_rel) % 2;
-    int part = 0;                                             // default = main
-    if (b->prev_part_building_id && b->next_part_building_id) // the middle part is ALWAYS the altar
-        part = 1;
-    //else if (b == get_temple_complex_front_facing_part(b)) // front facing part (oracle)
-    //    part = 2;
-
-    auto mainc = b->main()->dcast_temple_complex();
-    auto &maind = mainc->runtime_data();
-    int image_id = get_temple_complex_part_image(b->type, part, orientation_binary, (bool)(maind.temple_complex_upgrades & part));
-    map_building_tiles_add(b->id, b->tile, b->size, image_id, TERRAIN_BUILDING);
-    if (b->next_part_building_id) {
-        map_tiles_add_temple_complex_parts(b->next());
+void building_temple_complex::refresh_part_images() {
+    for (const part_image_t& part : part_images().parts) {
+        map_building_tiles_add(part.b->id, part.b->tile, 3, part.image_id, TERRAIN_BUILDING);
     }
 }
 
