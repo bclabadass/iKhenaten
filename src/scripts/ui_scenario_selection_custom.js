@@ -122,6 +122,8 @@ window_scenario_selection_custom {
         info_time_limit        : text({ pos[545, 484], size[265, 17], font:FONT_NORMAL_YELLOW })
 
         info_hdr_monuments     : text_center({ pos[545, 487], size[265, 17], align:"center", text[41, 48], font:FONT_NORMAL_WHITE_ON_DARK })
-        info_monuments_body    : text({ pos[545, 504], size[265, 51], wrap:px(16), font:FONT_NORMAL_BLACK_ON_DARK, multiline:true, clip_area:true })
+        info_monument_0        : text({ pos[545, 504], size[265, 16], font:FONT_NORMAL_BLACK_ON_DARK })
+        info_monument_1        : text({ pos[545, 520], size[265, 16], font:FONT_NORMAL_BLACK_ON_DARK })
+        info_monument_2        : text({ pos[545, 536], size[265, 16], font:FONT_NORMAL_BLACK_ON_DARK })
     }
 }

@@ -35,6 +35,8 @@
 #include "scenario/event_phrases.h"
 
 #include <algorithm>
+#include <functional>
+#include <vector>
 
 const e_attack_faction_tokens_t ANK_CONFIG_ENUM(e_attack_faction_tokens);
 const e_invasion_spawn_kind_tokens_t ANK_CONFIG_ENUM(e_invasion_spawn_kind_tokens);
@@ -477,11 +479,39 @@ bool scenario_invasion_city_undefended() {
     return city_own_warships() == 0;
 }
 
+// OG 0x41E3B0 (map selection): the invasions in events[], less Pharaoh's army (the favour-triggered invasion) and
+// whatever its outcomes chain to, followed 7 deep. Editor maps keep theirs in invasions[].
 int scenario_invasion_count() {
     int num_invasions = 0;
     for (int i = 0; i < MAX_INVASIONS; i++) {
         if (g_scenario.invasions[i].type)
             num_invasions++;
+    }
+
+    auto& events = g_scenario.events;
+    const int n = events.events_count();
+    std::vector<bool> favour_chain(n, false);
+    std::function<void(int, int)> mark = [&](int id, int depth) {
+        if (depth >= 7 || id < 0 || id >= n) {
+            return;
+        }
+        favour_chain[id] = true;
+        const event_ph_t* e = events.at(id);
+        for (int next : {e->on_completed_action, e->on_refusal_action, e->on_too_late_action, e->on_defeat_action}) {
+            mark(next, depth + 1);
+        }
+    };
+    for (int i = 0; i < n; i++) {
+        const event_ph_t* e = events.at(i);
+        if (e && e->event_trigger_type & EVENT_TRIGGER_BY_FAVOUR) {
+            mark(i, 0);
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        const event_ph_t* e = events.at(i);
+        if (e && e->type == EVENT_TYPE_INVASION && !favour_chain[i]) {
+            num_invasions++;
+        }
     }
     return num_invasions;
 }

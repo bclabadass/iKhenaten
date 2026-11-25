@@ -208,7 +208,7 @@ function scenario_selection_score_months_suffix(m) {
 [es=(window_scenario_selection, mission_changed)]
 function window_scenario_selection_update_goals_or_scores(ev) {
     var on = window_scenario_selection.scores_or_goals != 1
-    ev.btn_scores.text = window_scenario_selection.scores_or_goals ? __loc(44, 220) : __loc(44, 221)
+    ev.btn_scores.text = on ? __loc(44, 220) : __loc(44, 221)
 
     ev.info_hdr_mission.enabled = on
     ev.info_line_climate.enabled = on
@@ -219,7 +219,7 @@ function window_scenario_selection_update_goals_or_scores(ev) {
     ev.info_goals_body.enabled = on
     ev.info_time_limit.enabled = on
     ev.info_hdr_monuments.enabled = on
-    ev.info_monuments_body.enabled = on
+    scenario_selection_monument_lines_enabled(ev, on)
 
     ev.side_scores_intro.enabled = !on
     ev.side_scores_body.enabled = !on
@@ -258,6 +258,17 @@ function window_scenario_selection_update_file_schema(ev) {
     ev.debug_file_schema.enabled = !!game.debug_properties
 }
 
+var SCENARIO_SELECTION_MONUMENT_STEP = 16
+
+function scenario_selection_monument_lines_enabled(ev, on) {
+    for (var i = 0; i < 3; i++) {
+        var line = ev["info_monument_" + i]
+        line.enabled = on && line.text != ""
+    }
+}
+
+// One line per monument, 16 apart as in the original (0x41ECBB): three under five goal lines still end inside the
+// panel.
 [es=(window_scenario_selection, mission_changed)]
 function window_scenario_selection_update_monuments(ev) {
     var mon = []
@@ -272,13 +283,36 @@ function window_scenario_selection_update_monuments(ev) {
 
     if (mon.length == 0)
         mon.push(__loc(198, 0))
-    ev.info_monuments_body.text = mon.join("\n")
+    for (var i = 0; i < 3; i++) {
+        ev["info_monument_" + i].text = i < mon.length ? mon[i] : ""
+    }
+    scenario_selection_monument_lines_enabled(ev, ev.info_hdr_mission.enabled && !scenario.is_open_play)
+}
+
+// The campaign keeps a mission's raids in mission<N>_raid_list(); its events[] hold Pharaoh's army (not counted) and,
+// for a few missions, the same raids again, so the larger count is the mission's.
+function scenario_selection_raid_count() {
+    var name = "mission" + (scenario.campaign_scenario_id | 0) + "_raid_list"
+    var list = eval("typeof " + name + " === 'function' ? " + name + "() : null")
+    return Math.max(list ? list.length : 0, __game_scenario_invasion_count())
+}
+
+// OG 0x41E8E5: none, up to 2, 4, 10, more.
+function scenario_selection_military_text_id(raids) {
+    if (raids <= 0)
+        return 112
+    if (raids <= 2)
+        return 113
+    if (raids <= 4)
+        return 114
+    if (raids <= 10)
+        return 115
+    return 116
 }
 
 [es=(window_scenario_selection, mission_changed)]
 function window_scenario_selection_update_goals(ev) {
-    var invasion_id = 112 + ((__game_scenario_invasion_count() / 2) | 0)
-    ev.info_line_invasion.text = __loc(44, invasion_id)
+    ev.info_line_invasion.text = __loc(44, scenario_selection_military_text_id(scenario_selection_raid_count()))
     var difficulty_keys = ["very_easy", "easy", "normal", "hard", "very_hard"]
     ev.info_line_start_region.text = __loc(44, 216) + " " + __loc("#difficulty_" + difficulty_keys[game.difficulty])
 
@@ -292,7 +326,7 @@ function window_scenario_selection_update_goals(ev) {
     if (ev.info_hdr_mission.enabled) {
         ev.info_hdr_goals.enabled = !open_play
         ev.info_hdr_monuments.enabled = !open_play
-        ev.info_monuments_body.enabled = !open_play
+        scenario_selection_monument_lines_enabled(ev, !open_play)
     }
     ev.info_goals_body.pos = { x: hdr.x, y: hdr.y + (open_play ? 8 : 27) }
 
@@ -311,7 +345,9 @@ function window_scenario_selection_update_goals(ev) {
     }
 
     ev.info_hdr_monuments.pos = { x: anchor.x, y: y }
-    ev.info_monuments_body.pos = { x: anchor.x, y: y + 22 }
+    for (var i = 0; i < 3; i++) {
+        ev["info_monument_" + i].pos = { x: anchor.x, y: y + 20 + i * SCENARIO_SELECTION_MONUMENT_STEP }
+    }
 }
 
 [es=(window_scenario_selection, show_scores)]
@@ -380,7 +416,8 @@ window_scenario_selection {
             onclick_event: "click_item"
         })
 
-        btn_scores             : large_button({ pos[550, 542], size[240, 30], text[44, 221], body:2, font:FONT_NORMAL_BLACK_ON_DARK, onclick_event: "show_scores" })
+        // Below the panel, left of the start arrow: inside it, three monuments ran under it.
+        btn_scores             : large_button({ pos[545, 584], size[225, 26], text[44, 220], body:2, font:FONT_NORMAL_BLACK_ON_DARK, onclick_event: "show_scores" })
         btn_start              : image_button({ pos[780, 582], size[27, 27], pack:PACK_GENERAL, id:193, offset:4 })
 
         side_hdr_period        : text_center({ pos[545, 165], size[265, 20], align:"center", text:"", font:FONT_NORMAL_BLACK_ON_LIGHT })
@@ -402,6 +439,8 @@ window_scenario_selection {
         info_time_limit        : text({ pos[545, 484], size[265, 17], font:FONT_NORMAL_YELLOW })
 
         info_hdr_monuments     : text_center({ pos[545, 477], size[265, 17], align:"center", text[41, 48], font:FONT_NORMAL_WHITE_ON_DARK })
-        info_monuments_body    : text({ pos[545, 494], size[265, 51], wrap:px(16), font:FONT_NORMAL_BLACK_ON_DARK, multiline:true, clip_area:true })
+        info_monument_0        : text({ pos[545, 494], size[265, 16], font:FONT_NORMAL_BLACK_ON_DARK })
+        info_monument_1        : text({ pos[545, 510], size[265, 16], font:FONT_NORMAL_BLACK_ON_DARK })
+        info_monument_2        : text({ pos[545, 526], size[265, 16], font:FONT_NORMAL_BLACK_ON_DARK })
     }
 }
