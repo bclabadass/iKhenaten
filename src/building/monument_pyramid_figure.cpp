@@ -5,6 +5,7 @@
 #include "building/monument_mastaba_engine.h"
 #include "building/monument_pyramid.h"
 #include "building/monument_pyramid_engine.h"
+#include "building/monument_pyramid_ramp.h"
 #include "building/monuments.h"
 #include "city/city_figures.h"
 #include "core/calc.h"
@@ -1002,6 +1003,11 @@ int monument_pyramid_figure::claim_next_part(figure_id fid, int set_height, int 
         if (!ps || !b) {
             continue;
         }
+        // A part waiting for its ramp is the carpenter's: he skips a part a mason holds, and with the whole course
+        // taken the ramp was never built and the sleds never got up (Saqqara stalled pyramid).
+        if (pyramid_engine_part_needs_ramp(id) != PYRAMID_RAMP_NONE) {
+            continue;
+        }
 
         const bool needs_main = g_monument_pyramid_engine.uses_block_engine(head)
                                   ? g_monument_pyramid_engine.needs_main_material(*ps, style)
@@ -1291,6 +1297,38 @@ building_id monument_pyramid_figure::find_mason_waiting_for_block(building* main
         }
     }
     return 0;
+}
+
+// The original fills the course: the guilds keep sending stonemasons while it has a part no mason works or is coming
+// to (Brendan, Saqqara: every spot on a layer was taken). The monument's five worker slots are not a limit here.
+int monument_pyramid_figure::masons_wanted(building* head) const {
+    head = head ? chain_head_for(head) : nullptr;
+    if (!head || !g_monument_pyramid_engine.uses_block_engine(head) || mastaba_engine_is(head)) {
+        return 0;
+    }
+    svector<building_id, PYRAMID_PARTS_CAPACITY> frontier;
+    pyramid_engine_find_frontier(head, frontier);
+    const e_pyramid_style style = g_monument_pyramid_engine.style_of(head);
+    int open = 0;
+    for (building_id id : frontier) {
+        auto* ps = pyramid_part_state_get(id);
+        if (!ps || (style == PYRAMID_STYLE_MUDBRICK && g_monument_pyramid_engine.needs_main_material(*ps, style))
+            || pyramid_engine_part_needs_ramp(id) != PYRAMID_RAMP_NONE) {
+            continue;
+        }
+        const figure* worker = ps->worker_figure_id ? figure_get(ps->worker_figure_id) : nullptr;
+        open += !worker || !worker->is_alive();
+    }
+    int coming = 0;
+    figure_valid_do(
+      [&](figure& f) {
+          auto* mason = smart_cast<figure_stonemason>(&f);
+          const int st = f.action_state;
+          coming += mason && mason->runtime_data().destination_bid == head->id
+                    && (st == ACTION_0_MASON_CREATED || st == ACTION_1_MASON_GOING || st == ACTION_16_MASON_CLIMB_RAMP);
+      },
+      std::initializer_list<e_figure_type>{FIGURE_STONEMASON});
+    return std::max(0, open - coming);
 }
 
 int monument_pyramid_figure::laborer_can_enter_ramp(figure_id fid) const {

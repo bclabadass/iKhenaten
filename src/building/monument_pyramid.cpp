@@ -1275,7 +1275,7 @@ bool building_pyramid::need_stonemason() {
         }
 
         if (g_monument_pyramid_engine.block_phase_active(&base)) {
-            return need_workers();
+            return g_monument_pyramid_figure.masons_wanted(&base) > 0;
         }
         const int p = phase();
         if (p < 2 || p >= phases() - 1) {

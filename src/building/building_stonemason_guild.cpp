@@ -2,6 +2,7 @@
 
 #include "building/building_statue.h"
 #include "building/monuments.h"
+#include "building/monument_pyramid_engine.h"
 #include "figuretype/figure_stonemason.h"
 #include "city/city.h"
 #include "city/city_labor.h"
@@ -44,10 +45,6 @@ void building_stonemason_guild::spawn_figure() {
     }
 
     base.figure_spawn_delay = 0;
-    if (!can_spawn_stonemason_man()) {
-        return;
-    }
-
     building* monument = buildings_valid_first([&] (building &b) {
         if (!b.is_main()) {
             return false;
@@ -64,6 +61,14 @@ void building_stonemason_guild::spawn_figure() {
 
         return monument->need_stonemason();
     });
+
+    // A pyramid's course takes a mason on every free part, so the guild keeps sending them while it has one
+    // (`need_stonemason`); other monuments and the statues get one mason at a time from each guild.
+    const bool fills_course
+      = monument && monument->dcast_pyramid() && g_monument_pyramid_engine.uses_block_engine(monument);
+    if (!fills_course && !can_spawn_stonemason_man()) {
+        return;
+    }
 
     if (monument) {
         auto f = create_figure_with_destination(FIGURE_STONEMASON, monument, (e_figure_action)ACTION_0_MASON_CREATED, BUILDING_SLOT_SERVICE);

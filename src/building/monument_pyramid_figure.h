@@ -51,6 +51,7 @@ public:
     void drop_train(figure_id member_fid);
 
     building_id find_mason_waiting_for_block(building *head, int clear_partner);
+    int masons_wanted(building* head) const;
     void sort_frontier(building_id* parts, int count) const;
     void wake_pair_mason(figure_id mason_fid);
     building_id next_on_ring(building_id part_id) const;

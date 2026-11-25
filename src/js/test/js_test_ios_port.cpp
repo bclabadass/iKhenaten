@@ -1,5 +1,6 @@
 #include "js/test/js_test_common.h"
 #include "grid/figure.h"
+#include <map>
 
 // Test hooks added on the ios-port branch (moved here when upstream split js_test_game.cpp by domain).
 
@@ -1031,7 +1032,7 @@ static vec2i test_pyramid_part_ground(building* part) {
 }
 
 // Workers standing on a raised pyramid course: "on,raised" where raised counts those drawn on top of the course
-// picture of their part (middle of the part, its top surface) and sorted behind the pyramid's front row. Needs a
+// picture of their part (middle of the part, its top surface) and sorted after the stones of their part. Needs a
 // rendered frame with them on screen.
 static xstring __test_pyramid_workers_raised() {
     int on = 0;
@@ -1053,11 +1054,21 @@ static xstring __test_pyramid_workers_raised() {
         on++;
         const bool on_top
           = top >= 0 && std::abs(st.main_pos.x - stand.x) <= 1 && std::abs(st.main_pos.y - stand.y) <= 1;
-        const bool behind = st.sort_pixel.y > stand.y + top;
+        // Drawn after the stones of the part he stands on (the frontmost part's middle lies below the pyramid's bottom
+        // row, so his feet are no measure of that).
+        int part_row = 0;
+        for (int dy = 0; dy < part->size; dy++) {
+            for (int dx = 0; dx < part->size; dx++) {
+                part_row = std::max(part_row, g_camera.lookup_tile_to_pixel(part->tile.shifted(dx, dy)).y);
+            }
+        }
+        const bool behind = st.sort_pixel.y > part_row;
         raised += (on_top && behind);
-        logs::info("[pyramid-worker] fig %d type %d action %d part %d height %d drawn at %d,%d, course top at %d,%d", i,
-          (int)f->type, (int)f->action_state, (int)w->part, (int)w->height, st.main_pos.x, st.main_pos.y, stand.x,
-          stand.y);
+        logs::info(
+          "[pyramid-worker] fig %d type %d action %d part %d height %d drawn at %d,%d, course top at %d,%d, sorted "
+          "%s his part's stones",
+          i, (int)f->type, (int)f->action_state, (int)w->part, (int)w->height, st.main_pos.x, st.main_pos.y, stand.x,
+          stand.y, behind ? "after" : "before");
     }
     bstring64 out;
     out.printf("%d,%d", on, raised);
@@ -1125,6 +1136,69 @@ static xstring __test_pyramid_waiting_masons() {
     return xstring(out.c_str());
 }
 ANK_FUNCTION(__test_pyramid_waiting_masons);
+
+// The crew of the first block-engine pyramid: "masons=..,waiting=..,frontier=..,open=..,slots=..,guilds=..,
+// laborers=..,head=..,ramp=..,carpenters=..,laborer_states=state:n/.." — masons with a part of it, those waiting for a
+// block, frontier parts, frontier parts no mason has claimed, filled monument worker slots, stonemason guilds,
+// laborers bringing it a block, the pyramid, frontier parts waiting for a ramp, carpenters, laborers by action.
+static xstring __test_pyramid_crew() {
+    building* head = nullptr;
+    buildings_valid_do([&](building& b) {
+        if (!head && b.is_main() && b.dcast_pyramid() && g_monument_pyramid_engine.uses_block_engine(&b)
+            && !b.dcast_monument()->is_finished()) {
+            head = &b;
+        }
+    });
+    if (!head) {
+        return xstring("none");
+    }
+    svector<building_id, PYRAMID_PARTS_CAPACITY> frontier;
+    pyramid_engine_find_frontier(head, frontier);
+    int open = 0, ramp = 0;
+    for (building_id id : frontier) {
+        auto* ps = pyramid_part_state_get(id);
+        open += ps && !ps->worker_figure_id;
+        ramp += pyramid_engine_part_needs_ramp(id) != PYRAMID_RAMP_NONE;
+    }
+    int masons = 0, waiting = 0, laborers = 0, carpenters = 0;
+    std::map<int, int> laborer_states;
+    for (int i = 1; i < MAX_FIGURES; i++) {
+        figure* f = figure_get(i);
+        if (!f->is_valid()) {
+            continue;
+        }
+        if (f->type == FIGURE_STONEMASON && pyramid_figure_on_own_pyramid(f)) {
+            masons++;
+            waiting += f->action_state == ACTION_19_MASON_WAIT_FOR_BLOCK;
+        }
+        carpenters += f->type == FIGURE_CARPENTER;
+        if (f->type == FIGURE_LABORER) {
+            laborer_states[f->action_state]++;
+        }
+        if (f->type == FIGURE_LABORER && f->leading_figure_id) {
+            const int st = f->action_state;
+            laborers += st == ACTION_17_LABORER_TO_PYRAMID || st == ACTION_18_LABORER_CLIMB_RAMP
+                        || st == ACTION_19_LABORER_TO_MASON || st == ACTION_20_LABORER_WALK_TO_MASON
+                        || st == ACTION_30_LABORER_SLED_AT_RAMP || st == ACTION_15_LABORER_TO_STORAGE_YARD
+                        || st == ACTION_16_LABORER_AT_STORAGE_YARD;
+        }
+    }
+    int slots = 0;
+    for (auto w : head->dcast_monument()->runtime_data().workers) {
+        slots += w != 0;
+    }
+    int guilds = 0;
+    buildings_valid_do([&](building& b) { guilds += b.type == BUILDING_STONEMASONS_GUILD; });
+    bstring256 out;
+    out.printf("masons=%d,waiting=%d,frontier=%d,open=%d,slots=%d,guilds=%d,laborers=%d,head=%d", masons, waiting,
+      (int)frontier.size(), open, slots, guilds, laborers, head->id);
+    out.append_fmt(",ramp=%d,carpenters=%d,laborer_states=", ramp, carpenters);
+    for (auto& [state, n] : laborer_states) {
+        out.append_fmt("%d:%d/", state, n);
+    }
+    return xstring(out.c_str());
+}
+ANK_FUNCTION(__test_pyramid_crew);
 
 // Parts of one pyramid of the same layout kind on the same course but with different block counts: "pairs,same_image"
 // where same_image counts the pairs drawn with one picture (the whole ring showed one course).
