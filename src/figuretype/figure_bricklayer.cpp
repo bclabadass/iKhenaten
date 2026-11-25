@@ -262,6 +262,14 @@ void figure_bricklayer::figure_action() {
     }
 
     case ACTION_3_BRICKLAYER_RETURN_HOME:
+        // Gone once their work on a course ends, like the masons (they were drawn dropping off its edge).
+        // destination() is the guild once the walk starts; destination_bid keeps the monument.
+        if (building* worked = building_get(rd.destination_bid);
+          worked && worked->id
+          && ((worked->dcast_pyramid() && g_monument_pyramid_engine.uses_block_engine(worked))
+              || mastaba_engine_is(worked))) {
+            base.set_flag(e_figure_flag_invisible);
+        }
         if (do_gotobuilding(home(), true, TERRAIN_USAGE_PREFER_ROADS, -1, -1)) {
             poof();
         }

@@ -426,7 +426,15 @@ void figure_stonemason::figure_action() {
         break;
 
     case ACTION_6_MASON_RETURN_HOME:
-        base.set_flag(e_figure_flag_invisible, false);
+        // Off a pyramid's courses the original's masons are gone once their work ends; walking home from the part they
+        // stood on, they were drawn dropping off the pyramid's edge (Brendan, build 14185).
+        // destination() is the guild once the walk starts; destination_bid keeps the monument he was sent to.
+        if (building* worked = building_get(runtime_data().destination_bid)) {
+            base.set_flag(e_figure_flag_invisible,
+              worked->id && worked->dcast_pyramid() && g_monument_pyramid_engine.uses_block_engine(worked));
+        } else {
+            base.set_flag(e_figure_flag_invisible, false);
+        }
         // Fail → destroy (action 8 had no handler and left the walker stuck).
         if (do_gotobuilding(home(), true, TERRAIN_USAGE_PREFER_ROADS,
                             ACTION_10_MASON_DESTROY, ACTION_10_MASON_DESTROY)) {
@@ -494,7 +502,7 @@ void figure_stonemason::update_animation() {
         break;
 
     case ACTION_21_MASON_PYRAMID_WORK:
-        image_set_animation(animkeys().work_wall);
+        image_set_animation(animkeys().work_ground);
         break;
     }
 }
