@@ -442,6 +442,17 @@ static pcstr __test_image_info(int image_id) {
 }
 ANK_FUNCTION_1(__test_image_info);
 
+// Food a house holds, all slots together (0 for anything else).
+static int __test_house_food_total(int bid) {
+    auto* house = building_get(bid)->dcast_house();
+    int total = 0;
+    for (int slot = INVENTORY_MIN_FOOD; house && slot < INVENTORY_MAX_FOOD; ++slot) {
+        total += house->runtime_data().foods[slot];
+    }
+    return total;
+}
+ANK_FUNCTION_1(__test_house_food_total);
+
 // The tile's value in the citizens' land routing grid, as last computed (4 clear land, 2 passable, 0 road, -1 blocked).
 static int __test_routing_citizen_value(int x, int y) {
     return map_routing_citizen_value(tile2i(x, y).grid_offset());

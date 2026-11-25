@@ -66,6 +66,10 @@ public:
     virtual tile2i access_tile() const override { return base.main()->tile.shifted(pyramid_params().access_offset); }
     virtual grid_area get_area() const override;
 
+    // A pyramid a mission starts with finished (Khmun's, Menat Khufu's): the block engine lays every block as the
+    // workers would, so each part gets its layers and pictures; no completion message.
+    void complete_prebuilt();
+
     // OG pyramid block engine when pyramide_type != NONE.
     virtual void sync_visuals() override;
     virtual bool need_bricklayers() override;

@@ -659,9 +659,12 @@ bool building_gatehouse_5x2::draw_ornaments_and_animations_height(painter& ctx, 
 }
 
 // A map's walls can carry gatehouses as bare terrain: two 2x2 pylons with the road between them and no building.
+// The road tiles may carry gatehouse terrain as well (Khmun, Maritis, Migdol: the original's gate is one building
+// over pylons and road); they are the gate, never a pylon.
 int building_gatehouse_5x2::map_gatehouses_to_buildings() {
     auto bare_gatehouse = [](tile2i tile) {
-        return map_grid_is_inside(tile, 1) && map_terrain_is(tile, TERRAIN_GATEHOUSE) && map_building_at(tile) == 0;
+        return map_grid_is_inside(tile, 1) && map_terrain_is(tile, TERRAIN_GATEHOUSE)
+               && !map_terrain_is(tile, TERRAIN_ROAD) && map_building_at(tile) == 0;
     };
     auto bare_pylon = [&](tile2i tile) {
         return bare_gatehouse(tile) && bare_gatehouse(tile.shifted(1, 0)) && bare_gatehouse(tile.shifted(0, 1))
@@ -687,6 +690,9 @@ int building_gatehouse_5x2::map_gatehouses_to_buildings() {
                             map_terrain_remove(pylon.shifted(dx, dy), TERRAIN_GATEHOUSE);
                         }
                     }
+                }
+                for (tile2i road : layout.gate) {
+                    map_terrain_remove(road, TERRAIN_GATEHOUSE | TERRAIN_BUILDING);
                 }
                 building* b = building_create(BUILDING_DECORATIVE_GATEHOUSE, gate, axis);
                 if (b && b->id > 0) {

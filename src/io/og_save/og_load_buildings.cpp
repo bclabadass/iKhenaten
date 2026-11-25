@@ -11,12 +11,15 @@
 #include "building/building_static_params.h"
 #include "building/building_industry.h"
 #include "building/building_temple_complex.h"
+#include "building/monument_pyramid.h"
 #include "building/building_type.h"
 #include "city/city.h"
+#include "city/city_buildings.h"
 #include "core/log.h"
 #include "figure/figure_type.h"
 #include "grid/building.h"
 #include "game/resource.h"
+#include "scenario/scenario.h"
 
 #include <algorithm>
 #include <map>
@@ -29,6 +32,8 @@ namespace og {
 
         enum e_og_building_type {
             OG_TYPE_FORT = 57,
+            OG_TYPE_PYRAMID = 183,
+            OG_TYPE_DECORATIVE_GATEHOUSE = 202,
             OG_TYPE_WATER_LIFT = 90,
             OG_TYPE_TEMPLE_COMPLEX_ALTAR = 211,
             OG_TYPE_TEMPLE_COMPLEX_ORACLE = 212,
@@ -255,6 +260,29 @@ namespace og {
             oracle->set_type(params.allowed_oracle.front());
         }
 
+        // Ours by footprint side; the original's generic pyramid leaves the style to the mission.
+        e_building_type mission_pyramid_type(int side) {
+            static const std::pair<int, e_building_type> types[] = {
+              {8, BUILDING_SMALL_MUDBRICK_PYRAMID},
+              {8, BUILDING_SMALL_STEPPED_PYRAMID},
+              {8, BUILDING_SMALL_BENT_PYRAMID},
+              {8, BUILDING_SMALL_PYRAMID},
+              {12, BUILDING_MEDIUM_MUDBRICK_PYRAMID},
+              {12, BUILDING_MEDIUM_STEPPED_PYRAMID},
+              {12, BUILDING_MEDIUM_BENT_PYRAMID},
+              {12, BUILDING_MEDIUM_PYRAMID},
+              {16, BUILDING_LARGE_MUDBRICK_PYRAMID},
+              {16, BUILDING_LARGE_STEPPED_PYRAMID},
+              {16, BUILDING_LARGE_PYRAMID},
+            };
+            for (const auto& t : types) {
+                if (t.first == side && scenario_building_allowed(t.second)) {
+                    return t.second;
+                }
+            }
+            return BUILDING_NONE;
+        }
+
     } // namespace
 
     void load_buildings(const savegame& s, load_report& report, bool drop_unmodelled) {
@@ -264,7 +292,10 @@ namespace og {
             if (og.state == BUILDING_STATE_UNUSED) {
                 continue;
             }
-            if (drop_unmodelled && !building_impl::has_model(our_type(og))) {
+            // An OG gatehouse record is one pylon; the map's bare gatehouse terrain becomes our 5x2 gatehouse at the
+            // start (building_gatehouse_5x2::map_gatehouses_to_buildings).
+            if (
+              drop_unmodelled && (!building_impl::has_model(our_type(og)) || og.type == OG_TYPE_DECORATIVE_GATEHOUSE)) {
                 logs::info("[og-save] dropped building %u: no model for type %d", (uint32_t)id, og.type);
                 for (int i = 0; i < GRID_CELLS; ++i) {
                     if (map_building_at(i) == (int)id) {
@@ -306,6 +337,46 @@ namespace og {
             if (og.state != BUILDING_STATE_UNUSED && complex && og.prev_part_building_id == 0) {
                 convert_temple_complex(*complex);
             }
+        }
+    }
+
+    void load_pyramids(const savegame& s, load_report& report) {
+        for (size_t id = 1; id < s.buildings.size(); ++id) {
+            const building& main = s.buildings[id];
+            if (
+              main.state == BUILDING_STATE_UNUSED || main.type != OG_TYPE_PYRAMID || main.prev_part_building_id != 0) {
+                continue;
+            }
+            int x0 = main.x, y0 = main.y, x1 = main.x + main.size, y1 = main.y + main.size;
+            bool finished = true;
+            int parts = 0;
+            for (size_t part = id; part > 0 && part < s.buildings.size() && parts < 64;
+              part = s.buildings[part].next_part_building_id, ++parts) {
+                const building& p = s.buildings[part];
+                x0 = std::min<int>(x0, p.x);
+                y0 = std::min<int>(y0, p.y);
+                x1 = std::max<int>(x1, p.x + p.size);
+                y1 = std::max<int>(y1, p.y + p.size);
+                finished = finished && p.data.pyramid.layer >= p.data.pyramid.target_layers;
+            }
+
+            const e_building_type type = (x1 - x0 == y1 - y0) ? mission_pyramid_type(x1 - x0) : BUILDING_NONE;
+            if (!finished || type == BUILDING_NONE) {
+                logs::info("[og-save] pyramid %u left out: %dx%d at %d,%d, %s", (uint32_t)id, x1 - x0, y1 - y0, x0, y0,
+                  finished ? "the mission allows no pyramid of that size" : "partly built");
+                continue;
+            }
+
+            ::building* b = building_create(type, tile2i(x0, y0), 0);
+            if (!b || b->id <= 0 || !b->dcast_pyramid()) {
+                continue;
+            }
+            add_building(b, 0, 0);
+            for (::building* part = b; part; part = part->has_next() ? part->next() : nullptr) {
+                part->state = BUILDING_STATE_VALID;
+            }
+            b->dcast_pyramid()->complete_prebuilt();
+            report.pyramids++;
         }
     }
 

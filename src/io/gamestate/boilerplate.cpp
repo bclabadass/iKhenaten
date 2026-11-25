@@ -225,6 +225,20 @@ bool GamestateIO::write_map(pcstr path, bool relative) {
     return g_chunk_io.serialize(path, 0, FILE_FORMAT_MAP_FILE, 160, file_schema);
 }
 
+// The original starts a campaign mission from its mission1.pak entry, a save holding the mission's prebuilt city.
+static bool load_mission_prebuilt(int scenario_id, og::savegame& entry) {
+    std::string error;
+    if (!og::read_mission_pak(scenario_id, entry, error)) {
+        logs::info("Mission %d: no prebuilt buildings (%s)", scenario_id, error.c_str());
+        return false;
+    }
+    og::load_report report;
+    og::load_mission_start(entry, report);
+    logs::info("Mission %d: %d buildings from mission1.pak (v%d, %d dropped)", scenario_id, report.buildings,
+      entry.version, report.buildings_dropped);
+    return true;
+}
+
 bool GamestateIO::load_mission(const int scenario_id, bool start_immediately, bool prebuilt) {
     xstring map_file;
     g_config_arch.r_section(mission_id_t(scenario_id), [&](archive arch) {
@@ -250,21 +264,8 @@ bool GamestateIO::load_mission(const int scenario_id, bool start_immediately, bo
         return false;
     }
 
-    if (prebuilt) {
-        og::savegame entry;
-        std::string error;
-        if (!og::read_mission_pak(scenario_id, entry, error)) {
-            logs::info("Mission %d: no prebuilt buildings (%s)", scenario_id, error.c_str());
-        } else if (entry.version < og::MISSION_START_MIN_VERSION) {
-            logs::info("Mission %d: prebuilt buildings left out, mission1.pak entry v%d numbers pictures differently",
-              scenario_id, entry.version);
-        } else {
-            og::load_report report;
-            og::load_mission_start(entry, report);
-            logs::info("Mission %d: %d buildings from mission1.pak (v%d, %d dropped)", scenario_id, report.buildings,
-              entry.version, report.buildings_dropped);
-        }
-    }
+    og::savegame entry;
+    const bool has_entry = prebuilt && load_mission_prebuilt(scenario_id, entry);
 
     // The only place a mission's cities are built from the empire objects: post_load() needs
     // EMPIRE_CITY_OURS via update_allowed_foods(), then applies the mission script on top, and
@@ -272,6 +273,11 @@ bool GamestateIO::load_mission(const int scenario_id, bool start_immediately, bo
     g_empire.init_cities();
 
     GamestateLoadDetail::post_load();
+    if (has_entry) {
+        og::load_report report;
+        og::load_mission_after_post_load(entry, report);
+        logs::info("Mission %d: %d pyramids from mission1.pak", scenario_id, report.pyramids);
+    }
 
     g_empire.fix_trade_routes();
 

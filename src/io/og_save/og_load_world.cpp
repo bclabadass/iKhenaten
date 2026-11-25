@@ -19,6 +19,7 @@
 #include "grid/elevation.h"
 #include "grid/figure.h"
 #include "grid/grid.h"
+#include "grid/image.h"
 #include "grid/moisture.h"
 #include "grid/random.h"
 
@@ -139,8 +140,22 @@ namespace og {
     void load_mission_start(const savegame& s, load_report& report) {
         copy_grid<uint16_t>(s, CHUNK_GRID_BUILDING_IDS, building_grid_chunk::grid);
         load_buildings(s, report, true);
+        if (s.version <= V147_LAST_VERSION) {
+            for (int i = 0; i < GRID_CELLS; ++i) {
+                const int image = map_image_at(i);
+                if (map_building_at(i) > 0 && image > V147_PICTURE_SHIFT) {
+                    map_image_set(i, image - V147_PICTURE_SHIFT);
+                }
+            }
+        }
         load_storages(s);
         load_formations(s, report);
+    }
+
+    void load_mission_after_post_load(const savegame& s, load_report& report) {
+        load_after_post_load(s);
+        load_census(s);
+        load_pyramids(s, report);
     }
 
 } // namespace og

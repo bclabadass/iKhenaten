@@ -1161,6 +1161,7 @@ bool building_pyramid::run_block_day() {
 
     if (ms->remaining_blocks == 0) {
         finish_block_construction();
+        post_completion_message();
         return true;
     }
     if (!ms->block_phase_active) {
@@ -1181,7 +1182,18 @@ void building_pyramid::finish_block_construction() {
         }
         part = part->has_next() ? part->next() : nullptr;
     }
-    post_completion_message();
+}
+
+void building_pyramid::complete_prebuilt() {
+    for (int phase = 1; phase <= 2; ++phase) {
+        for (building* part = &base; part; part = part->has_next() ? part->next() : nullptr) {
+            if (auto* m = part->dcast_monument()) {
+                m->set_phase(phase);
+            }
+        }
+    }
+    pyramid_engine_boost_blocks(&base, 0);
+    finish_block_construction();
 }
 
 void building_pyramid::post_completion_message() {

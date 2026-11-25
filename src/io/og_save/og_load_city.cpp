@@ -20,8 +20,32 @@ namespace og {
 
     } // namespace
 
+    void load_census(const savegame& s) {
+        const city_player& p = s.player();
+        assign(g_city.population.current, p.population);
+        assign(g_city.population.school_age, p.school_age);
+        assign(g_city.population.academy_age, p.academy_age);
+        for (int i = 0; i < 100; i++) {
+            assign(g_city.population.at_age[i], p.population_at_age[i]);
+        }
+        for (int i = 0; i < 20; i++) {
+            assign(g_city.population.at_level[i], p.population_per_level[i]);
+        }
+        assign(g_city.population.people_in_shanties, p.people_in_huts_and_shanties);
+        assign(g_city.population.people_in_manors, p.people_in_manors_and_up);
+        assign(g_city.population.last_used_house_add, p.last_used_house_add);
+        assign(g_city.population.last_used_house_remove, p.last_used_house_remove);
+        assign(g_city.population.percentage_plebs, p.percentage_plebs);
+        assign(g_city.population.working_age, p.working_age);
+        assign(g_city.labor.workers_available, p.workers_available);
+        assign(g_city.population.people_in_huts, p.people_in_huts);
+        assign(g_city.population.people_in_residences, p.people_in_residences_and_up);
+        assign(g_city.population.highest_ever, p.population_highest_ever);
+    }
+
     void load_city_state(const savegame& s) {
         const city_player& p = s.player();
+        load_census(s);
         std::memcpy(g_city.unused.other_player, &s.players[0], sizeof(city_player));
 
         assign(g_city.buildings.unknown_value, p.building_reserved_id);
@@ -31,10 +55,7 @@ namespace og {
         assign(g_city.health.target_value, p.health_target);
         assign(g_city.health.value, p.health);
         assign(g_city.health.num_mortuary_workers, p.mortuary_workers);
-        assign(g_city.population.current, p.population);
         assign(g_city.population.last_year, p.population_last_year);
-        assign(g_city.population.school_age, p.school_age);
-        assign(g_city.population.academy_age, p.academy_age);
         assign(g_city.population.total_capacity, p.total_capacity);
         assign(g_city.population.room_in_houses, p.room_in_houses);
         for (int i = 0; i < 2400; i++) {
@@ -42,12 +63,6 @@ namespace og {
         }
         assign(g_city.population.monthly.next_index, p.monthly_population_next_index);
         assign(g_city.population.monthly.count, p.monthly_population_count);
-        for (int i = 0; i < 100; i++) {
-            assign(g_city.population.at_age[i], p.population_at_age[i]);
-        }
-        for (int i = 0; i < 20; i++) {
-            assign(g_city.population.at_level[i], p.population_per_level[i]);
-        }
         assign(g_city.population.yearly_births, p.yearly_births);
         assign(g_city.population.yearly_deaths, p.yearly_deaths);
         assign(g_city.population.lost_removal, p.lost_removal);
@@ -59,12 +74,8 @@ namespace og {
         assign(g_city.population.last_change, p.last_change);
         assign(g_city.population.average_per_year, p.average_per_year);
         assign(g_city.population.total_all_years, p.total_all_years);
-        assign(g_city.population.people_in_shanties, p.people_in_huts_and_shanties);
-        assign(g_city.population.people_in_manors, p.people_in_manors_and_up);
         assign(g_city.population.total_years, p.total_years);
         assign(g_city.population.yearly_update_requested, p.yearly_update_requested);
-        assign(g_city.population.last_used_house_add, p.last_used_house_add);
-        assign(g_city.population.last_used_house_remove, p.last_used_house_remove);
         assign(g_city.migration.immigrated_today, p.immigrated_today);
         assign(g_city.migration.emigrated_today, p.emigrated_today);
         assign(g_city.migration.refused_immigrants_today, p.refused_immigrants_today);
@@ -88,9 +99,6 @@ namespace og {
         }
         assign(g_city.resource.food_supply_months, p.food_supply_months);
         assign(g_city.resource.granaries.operating, p.granaries_operating);
-        assign(g_city.population.percentage_plebs, p.percentage_plebs);
-        assign(g_city.population.working_age, p.working_age);
-        assign(g_city.labor.workers_available, p.workers_available);
         for (int i = 0; i < 10; i++) {
             assign(g_city.labor.categories[i].workers_needed, p.labor_categories[i].workers_needed);
             assign(g_city.labor.categories[i].workers_allocated, p.labor_categories[i].workers_allocated);
@@ -265,8 +273,6 @@ namespace og {
         assign(g_city.buildings.warships_requested, p.shipyard_boats_requested);
         assign(g_city.figures.enemies, p.enemies);
         assign(g_city.sentiment.wages, p.sentiment_wages);
-        assign(g_city.population.people_in_huts, p.people_in_huts);
-        assign(g_city.population.people_in_residences, p.people_in_residences_and_up);
         assign(g_city.figures.kingdome_soldiers, p.kingdom_soldiers);
         assign(g_city.ratings.monument_destroyed_buildings, p.destroyed_buildings);
         assign(g_city.military.total_batalions, p.total_legions);
@@ -277,7 +283,6 @@ namespace og {
         assign(g_city.sound.march_enemy, p.sound_march_enemy);
         assign(g_city.sound.march_horse, p.sound_march_horse);
         assign(g_city.sentiment.include_huts, p.sentiment_food_toggle);
-        assign(g_city.population.highest_ever, p.population_highest_ever);
         assign(g_city.finance.estimated_wages, p.estimated_wages);
         assign(g_city.ratings.prosperity_max, p.prosperity_max);
         for (int i = 0; i < 10; i++) {
