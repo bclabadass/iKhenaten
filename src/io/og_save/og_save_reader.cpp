@@ -232,9 +232,8 @@ namespace og {
             return false;
         }
 
-        bool read_chunk(cursor& in, int index, bool compressed, std::vector<uint8_t>& out, std::string& error) {
-            const chunk_spec& spec = k_chunks[index];
-            const size_t raw_size = (size_t)spec.element_size * spec.count;
+        bool read_chunk(cursor& in, int index, bool compressed, size_t raw_size, std::vector<uint8_t>& out,
+          std::string& error) {
             out.assign(raw_size, 0);
             if (!compressed) {
                 return in.take(out.data(), raw_size)
@@ -286,89 +285,162 @@ namespace og {
             return true;
         }
 
+        size_t spec_size(int index) {
+            return (size_t)k_chunks[index].element_size * k_chunks[index].count;
+        }
+
+        // The oldest mission entries in mission1.pak (Pharaoh 1.0).
+        constexpr int MISSION_ENTRY_MIN_VERSION = 147;
+
+        bool read_image(const uint8_t* data, size_t size, savegame& out, std::string& error, bool mission_entry) {
+            cursor in{data, size};
+            out = savegame();
+
+            for (int i = CHUNK_MISSION_ID; i <= CHUNK_SCHEMA_COUNT; ++i) {
+                if (!read_chunk(in, i, false, spec_size(i), out.chunks[i], error)) {
+                    return false;
+                }
+            }
+            out.version = out.value<int32_t>(CHUNK_FILE_VERSION);
+            out.schema_count = out.value<int32_t>(CHUNK_SCHEMA_COUNT);
+            const bool old_entry
+              = mission_entry && out.version >= MISSION_ENTRY_MIN_VERSION && out.version < SAVE_VERSION;
+            if (out.version != SAVE_VERSION && !old_entry) {
+                return fail(error, "save version %d is not supported (expected %d)", out.version, SAVE_VERSION);
+            }
+            // A file older than Cleopatra ends before the extended chunks.
+            const int file_chunks = old_entry ? CHUNK_FIRST_EXTENDED : CHUNK_COUNT;
+            if (out.schema_count < file_chunks || out.schema_count > CHUNK_COUNT) {
+                return fail(error, "file declares %d chunks, a v%d save has %d", out.schema_count, out.version,
+                  file_chunks);
+            }
+
+            if (!read_chunk(in, CHUNK_SCHEMA, false, spec_size(CHUNK_SCHEMA), out.chunks[CHUNK_SCHEMA], error)) {
+                return false;
+            }
+            const auto* schema = out.array<chunk_schema_record>(CHUNK_SCHEMA);
+            std::array<bool, CHUNK_COUNT> absent = {};
+            std::array<bool, CHUNK_COUNT> other_layout = {};
+            for (int i = 0; i < CHUNK_COUNT; ++i) {
+                const chunk_spec& spec = k_chunks[i];
+                // Some v160 files carry only the base chunks with the Cleopatra records left empty in the schema; the
+                // bytes then end after chunk 146.
+                absent[i] = i >= out.schema_count
+                            || (i >= CHUNK_FIRST_EXTENDED && schema[i].element_size == 0 && schema[i].count == 0);
+                if (absent[i]) {
+                    continue;
+                }
+                const bool same_layout = schema[i].element_size == spec.element_size && schema[i].count == spec.count
+                                         && (schema[i].compressed != 0) == spec.compressed;
+                if (!same_layout && old_entry && schema[i].element_size > 0 && schema[i].count > 0) {
+                    other_layout[i] = true;
+                    continue;
+                }
+                if (!same_layout) {
+                    char buf[256];
+                    std::snprintf(buf, sizeof(buf), "chunk %d (%s): file schema %dx%d%s, expected %dx%d%s", i,
+                      spec.name, schema[i].element_size, schema[i].count, schema[i].compressed ? " compressed" : "",
+                      spec.element_size, spec.count, spec.compressed ? " compressed" : "");
+                    error = buf;
+                    return false;
+                }
+            }
+
+            for (int i = CHUNK_SCHEMA + 1; i < CHUNK_COUNT; ++i) {
+                if (absent[i]) {
+                    // An empty compressed chunk still has its 4-byte header; a chunk past the file's count has nothing.
+                    uint32_t header = 0;
+                    if (i < out.schema_count && schema[i].compressed && !in.take(&header, sizeof(header))) {
+                        return fail(error, "chunk %d: compressed header runs past the end of the file", i);
+                    }
+                    out.chunks[i].assign(spec_size(i), 0);
+                    out.missing_chunks++;
+                    continue;
+                }
+                if (other_layout[i]) {
+                    std::vector<uint8_t> skipped;
+                    if (!read_chunk(in, i, schema[i].compressed != 0, (size_t)schema[i].element_size * schema[i].count,
+                          skipped, error)) {
+                        return false;
+                    }
+                    out.chunks[i].assign(spec_size(i), 0);
+                    out.missing_chunks++;
+                    continue;
+                }
+                if (!read_chunk(in, i, k_chunks[i].compressed, spec_size(i), out.chunks[i], error)) {
+                    return false;
+                }
+            }
+            if (in.pos != in.size) {
+                return fail(error, "%d bytes left after the last chunk", (int)(in.size - in.pos));
+            }
+
+            return take_records(out, CHUNK_BUILDINGS, out.buildings, error)
+                   && take_records(out, CHUNK_FIGURES, out.figures, error)
+                   && take_records(out, CHUNK_FORMATIONS, out.formations, error)
+                   && take_records(out, CHUNK_CITY_PLAYERS, out.players, error)
+                   && take_records(out, CHUNK_CITY_PLAYER_NAMES, out.player_names, error)
+                   && take_record(out, CHUNK_SCENARIO, out.scenario, error)
+                   && take_records(out, CHUNK_EMPIRE_CITIES, out.empire_cities, error)
+                   && take_records(out, CHUNK_EMPIRE_OBJECTS, out.empire_objects, error)
+                   && take_records(out, CHUNK_EMPIRE_ROUTES, out.empire_routes, error)
+                   && take_records(out, CHUNK_EMPIRE_TRADERS, out.empire_traders, error)
+                   && take_records(out, CHUNK_EMPIRE_MAP_HEADERS, out.empire_map_headers, error)
+                   && take_records(out, CHUNK_MESSAGES, out.messages, error)
+                   && take_records(out, CHUNK_CITY_SOUNDS, out.city_sounds, error)
+                   && take_records(out, CHUNK_BUILDING_STORAGES, out.storages, error)
+                   && take_records(out, CHUNK_FERRY_QUEUES, out.ferry_queues, error)
+                   && take_records(out, CHUNK_FERRY_PATHS, out.ferry_paths, error)
+                   && take_records(out, CHUNK_DOCK_QUEUES, out.dock_queues, error)
+                   && take_record(out, CHUNK_FLOODPLAIN_SETTINGS, out.floodplain, error)
+                   && take_record(out, CHUNK_VEGETATION_GROWTH_STATE, out.vegetation_growth, error);
+        }
+
     } // namespace
 
     bool read_savegame(const uint8_t* data, size_t size, savegame& out, std::string& error) {
-        cursor in{data, size};
-        out = savegame();
+        return read_image(data, size, out, error, false);
+    }
 
-        for (int i = CHUNK_MISSION_ID; i <= CHUNK_SCHEMA_COUNT; ++i) {
-            if (!read_chunk(in, i, false, out.chunks[i], error)) {
-                return false;
-            }
-        }
-        out.version = out.value<int32_t>(CHUNK_FILE_VERSION);
-        out.schema_count = out.value<int32_t>(CHUNK_SCHEMA_COUNT);
-        if (out.version != SAVE_VERSION) {
-            return fail(error, "save version %d is not supported (expected %d)", out.version, SAVE_VERSION);
-        }
-        if (out.schema_count != CHUNK_COUNT) {
-            return fail(error, "file declares %d chunks, a v%d save has %d", out.schema_count, SAVE_VERSION,
-              CHUNK_COUNT);
-        }
+    bool read_mission_entry(const uint8_t* data, size_t size, savegame& out, std::string& error) {
+        return read_image(data, size, out, error, true);
+    }
 
-        if (!read_chunk(in, CHUNK_SCHEMA, false, out.chunks[CHUNK_SCHEMA], error)) {
+    bool read_mission_pak(int mission, savegame& out, std::string& error) {
+        vfs::reader pak = vfs::file_open(vfs::path("mission1.pak").resolve());
+        if (!pak) {
+            error = "no mission1.pak";
             return false;
         }
-        const auto* schema = out.array<chunk_schema_record>(CHUNK_SCHEMA);
-        std::array<bool, CHUNK_COUNT> absent = {};
-        for (int i = 0; i < CHUNK_COUNT; ++i) {
-            const chunk_spec& spec = k_chunks[i];
-            // Some v160 files carry only the base chunks with the Cleopatra records left empty in the schema; the
-            // bytes then end after chunk 146.
-            absent[i] = i >= CHUNK_FIRST_EXTENDED && schema[i].element_size == 0 && schema[i].count == 0;
-            if (absent[i]) {
-                continue;
-            }
-            if (schema[i].element_size != spec.element_size || schema[i].count != spec.count
-                || (schema[i].compressed != 0) != spec.compressed) {
-                char buf[256];
-                std::snprintf(buf, sizeof(buf), "chunk %d (%s): file schema %dx%d%s, expected %dx%d%s", i, spec.name,
-                  schema[i].element_size, schema[i].count, schema[i].compressed ? " compressed" : "", spec.element_size,
-                  spec.count, spec.compressed ? " compressed" : "");
-                error = buf;
-                return false;
+        const auto* bytes = (const uint8_t*)pak->data();
+        const size_t size = (size_t)pak->size();
+        // The pak opens with one offset per mission; the first entry starts right after that table.
+        auto offset_at = [&](int slot) {
+            int32_t v = 0;
+            std::memcpy(&v, bytes + 4 * slot, sizeof(v));
+            return v;
+        };
+        if (size < 4) {
+            error = "mission1.pak is empty";
+            return false;
+        }
+        const int entries = offset_at(0) / 4;
+        if (mission < 0 || mission >= entries || (size_t)offset_at(0) > size) {
+            return fail(error, "mission %d is not in mission1.pak (%d entries)", mission, entries);
+        }
+        // An entry ends where the next one starts (the last one at the end of the file).
+        const size_t begin = (size_t)offset_at(mission);
+        size_t end = size;
+        for (int slot = 0; slot < entries; ++slot) {
+            const size_t next = (size_t)offset_at(slot);
+            if (next > begin && next < end) {
+                end = next;
             }
         }
-
-        for (int i = CHUNK_SCHEMA + 1; i < CHUNK_COUNT; ++i) {
-            if (absent[i]) {
-                // An empty compressed chunk still has its 4-byte header.
-                uint32_t header = 0;
-                if (schema[i].compressed && !in.take(&header, sizeof(header))) {
-                    return fail(error, "chunk %d: compressed header runs past the end of the file", i);
-                }
-                out.chunks[i].assign((size_t)k_chunks[i].element_size * k_chunks[i].count, 0);
-                out.missing_chunks++;
-                continue;
-            }
-            if (!read_chunk(in, i, k_chunks[i].compressed, out.chunks[i], error)) {
-                return false;
-            }
+        if (begin < (size_t)offset_at(0) || begin >= end) {
+            return fail(error, "mission %d: bad entry in mission1.pak", mission);
         }
-        if (in.pos != in.size) {
-            return fail(error, "%d bytes left after the last chunk", (int)(in.size - in.pos));
-        }
-
-        return take_records(out, CHUNK_BUILDINGS, out.buildings, error)
-               && take_records(out, CHUNK_FIGURES, out.figures, error)
-               && take_records(out, CHUNK_FORMATIONS, out.formations, error)
-               && take_records(out, CHUNK_CITY_PLAYERS, out.players, error)
-               && take_records(out, CHUNK_CITY_PLAYER_NAMES, out.player_names, error)
-               && take_record(out, CHUNK_SCENARIO, out.scenario, error)
-               && take_records(out, CHUNK_EMPIRE_CITIES, out.empire_cities, error)
-               && take_records(out, CHUNK_EMPIRE_OBJECTS, out.empire_objects, error)
-               && take_records(out, CHUNK_EMPIRE_ROUTES, out.empire_routes, error)
-               && take_records(out, CHUNK_EMPIRE_TRADERS, out.empire_traders, error)
-               && take_records(out, CHUNK_EMPIRE_MAP_HEADERS, out.empire_map_headers, error)
-               && take_records(out, CHUNK_MESSAGES, out.messages, error)
-               && take_records(out, CHUNK_CITY_SOUNDS, out.city_sounds, error)
-               && take_records(out, CHUNK_BUILDING_STORAGES, out.storages, error)
-               && take_records(out, CHUNK_FERRY_QUEUES, out.ferry_queues, error)
-               && take_records(out, CHUNK_FERRY_PATHS, out.ferry_paths, error)
-               && take_records(out, CHUNK_DOCK_QUEUES, out.dock_queues, error)
-               && take_record(out, CHUNK_FLOODPLAIN_SETTINGS, out.floodplain, error)
-               && take_record(out, CHUNK_VEGETATION_GROWTH_STATE, out.vegetation_growth, error);
+        return read_mission_entry(bytes + begin, end - begin, out, error);
     }
 
     bool read_savegame_file(const char* path, savegame& out, std::string& error) {

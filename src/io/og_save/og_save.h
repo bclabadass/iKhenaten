@@ -274,4 +274,13 @@ namespace og {
     // against chunk_info() before any chunk is read.
     bool read_savegame_file(const char* path, savegame& out, std::string& error);
 
+    // A campaign mission's entry in mission1.pak: the original starts every mission from it, a save of the mission's
+    // first day written by the version the mission shipped with (147 or 149 for Pharaoh's, 160 for Cleopatra's).
+    // Chunks such an older file lays out differently (empire objects, v147 ferry queues) and the Cleopatra chunks it
+    // lacks read as zeros and count in missing_chunks.
+    bool read_mission_entry(const uint8_t* data, size_t size, savegame& out, std::string& error);
+
+    // mission1.pak's entry for the mission; false when the pak or the entry is missing or unreadable.
+    bool read_mission_pak(int mission, savegame& out, std::string& error);
+
 } // namespace og

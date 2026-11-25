@@ -225,7 +225,7 @@ bool GamestateIO::write_map(pcstr path, bool relative) {
     return g_chunk_io.serialize(path, 0, FILE_FORMAT_MAP_FILE, 160, file_schema);
 }
 
-bool GamestateIO::load_mission(const int scenario_id, bool start_immediately) {
+bool GamestateIO::load_mission(const int scenario_id, bool start_immediately, bool prebuilt) {
     xstring map_file;
     g_config_arch.r_section(mission_id_t(scenario_id), [&](archive arch) {
         map_file = arch.r_string("map_file");
@@ -248,6 +248,22 @@ bool GamestateIO::load_mission(const int scenario_id, bool start_immediately) {
     if (!GamestateLoadDetail::load_mission_map_raw(scenario_id, map_file.c_str())) {
         logs::error("Mission %d: map_file '%s' failed to load", scenario_id, map_file.c_str());
         return false;
+    }
+
+    if (prebuilt) {
+        og::savegame entry;
+        std::string error;
+        if (!og::read_mission_pak(scenario_id, entry, error)) {
+            logs::info("Mission %d: no prebuilt buildings (%s)", scenario_id, error.c_str());
+        } else if (entry.version < og::MISSION_START_MIN_VERSION) {
+            logs::info("Mission %d: prebuilt buildings left out, mission1.pak entry v%d numbers pictures differently",
+              scenario_id, entry.version);
+        } else {
+            og::load_report report;
+            og::load_mission_start(entry, report);
+            logs::info("Mission %d: %d buildings from mission1.pak (v%d, %d dropped)", scenario_id, report.buildings,
+              entry.version, report.buildings_dropped);
+        }
     }
 
     // The only place a mission's cities are built from the empire objects: post_load() needs
@@ -292,7 +308,7 @@ bool GamestateIO::load_og_savegame(pcstr full_path, bool start_immediately) {
         logs::error("[og-save] %s: custom scenario saves are not supported yet", full_path);
         return false;
     }
-    if (!load_mission(mission, false)) {
+    if (!load_mission(mission, false, false)) {
         logs::error("[og-save] %s: mission %d failed to load", full_path, mission);
         return false;
     }

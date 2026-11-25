@@ -188,6 +188,10 @@ crime_t::influence_t building_crime_t::to_influence() const {
     return inf;
 }
 
+bool building_impl::has_model(e_building_type e) {
+    return building_ctors && e > BUILDING_NONE && e < BUILDING_MAX && (*building_ctors)[e] != nullptr;
+}
+
 void building_impl::acquire(e_building_type e, building &b) {
     static_assert(sizeof(building_impl) <= sizeof(building::ptr_buffer_t));
 

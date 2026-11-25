@@ -24,7 +24,8 @@ bool write_savegame(pcstr filename_short);
 /** Write current map grids as FILE_FORMAT_MAP_FILE. relative → under Maps/. */
 bool write_map(pcstr path, bool relative = true);
 
-bool load_mission(const int scenario_id, bool start_immediately);
+// prebuilt: the buildings the mission starts with, from its mission1.pak entry (off when a save supplies the city).
+bool load_mission(const int scenario_id, bool start_immediately, bool prebuilt = true);
 bool load_savegame(pcstr filename_short, bool start_immediately = true);
 bool write_savegame_memory(std::vector<uint8_t>& out);
 bool load_savegame_memory(const std::vector<uint8_t>& bytes, pcstr name, bool start_immediately = true);

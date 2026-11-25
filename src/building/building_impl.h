@@ -173,6 +173,7 @@ public:
     int overlay_anim_image(const building_overlay_anim& ov, int& copies) const;
 
     static void acquire(e_building_type e, building &b);
+    static bool has_model(e_building_type e);
 
     struct static_params : building_static_params {};
     inline const static_params &current_params() const { return (const static_params &)building_static_params::get(type()); }

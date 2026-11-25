@@ -14,6 +14,7 @@
 #include "building/building_type.h"
 #include "city/city.h"
 #include "core/log.h"
+#include "figure/figure_type.h"
 #include "grid/building.h"
 #include "game/resource.h"
 
@@ -27,6 +28,7 @@ namespace og {
     namespace {
 
         enum e_og_building_type {
+            OG_TYPE_FORT = 57,
             OG_TYPE_WATER_LIFT = 90,
             OG_TYPE_TEMPLE_COMPLEX_ALTAR = 211,
             OG_TYPE_TEMPLE_COMPLEX_ORACLE = 212,
@@ -56,8 +58,23 @@ namespace og {
             return og_type == OG_TYPE_TEMPLE_COMPLEX_ALTAR || og_type == OG_TYPE_TEMPLE_COMPLEX_ORACLE;
         }
 
-        e_building_type our_type(int og_type) {
-            return og_type == OG_TYPE_WATER_LIFT ? BUILDING_WATER_LIFT : (e_building_type)og_type;
+        // An OG fort is one type whose subtype is its company's figure type; ours has a type per company.
+        e_building_type our_type(const building& og) {
+            switch (og.type) {
+            case OG_TYPE_WATER_LIFT:
+                return BUILDING_WATER_LIFT;
+            case OG_TYPE_FORT:
+                switch (og.subtype) {
+                case FIGURE_ARCHER:
+                    return BUILDING_FORT_ARCHERS;
+                case FIGURE_FCHARIOTEER:
+                    return BUILDING_FORT_CHARIOTEERS;
+                default:
+                    return BUILDING_FORT_INFANTRY;
+                }
+            default:
+                return (e_building_type)og.type;
+            }
         }
 
         // Orientation sits at union byte 86 for every OG variant that has one (oriented, industry, dock, temple
@@ -71,7 +88,7 @@ namespace og {
             b.clear_impl();
             b.id = id;
             b.state = (e_building_state)og.state;
-            b.set_type(our_type(og.type));
+            b.set_type(our_type(og));
             b.size = og.size;
             b.tile = tile2i(og.x, og.y);
             b.orientation = og_orientation(og);
@@ -219,13 +236,42 @@ namespace og {
             return b.type == BUILDING_WATER_LIFT;
         }
 
+        // An OG complex is three records of the complex's own type, the main one first and its next ids chaining the
+        // other two; ours puts the altar and oracle types on the second and third part. The OG orientation is our
+        // variant (on_create's (10 - 2 * planner orientation) % 8), which lays out the courtyard.
+        void convert_temple_complex(::building_temple_complex& complex) {
+            ::building& main = complex.base;
+            ::building* altar = main.has_next() ? main.next() : nullptr;
+            ::building* oracle = (altar && altar->has_next()) ? altar->next() : nullptr;
+            if (!altar || !oracle) {
+                return;
+            }
+            complex.runtime_data().variant = main.orientation;
+
+            const auto& params = complex.base_params();
+            altar->clear_impl();
+            altar->set_type(params.allowed_altar.front());
+            oracle->clear_impl();
+            oracle->set_type(params.allowed_oracle.front());
+        }
+
     } // namespace
 
-    void load_buildings(const savegame& s, load_report& report) {
+    void load_buildings(const savegame& s, load_report& report, bool drop_unmodelled) {
         std::map<int, int> unmapped;
         for (size_t id = 1; id < s.buildings.size(); ++id) {
             const building& og = s.buildings[id];
             if (og.state == BUILDING_STATE_UNUSED) {
+                continue;
+            }
+            if (drop_unmodelled && !building_impl::has_model(our_type(og))) {
+                logs::info("[og-save] dropped building %u: no model for type %d", (uint32_t)id, og.type);
+                for (int i = 0; i < GRID_CELLS; ++i) {
+                    if (map_building_at(i) == (int)id) {
+                        map_building_set(i, 0);
+                    }
+                }
+                report.buildings_dropped++;
                 continue;
             }
             if (is_dropped(og.type)) {
@@ -252,6 +298,14 @@ namespace og {
         }
         for (const auto& kv : unmapped) {
             logs::info("[og-save] unmapped building runtime data: type %d x%d", kv.first, kv.second);
+        }
+
+        for (size_t id = 1; id < s.buildings.size(); ++id) {
+            const building& og = s.buildings[id];
+            auto* complex = building_get(building_id(id))->dcast<::building_temple_complex>();
+            if (og.state != BUILDING_STATE_UNUSED && complex && og.prev_part_building_id == 0) {
+                convert_temple_complex(*complex);
+            }
         }
     }
 

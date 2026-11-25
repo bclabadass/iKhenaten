@@ -119,6 +119,10 @@ namespace og {
             }
         }
 
+        load_storages(s);
+    }
+
+    void load_storages(const savegame& s) {
         for (int i = 0; i < (int)s.storages.size(); ++i) {
             const building_storage& og_storage = s.storages[i];
             storage_t storage = {};
@@ -130,6 +134,13 @@ namespace og {
             }
             building_storage_set(i, og_storage.building_id, og_storage.in_use != 0, storage);
         }
+    }
+
+    void load_mission_start(const savegame& s, load_report& report) {
+        copy_grid<uint16_t>(s, CHUNK_GRID_BUILDING_IDS, building_grid_chunk::grid);
+        load_buildings(s, report, true);
+        load_storages(s);
+        load_formations(s, report);
     }
 
 } // namespace og

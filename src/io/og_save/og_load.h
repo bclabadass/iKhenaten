@@ -25,11 +25,24 @@ namespace og {
     void load_grids(const savegame& s);
     void load_world(const savegame& s);
     void load_city_state(const savegame& s);
-    void load_buildings(const savegame& s, load_report& report);
+    // drop_unmodelled: leave out records of types we have no building model for (the OG generic pyramid, ...).
+    void load_buildings(const savegame& s, load_report& report, bool drop_unmodelled = false);
     void load_formations(const savegame& s, load_report& report);
     void load_events(const savegame& s, load_report& report);
 
     // State that depends on what post_load rebuilt (food slots follow the city's allowed foods).
     void load_after_post_load(const savegame& s);
+
+    void load_storages(const savegame& s);
+
+    // The buildings a campaign mission starts with (Thinis' temple complex and mansion, Byblos' town, ...), from the
+    // mission's mission1.pak entry on top of its shipped map, which carries only the grids. Their tiles keep the
+    // map's pictures, so the entry must number pictures as we do (MISSION_START_MIN_VERSION).
+    void load_mission_start(const savegame& s, load_report& report);
+
+    enum {
+        // Pharaoh 1.0's entries (v147: Serabit Khadim, Kebet, Menat Khufu) number building pictures differently.
+        MISSION_START_MIN_VERSION = 149,
+    };
 
 } // namespace og
