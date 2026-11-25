@@ -351,10 +351,10 @@ bool mastaba_engine_part_has_active_worker(building_id part_id) {
     }
 }
 
-int mastaba_engine_try_assign_bricklayer(building *main, figure_id fid) {
-    figure *f = figure_get(fid);
+// The frontier part a bricklayer sent to this mastaba would claim, or 0.
+building_id mastaba_engine_open_bricklayer_part(building* main) {
     building *head = mastaba_chain_head(main);
-    if (!f || !head || !mastaba_engine_is(head)) {
+    if (!head || !mastaba_engine_is(head)) {
         return 0;
     }
     auto *mon = head->dcast_monument();
@@ -386,25 +386,32 @@ int mastaba_engine_try_assign_bricklayer(building *main, figure_id fid) {
         if (ps->worker_figure_id && mastaba_engine_part_has_active_worker(part_id)) {
             continue;
         }
-        ps->worker_figure_id = fid;
-
-        auto *bl = f->dcast_bricklayer();
-        if (!bl) {
-            ps->worker_figure_id = 0;
-            return 0;
-        }
-        auto &rd = bl->runtime_data();
-        rd.destination_bid = head->id;
-        rd.part_bid = part_id;
-        rd.serving_statue = 0;
-        // Non-NONE so WAIT_FOR_BLOCK keeps the claim (same as mudbrick pyramid).
-        rd.walk_mode = PYRAMID_WALK_ON_LAYER;
-
-        f->set_destination(head);
-        f->destination_tile = mon->access_point();
         return part_id;
     }
     return 0;
+}
+
+int mastaba_engine_try_assign_bricklayer(building* main, figure_id fid) {
+    figure* f = figure_get(fid);
+    building* head = mastaba_chain_head(main);
+    const building_id part_id = f ? mastaba_engine_open_bricklayer_part(main) : 0;
+    auto* bl = f ? f->dcast_bricklayer() : nullptr;
+    if (!part_id || !bl) {
+        return 0;
+    }
+    auto* ps = pyramid_part_state_get(part_id);
+    auto* mon = head->dcast_monument();
+    ps->worker_figure_id = fid;
+    auto& rd = bl->runtime_data();
+    rd.destination_bid = head->id;
+    rd.part_bid = part_id;
+    rd.serving_statue = 0;
+    // Non-NONE so WAIT_FOR_BLOCK keeps the claim (same as mudbrick pyramid).
+    rd.walk_mode = PYRAMID_WALK_ON_LAYER;
+
+    f->set_destination(head);
+    f->destination_tile = mon->access_point();
+    return part_id;
 }
 
 void monument_mastaba_engine::apply_block_placed(building *head, pyramid_main_state &ms, pyramid_part_state &ps) {

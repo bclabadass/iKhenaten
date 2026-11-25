@@ -156,6 +156,7 @@ public:
     virtual void update_map_orientation(int map_orientation) override;
     virtual int building_image_get() const override;
     virtual bool need_stonemason() override;
+    virtual e_mason_spots mason_spots() const override { return MASON_SPOTS_ON_ARRIVAL; }
     virtual bool need_carpenter() override;
     virtual bool need_workers() const override;
     virtual bool needs_resources() const override;

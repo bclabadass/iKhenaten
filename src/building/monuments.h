@@ -174,6 +174,11 @@ public:
     virtual int is_construction_halted();
     virtual int toggle_construction_halted();
     virtual bool need_stonemason();
+    // How the monument's masons take their work spots, for the guilds: with none each guild keeps one mason out (the
+    // obelisk, and the Cleopatra monuments that take one worker at a time); otherwise the guilds keep sending while
+    // need_stonemason() holds. A spot taken only once the mason arrives allows one mason on the way at a time.
+    enum e_mason_spots { MASON_SPOTS_NONE, MASON_SPOTS_ON_ARRIVAL, MASON_SPOTS_WHEN_SENT };
+    virtual e_mason_spots mason_spots() const { return MASON_SPOTS_NONE; }
     // The current stage has a work spot for this figure type that nobody holds.
     virtual bool has_free_spot(e_figure_type /*type*/) const { return false; }
     virtual bool need_carpenter();

@@ -76,6 +76,7 @@ public:
     virtual int building_image_get() const override;
     virtual bool deliver_resource(e_resource resource, int amount) override;
     virtual bool need_stonemason() override;
+    virtual e_mason_spots mason_spots() const override { return MASON_SPOTS_WHEN_SENT; }
     virtual bool need_artisan() override;
     virtual bool need_workers() const override;
     virtual bool needs_resources() const override;

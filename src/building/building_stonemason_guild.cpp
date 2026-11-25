@@ -2,9 +2,9 @@
 
 #include "building/building_statue.h"
 #include "building/monuments.h"
-#include "building/monument_pyramid_engine.h"
 #include "figuretype/figure_stonemason.h"
 #include "city/city.h"
+#include "city/city_figures.h"
 #include "city/city_labor.h"
 #include "core/calc.h"
 #include "figure/figure.h"
@@ -17,6 +17,23 @@
 #include "js/js_register.h"
 
 REPLICATE_STATIC_PARAMS_FROM_CONFIG(building_stonemason_guild);
+
+namespace {
+
+    // Masons sent to this monument that haven't reached it yet.
+    int stonemasons_on_the_way(building& monument) {
+        int count = 0;
+        figure_valid_do(
+          [&](figure& f) {
+              auto* mason = smart_cast<figure_stonemason>(&f);
+              count += mason && mason->runtime_data().destination_bid == monument.id
+                       && (f.action_state == ACTION_0_MASON_CREATED || f.action_state == ACTION_1_MASON_GOING);
+          },
+          std::initializer_list<e_figure_type>{FIGURE_STONEMASON});
+        return count;
+    }
+
+} // namespace
 
 bool building_stonemason_guild::can_spawn_stonemason_man() {
     return get_figures_number(FIGURE_STONEMASON) < current_params().max_walkers;
@@ -62,12 +79,16 @@ void building_stonemason_guild::spawn_figure() {
         return monument->need_stonemason();
     });
 
-    // A pyramid's course takes a mason on every free part, so the guild keeps sending them while it has one
-    // (`need_stonemason`); other monuments and the statues get one mason at a time from each guild.
-    const bool fills_course
-      = monument && monument->dcast_pyramid() && g_monument_pyramid_engine.uses_block_engine(monument);
-    if (!fills_course && !can_spawn_stonemason_man()) {
-        return;
+    // A monument with work spots takes a mason on each (a pyramid's course, the sphinx's stage), so the guilds keep
+    // sending them while it needs one; the rest, and the statues, get one mason at a time from each guild.
+    const auto spots = monument ? monument->dcast_monument()->mason_spots() : building_monument::MASON_SPOTS_NONE;
+    if (!can_spawn_stonemason_man()) {
+        if (spots == building_monument::MASON_SPOTS_NONE) {
+            return;
+        }
+        if (spots == building_monument::MASON_SPOTS_ON_ARRIVAL && stonemasons_on_the_way(*monument)) {
+            return;
+        }
     }
 
     if (monument) {

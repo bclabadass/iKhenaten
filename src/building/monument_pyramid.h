@@ -70,6 +70,7 @@ public:
     virtual void sync_visuals() override;
     virtual bool need_bricklayers() override;
     virtual bool need_stonemason() override;
+    virtual e_mason_spots mason_spots() const override;
     virtual bool need_carpenter() override;
     virtual int try_assign_bricklayer(figure_id fid) override;
     virtual void place_bricklayer_block(figure_id fid) override;

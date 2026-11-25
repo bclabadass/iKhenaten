@@ -169,6 +169,7 @@ public:
     virtual int building_image_get() const override;
     virtual bool draw_ornaments_and_animations_height(painter &ctx, vec2i point, tile2i tile, color mask) override;
     virtual bool need_stonemason() override;
+    virtual e_mason_spots mason_spots() const override { return MASON_SPOTS_ON_ARRIVAL; }
     virtual bool need_carpenter() override;
     virtual bool need_workers() const override;
     virtual bool needs_resources() const override;

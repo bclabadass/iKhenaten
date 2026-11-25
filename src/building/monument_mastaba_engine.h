@@ -74,6 +74,7 @@ void mastaba_engine_init(building *main);
 void mastaba_engine_start_block_phase(building *main);
 bool mastaba_engine_blocks_finished(building *main);
 
+building_id mastaba_engine_open_bricklayer_part(building* main);
 int mastaba_engine_try_assign_bricklayer(building *main, figure_id fid);
 bool mastaba_engine_part_has_active_worker(building_id part_id);
 void mastaba_engine_place_block(building_id part_id, figure_id fid);

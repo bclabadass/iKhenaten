@@ -62,10 +62,6 @@ void building_bricklayers_guild::spawn_figure() {
 
     common_spawn_labor_seeker(current_params().min_houses_coverage);
 
-    if (!can_spawn_bricklayer()) {
-        return;
-    }
-
     // OG bricklayers guild: roam spawn when staffed; figure finds task while roaming.
     // Remake: only spawn when mastaba/mudbrick block work or (feature) statue service exists.
     bool has_block_work = false;
@@ -85,7 +81,7 @@ void building_bricklayers_guild::spawn_figure() {
                 }
             }
             auto *ms = pyramid_main_state_get(b.id);
-            if (ms && ms->block_phase_active && ms->remaining_blocks > 0 && mon->has_free_worker_slot()) {
+            if (ms && ms->block_phase_active && ms->remaining_blocks > 0 && mastaba_engine_open_bricklayer_part(&b)) {
                 has_block_work = true;
             }
             return;
@@ -98,12 +94,18 @@ void building_bricklayers_guild::spawn_figure() {
                 }
             }
             auto *ms = pyramid_main_state_get(b.id);
-            if (ms && ms->style == PYRAMID_STYLE_MUDBRICK && ms->block_phase_active
-                && ms->remaining_blocks > 0 && mon->has_free_worker_slot()) {
+            if (ms && ms->style == PYRAMID_STYLE_MUDBRICK && ms->block_phase_active && ms->remaining_blocks > 0
+                && pyramid_engine_open_bricklayer_part(&b)) {
                 has_block_work = true;
             }
         }
     });
+
+    // A course takes a bricklayer on every part he can claim (he claims it as he leaves), so the guild keeps sending
+    // them while one is open, like the stonemasons on a pyramid; statues get the guild's usual few.
+    if (!has_block_work && !can_spawn_bricklayer()) {
+        return;
+    }
 
     building *statue = nullptr;
     if (!has_block_work && building_statue::guild_service_enabled()) {

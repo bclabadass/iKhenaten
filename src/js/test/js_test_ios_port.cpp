@@ -1200,6 +1200,23 @@ static xstring __test_pyramid_crew() {
 }
 ANK_FUNCTION(__test_pyramid_crew);
 
+// The course part the next bricklayer sent to this mastaba or mudbrick pyramid would claim, or 0.
+static int __test_open_bricklayer_part(int bid) {
+    building* b = building_get(bid);
+    if (!b || !b->id) {
+        return 0;
+    }
+    return mastaba_engine_is(b->main()) ? mastaba_engine_open_bricklayer_part(b)
+                                        : pyramid_engine_open_bricklayer_part(b);
+}
+ANK_FUNCTION_1(__test_open_bricklayer_part);
+
+static int __test_figure_type(int fid) {
+    figure* f = figure_get(fid);
+    return f && f->is_alive() ? (int)f->type : -1;
+}
+ANK_FUNCTION_1(__test_figure_type);
+
 // Parts of one pyramid of the same layout kind on the same course but with different block counts: "pairs,same_image"
 // where same_image counts the pairs drawn with one picture (the whole ring showed one course).
 static xstring __test_pyramid_part_images(int bid) {

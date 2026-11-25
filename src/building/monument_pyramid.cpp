@@ -1286,6 +1286,11 @@ bool building_pyramid::need_stonemason() {
     return building_monument::need_stonemason();
 }
 
+// need_stonemason() counts the masons on their way (masons_wanted).
+building_monument::e_mason_spots building_pyramid::mason_spots() const {
+    return g_monument_pyramid_engine.uses_block_engine(&base) ? MASON_SPOTS_WHEN_SENT : MASON_SPOTS_NONE;
+}
+
 bool building_pyramid::need_carpenter() {
     if (pyramid_params().pyramide_type == PYRAMID_STYLE_NONE) {
         return building_monument::need_carpenter();

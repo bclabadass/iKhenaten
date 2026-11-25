@@ -180,6 +180,7 @@ void pyramid_engine_init_mudbrick(building *main);
 void pyramid_engine_start_block_phase(building *main);
 bool pyramid_engine_blocks_finished(building *main);
 
+building_id pyramid_engine_open_bricklayer_part(building* main);
 int pyramid_engine_try_assign_bricklayer(building *main, figure_id fid);
 bool pyramid_engine_part_has_active_worker(building_id part_id);
 void pyramid_engine_place_block(building_id part_id, figure_id fid);
