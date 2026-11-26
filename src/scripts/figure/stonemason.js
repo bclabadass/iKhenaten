@@ -3,8 +3,9 @@ log_info("akhenaten: figure stonemason started")
 figure_stonemason {
 	animations {
 		walk { pack:PACK_SPR_MAIN, id:150, max_frames:12 }
-		// The original has no standing group for him: walk frame 9 is the one with his feet together.
-		idle { pack:PACK_SPR_MAIN, id:150, offset:72, max_frames:1 }
+		// Waiting for his block: he stands and rocks, swinging the mallet out and back (the original's mason sprite
+		// switch at 0x4ab2b6 picks this group with walk 150, death 151 and work 152).
+		idle { pack:PACK_SPR_MAIN, id:155, max_frames:12 }
 		death { pack:PACK_SPR_MAIN, id:151, max_frames:8, loop:false }
 		work_ground { pack:PACK_SPR_MAIN, id:152, max_frames:7 }
 		work_wall { pack:PACK_SPR_MAIN, id:153, max_frames:7 }

@@ -2,8 +2,7 @@
 // of around it, and a stonemason waiting for his block stood frozen mid-stride. The pyramid's footprint is open ground
 // in the citizens' routing grid, so the laborer's route from the yard to the entry cut straight across the laid
 // courses (on Saqqara 10 from the north side to the access point on the south side), and the sleds follow his tiles.
-// A waiting mason held walk frame 0; he now shows the walk frame with his feet together (the original has no standing
-// group for him).
+// A waiting mason held walk frame 0; he now plays his waiting group (SprMain 155, test 929 checks that it rocks).
 // Needs the Duo save in the Pharaoh folder's Save/DuoSaves/; without it the test logs a skip and passes.
 // Markers:
 //   [test-marker] t918_trains_go_around
@@ -53,7 +52,7 @@ function run_test() {
             mon = i
         }
     }
-    var idle_base = __test_image_id_from_group(PACK_SPR_MAIN, 150, 72)
+    var idle_base = __test_image_id_from_group(PACK_SPR_MAIN, 155, 0)
     var approach = 0, crossing = 0, reached = {}, reached_n = 0, crossed_by = ''
     var waiting = 0, not_idle = 0, seen_image = -1
     var was_approaching = {}
@@ -93,7 +92,7 @@ function run_test() {
                 var img = __test_figure_main_image_id(j)
                 waiting++
                 seen_image = img
-                if (img < idle_base || img >= idle_base + 8) {
+                if (img < idle_base || img >= idle_base + 96) {
                     not_idle++
                 }
             }

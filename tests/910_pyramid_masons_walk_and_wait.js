@@ -1,5 +1,5 @@
 // Pyramid workers walk smoothly over the courses, stand on top of the course picture under them, and a stonemason
-// waiting for his block stands still. A worker's tile only hops from part to part as he walks the course, and he was
+// waiting for his block doesn't chisel (he rocks in place, test 929). A worker's tile only hops from part to part as he walks the course, and he was
 // drawn on that tile, so he jumped a part at a time; he was raised 15 pixels a block, which put him above the upper
 // courses and off the part he stood on; and a mason waiting for the sled played his chiseling loop (Brendan,
 // Saqqara 10: "stutter across the pyramid", "always chiseling", "no longer aligned with the grid").
@@ -29,7 +29,7 @@ function run_test() {
     __test_pump_frames(3)
     var on = __test_pyramid_workers_raised().split(',')
 
-    var samples = 0, max_jump = 0, waiting = 0, changed = 0
+    var samples = 0, max_jump = 0, waiting = 0, chiseling = 0
     __test_pyramid_walk_jump()
     __test_pyramid_waiting_masons()
     for (var k = 0; k < 8000 && (samples < 1500 || waiting < 200); k++) {
@@ -42,17 +42,17 @@ function run_test() {
         max_jump = Math.max(max_jump, +j[1])
         var w = __test_pyramid_waiting_masons().split(',')
         waiting += +w[0]
-        changed += +w[1]
+        chiseling += +w[1]
     }
     __log_info_native('[test:910] on courses ' + on[0] + ', on the course tops ' + on[1] + '; walking samples ' + samples
-        + ', largest step ' + max_jump + ' px; waiting samples ' + waiting + ', sprite changed ' + changed)
+        + ', largest step ' + max_jump + ' px; waiting samples ' + waiting + ', chiseling ' + chiseling)
     if (+on[0] > 0 && on[0] == on[1]) {
         __log_marker('t910_workers_on_course_tops')
     }
     if (samples > 0 && max_jump <= 8) {
         __log_marker('t910_workers_walk_smoothly')
     }
-    if (waiting > 0 && changed == 0) {
+    if (waiting > 0 && chiseling == 0) {
         __log_marker('t910_waiting_masons_stand')
     }
     test_reload_city_session('data/default.map')

@@ -1121,29 +1121,24 @@ static xstring __test_pyramid_walk_jump() {
 }
 ANK_FUNCTION(__test_pyramid_walk_jump);
 
-// Stonemasons on a pyramid waiting for their block: "waiting,changed" — changed counts those whose sprite differs from
-// the previous call (they stand still until the sled arrives; call once per game tick).
+// Stonemasons on a pyramid waiting for their block: "waiting,chiseling" — chiseling counts those drawn with a frame of
+// their work group (SprMain 152) instead of their waiting group (call once per game tick).
 static xstring __test_pyramid_waiting_masons() {
-    static std::unordered_map<int, int> last;
-    std::unordered_map<int, int> now;
+    const int work_first = image_id_from_group(PACK_SPR_MAIN, 152, 0);
+    const int work_end = image_id_from_group(PACK_SPR_MAIN, 153, 0);
     int waiting = 0;
-    int changed = 0;
+    int chiseling = 0;
     for (int i = 1; i < MAX_FIGURES; i++) {
         figure* f = figure_get(i);
         if (!f->is_valid() || f->type != FIGURE_STONEMASON || f->action_state != ACTION_19_MASON_WAIT_FOR_BLOCK
             || !pyramid_figure_on_own_pyramid(f)) {
             continue;
         }
-        now[i] = f->main_image_id;
-        auto it = last.find(i);
-        if (it != last.end()) {
-            waiting++;
-            changed += it->second != f->main_image_id;
-        }
+        waiting++;
+        chiseling += f->main_image_id >= work_first && f->main_image_id < work_end;
     }
-    last = std::move(now);
     bstring64 out;
-    out.printf("%d,%d", waiting, changed);
+    out.printf("%d,%d", waiting, chiseling);
     return xstring(out.c_str());
 }
 ANK_FUNCTION(__test_pyramid_waiting_masons);
