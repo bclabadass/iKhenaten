@@ -18,6 +18,7 @@
 #include "building/monument_royal_tomb.h"
 #include "city/city.h"
 #include "city/city_message.h"
+#include "city/city_population.h"
 #include "core/random.h"
 #include "core/xstring.h"
 #include "game/simulation.h"
@@ -65,6 +66,11 @@ void __test_set_city_population(int amount) {
     g_city.population.current = amount;
 }
 ANK_FUNCTION_1(__test_set_city_population);
+
+void __test_population_check_consistency() {
+    city_population_check_consistency();
+}
+ANK_FUNCTION(__test_population_check_consistency);
 
 void __test_set_city_enemies(int count) {
     g_city.figures.enemies = (int16_t)count;

@@ -601,8 +601,12 @@ void city_population_t::yearly_update() {
 
 void city_population_check_consistency(void) {
     int people_in_houses = calculate_people_per_house_type();
-    if (people_in_houses < city_data.population.current)
+    if (people_in_houses < city_data.population.current) {
         remove_from_census(city_data.population.current - people_in_houses);
+        // Without the recount the next check (8 days on) takes the same difference again; plague deaths leave the
+        // census alone and a plague stops migration, so nothing else recounts it and the census drains to 0.
+        g_city.population.recalculate();
+    }
 }
 
 int city_population_open_housing_capacity(void) {
