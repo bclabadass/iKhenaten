@@ -4,7 +4,7 @@ log_info("akhenaten: mission 12 meidum started")
 //
 // Goals:     population 3000, culture 25, prosperity 25, monuments 39, kingdom 40, housing level 11.
 // Start:     funds 10000, rescue loan 3000, debt interest 8% (normal difficulty).
-// Gods:      Osiris, Ptah, Ra.
+// Gods:      Bast (patron), Osiris, Ptah.
 // Monuments: small stepped pyramid and stepped pyramid complex (goal 39 needs both); small and medium
 //            mastabas are also available.
 // Trade:     can open — Saqqara, Serabit Khadim, Abu (by sea), Behdet (by sea), Nekhen (by sea); display
@@ -102,7 +102,7 @@ mission12 { // Meidum
 		BUILDING_TAX_COLLECTOR, BUILDING_COURTHOUSE, BUILDING_PERSONAL_MANSION, BUILDING_BAZAAR, BUILDING_GRANARY, BUILDING_STORAGE_YARD,
 		BUILDING_RECRUITER, BUILDING_WEAPONSMITH, BUILDING_FORT_CHARIOTEERS, BUILDING_FORT_ARCHERS, BUILDING_FORT_INFANTRY,
 		BUILDING_WARSHIP_WHARF, BUILDING_TRANSPORT_WHARF, BUILDING_SHIPWRIGHT,
-		BUILDING_TEMPLE_OSIRIS, BUILDING_SHRINE_OSIRIS, BUILDING_TEMPLE_PTAH, BUILDING_SHRINE_PTAH, BUILDING_TEMPLE_RA, BUILDING_SHRINE_RA,
+		BUILDING_TEMPLE_OSIRIS, BUILDING_SHRINE_OSIRIS, BUILDING_TEMPLE_PTAH, BUILDING_SHRINE_PTAH, BUILDING_TEMPLE_BAST, BUILDING_SHRINE_BAST,
 		BUILDING_GRAIN_FARM, BUILDING_FIGS_FARM,
 		BUILDING_STONE_QUARRY, BUILDING_CLAY_PIT, BUILDING_REED_GATHERER, BUILDING_WOOD_CUTTERS,
 		BUILDING_LOW_BRIDGE, BUILDING_FERRY,

@@ -163,6 +163,21 @@ void scenario_apply_og_mission_rules(int mission) {
             for (const int type : rule->off) {
                 scenario_building_allow((e_building_type)type, false);
             }
+            // The original offers a temple and shrine to each god the map makes known, and to no other (Meidum's
+            // script offered Ra, whom the city doesn't know, instead of its patron Bast).
+            const e_building_type god_buildings[MAX_GODS][2] = {
+              {BUILDING_TEMPLE_OSIRIS, BUILDING_SHRINE_OSIRIS},
+              {BUILDING_TEMPLE_RA, BUILDING_SHRINE_RA},
+              {BUILDING_TEMPLE_PTAH, BUILDING_SHRINE_PTAH},
+              {BUILDING_TEMPLE_SETH, BUILDING_SHRINE_SETH},
+              {BUILDING_TEMPLE_BAST, BUILDING_SHRINE_BAST},
+            };
+            for (int god = 0; god < MAX_GODS; god++) {
+                const bool known = g_city.religion.gods[god].is_known != GOD_STATUS_UNKNOWN;
+                for (const e_building_type t : god_buildings[god]) {
+                    scenario_building_allow(t, known);
+                }
+            }
         }
         for (const e_building_type complex : {BUILDING_TEMPLE_COMPLEX_OSIRIS, BUILDING_TEMPLE_COMPLEX_RA,
                BUILDING_TEMPLE_COMPLEX_PTAH, BUILDING_TEMPLE_COMPLEX_SETH, BUILDING_TEMPLE_COMPLEX_BAST}) {
