@@ -511,7 +511,9 @@ static bool is_adjacent_road_tile_for_roaming(int grid_offset, e_permission perm
     }
 
     building* b = building_at(grid_offset);
-    if (b->type == BUILDING_MUD_GATEHOUSE || b->type == BUILDING_DECORATIVE_GATEHOUSE) {
+    // A ferry landing's road leads onto the water; roamers who walked onto it drowned (the boat takes only walkers
+    // with a destination).
+    if (b->type == BUILDING_MUD_GATEHOUSE || b->type == BUILDING_DECORATIVE_GATEHOUSE || b->type == BUILDING_FERRY) {
         return false;
     }
 

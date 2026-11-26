@@ -367,9 +367,9 @@ void building_ferry::on_place_update_tiles(int orientation, int variant) {
 }
 
 void building_ferry::update_map_orientation(int orientation) {
-    int image_offset = map_view_relative_orientation(base.orientation);
-    int image_id = base_img() + image_offset;
-    map_water_add_building(id(), tile(), size(), image_id);
+    // map_water_add_building alone clears the land tiles' road (it runs on every load and rotation), leaving the
+    // landing's road on its water tiles only: walkers then took their road access there and drowned.
+    on_place_update_tiles(map_view_relative_orientation(base.orientation), 0);
 }
 
 void building_ferry::on_destroy() {
