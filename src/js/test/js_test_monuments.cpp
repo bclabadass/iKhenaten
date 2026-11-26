@@ -1593,3 +1593,20 @@ static int __test_pyramid_part_draw_image(int bid) {
     return static_cast<building_stepped_pyramid*>(pyr)->height_part_image(b->tile, map_view_orientation() / 2);
 }
 ANK_FUNCTION_1(__test_pyramid_part_draw_image);
+
+// "layer,blocks,stage,subtype,kind,ramp1,ramp2,ramp_image,monument_layer" for one block-engine part, "" otherwise.
+static pcstr __test_pyramid_part_state(int bid) {
+    static bstring256 out;
+    out.clear();
+    building* b = building_get(bid);
+    auto* ps = pyramid_part_state_get(bid);
+    if (!b || !ps || !b->main()) {
+        return out.c_str();
+    }
+    auto* mon = b->dcast_monument();
+    out.printf("%d,%d,%d,%d,%d,%d,%d,%d,%d", (int)ps->layer, (int)ps->blocks, (int)ps->stage, (int)ps->subtype,
+      g_monument_pyramid_engine.layout_kind(b->main(), ps->subtype), (int)ps->ramp1_height, (int)ps->ramp2_height,
+      (int)ps->ramp_image_id, mon ? (int)mon->runtime_data().layer : -1);
+    return out.c_str();
+}
+ANK_FUNCTION_1(__test_pyramid_part_state);

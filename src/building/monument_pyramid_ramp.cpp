@@ -56,10 +56,17 @@ int pyramid_engine_part_needs_ramp(building_id part_id) {
     if (!ps || !ms) {
         return PYRAMID_RAMP_NONE;
     }
-    // OG: both part and main in casing → no more ramp work.
-    auto *main_ps = pyramid_part_state_get(head->id);
-    if (ps->stage == PYRAMID_STAGE_CASING && main_ps && main_ps->stage == PYRAMID_STAGE_CASING) {
-        return PYRAMID_RAMP_NONE;
+    // OG: both part and main in casing → no more ramp work. OG's main is the centre part (subtype 0); ours is the
+    // NW corner, which is cased with the first course, so the top ramp of every course was never built.
+    if (ps->stage == PYRAMID_STAGE_CASING) {
+        svector<building*, PYRAMID_PARTS_CAPACITY> parts;
+        g_monument_pyramid_engine.collect_parts(head, parts);
+        for (building* p : parts) {
+            auto* centre = pyramid_part_state_get(p->id);
+            if (centre && centre->subtype == 0 && centre->stage == PYRAMID_STAGE_CASING) {
+                return PYRAMID_RAMP_NONE;
+            }
+        }
     }
 
     const int subtype = ps->subtype;
