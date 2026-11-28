@@ -133,6 +133,7 @@ public:
     void ship_move(bool cautious);
     void move_attack();
     void sail_to_destination();
+    void move_off_unroutable_water();
     void patrol();
     void evade();
     void attack_ship();

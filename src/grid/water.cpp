@@ -12,6 +12,7 @@
 #include "grid/terrain.h"
 #include "grid/tiles.h"
 #include "grid/routing/routing.h"
+#include "grid/routing/routing_grids.h"
 #include "scenario/map.h"
 
 #include <algorithm>
@@ -335,16 +336,57 @@ static int num_surrounding_water_tiles(int grid_offset) {
     return amount;
 }
 
+static bool boat_can_route_from(int grid_offset) {
+    const int value = map_grid_get(routing_tiles_water, grid_offset);
+    return value != WATER_N1_BLOCKED && value != WATER_N3_LOW_BRIDGE;
+}
+
+bool map_water_boat_can_route_from(tile2i tile) {
+    return boat_can_route_from(tile.grid_offset());
+}
+
 bool map_water_can_spawn_boat(tile2i tile, int size, tile2i &boat_tile) {
     int base_offset = tile.grid_offset();
     offsets_array offsets;
     map_grid_adjacent_offsets(size, offsets);
+    // A boat launched on a tile boat routing can't use (water on fewer than all eight sides) never leaves it.
+    for (const int& tile_delta : offsets) {
+        const int grid_offset = base_offset + tile_delta;
+        if (map_terrain_is(grid_offset, TERRAIN_WATER | TERRAIN_DEEPWATER)
+            && !map_terrain_is(grid_offset, TERRAIN_BUILDING) && boat_can_route_from(grid_offset)) {
+            map_point_store_result(tile2i(grid_offset), boat_tile);
+            return true;
+        }
+    }
     for (const int& tile_delta: offsets) {
         int grid_offset = base_offset + tile_delta;
         if (map_terrain_is(grid_offset, TERRAIN_WATER|TERRAIN_DEEPWATER)) {
             if (!map_terrain_is(grid_offset, TERRAIN_BUILDING)) {
                 if (num_surrounding_water_tiles(grid_offset) >= 2) {
                     map_point_store_result(tile2i(grid_offset), boat_tile);
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool map_water_find_routable_tile_near(tile2i tile, int max_radius, tile2i& result) {
+    for (int r = 1; r <= max_radius; ++r) {
+        for (int dy = -r; dy <= r; ++dy) {
+            for (int dx = -r; dx <= r; ++dx) {
+                if (std::max(std::abs(dx), std::abs(dy)) != r) {
+                    continue;
+                }
+                const tile2i n(tile.x() + dx, tile.y() + dy);
+                if (!map_grid_is_inside(n, 1)) {
+                    continue;
+                }
+                const int grid_offset = n.grid_offset();
+                if (map_terrain_is(grid_offset, TERRAIN_WATER | TERRAIN_DEEPWATER)
+                    && !map_terrain_is(grid_offset, TERRAIN_BUILDING) && boat_can_route_from(grid_offset)) {
+                    result = n;
                     return true;
                 }
             }

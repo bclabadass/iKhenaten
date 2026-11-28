@@ -317,11 +317,28 @@ void figure_warship::move_attack() {
     }
 }
 
+// Warships launched before the shipwright picked a routable tile sit where boat routing can't start (a tile with land
+// on one of its eight sides): no route ever leaves it. Move such a ship onto the nearest water it can sail from.
+void figure_warship::move_off_unroutable_water() {
+    tile2i free_tile;
+    if (map_water_boat_can_route_from(base.tile) || !map_water_find_routable_tile_near(base.tile, 3, free_tile)) {
+        return;
+    }
+    base.map_figure_remove();
+    base.tile = free_tile;
+    base.previous_tile = free_tile;
+    base.progress_on_tile = 15;
+    base.map_figure_add();
+}
+
 void figure_warship::sail_to_destination() {
     if (base.tile != base.destination_tile) {
         ship_move(false);
     }
     if (direction() == DIR_FIGURE_REROUTE || direction() == DIR_FIGURE_CAN_NOT_REACH) {
+        if (direction() == DIR_FIGURE_CAN_NOT_REACH) {
+            move_off_unroutable_water();
+        }
         route_remove();
         return;
     }

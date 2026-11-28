@@ -442,6 +442,32 @@ static void __test_map_set_image(int x, int y, int image_id) {
 }
 ANK_FUNCTION_3(__test_map_set_image);
 
+// A figure's destination tile, packed x * 1000 + y; -1 none.
+static int __test_figure_destination_tile(int fid) {
+    figure* f = figure_get(fid);
+    if (!f || f->id <= 0 || !f->destination_tile.valid()) {
+        return -1;
+    }
+    return f->destination_tile.x() * 1000 + f->destination_tile.y();
+}
+ANK_FUNCTION_1(__test_figure_destination_tile);
+
+// Where a boat built by a building of `size` at (x, y) is launched, packed x * 1000 + y; -1 none.
+static int __test_water_spawn_boat_tile(int x, int y, int size) {
+    tile2i boat_tile;
+    if (!map_water_can_spawn_boat(tile2i(x, y), size, boat_tile)) {
+        return -1;
+    }
+    return boat_tile.x() * 1000 + boat_tile.y();
+}
+ANK_FUNCTION_3(__test_water_spawn_boat_tile);
+
+// True when the tile has any of the terrain flags.
+static bool __test_map_terrain_is(int x, int y, int flags) {
+    return map_terrain_is(tile2i(x, y), flags);
+}
+ANK_FUNCTION_3(__test_map_terrain_is);
+
 // Routes a figure to (x, y) as it routes itself and returns its path as "x,y;x,y;..." ("" without a route).
 static pcstr __test_figure_route_to(int fid, int x, int y) {
     static std::string out;

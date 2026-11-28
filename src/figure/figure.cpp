@@ -246,6 +246,12 @@ bool figure::do_goto(tile2i dest, int terrainchoice, short NEXT_ACTION, short FA
         terrain_usage = TERRAIN_USAGE_ANY;
     }
 
+    // A new walk must not inherit the last move's DIR_FIGURE_NONE (a cross-country arrival stops mid-tile with it):
+    // the check below would take it as arrival before the first step.
+    if (destination_tile != dest && direction == DIR_FIGURE_NONE && tile != dest) {
+        direction = previous_tile_direction < DIR_FIGURE_NONE ? previous_tile_direction : DIR_0_TOP_RIGHT;
+    }
+
     // refresh routing if destination is different or missing path
     if (destination_tile != dest || routing_path_id <= 0) {
         OZZY_PROFILER_SECTION(_, "Figure/Goto/Route remove (no dest)");

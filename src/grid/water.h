@@ -52,6 +52,9 @@ water_dest map_water_find_shipwreck_tile(figure &wreck);
 bool map_water_find_alternative_fishing_boat_tile(figure &boat, tile2i &tile);
 void map_water_rebuild_shores();
 bool map_water_can_spawn_boat(tile2i tile, int size, tile2i &boat_tile);
+bool map_water_boat_can_route_from(tile2i tile);
+// The nearest water tile within max_radius that boat routing can start from (not a building).
+bool map_water_find_routable_tile_near(tile2i tile, int max_radius, tile2i& result);
 
 int map_water_landing_point(tile2i landing, tile2i ship, tile2i &out);
 bool map_find_nearest_free_land_tile(tile2i &tile);

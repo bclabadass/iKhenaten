@@ -1,16 +1,20 @@
 // Laborers drowned on the way to a monument across the river (Brendan, Meidum 3: "laborers from work camps attempt
 // to walk directly to pyramid (across the nile) and die upon hitting the coast. They should take the ferry").
-// Two causes: a laborer sent to level the site walked cross-country from the work camp road straight to its tile
-// (OG), into the river; it now takes the roads and the ferry when that line crosses water. And a walker queued at a
-// ferry landing stopped with DIR_FIGURE_NONE, which do_goto read as arrival: the next action replaced the ferry wait,
-// so the boat never took it and the laborer, "at the site", set off cross-country from the landing.
-// Needs the Duo save in the Pharaoh folder's Save/DuoSaves/; without it the test logs a skip and passes.
+// A laborer sent to level the site walked cross-country from the work camp road straight to its tile (OG), into the
+// river; it now takes the roads and the ferry when that line crosses water. A walker queued at a ferry landing
+// stopped with DIR_FIGURE_NONE, which do_goto read as arrival: the next action replaced the ferry wait, so the boat
+// never took it and the laborer, "at the site", set off cross-country from the landing.
+// Then (Brendan, build 14278: "a few laborers still continue to cross across the river directly but now they no
+// longer fail"): a new do_goto walk inherited DIR_FIGURE_NONE from the cross-country step before it (the laborer's
+// unseen walk to the work camp road) and "arrived" on its first tick, so the laborer went cross-country over the
+// water from the landing; and an idle laborer's unseen walk back from the site ran into the river and died there.
+// Needs the Duo saves in the Pharaoh folder's Save/DuoSaves/; without them the test logs a skip and passes.
 // Markers:
 //   [test-marker] t935_laborers_cross_by_ferry
 //   [test-marker] t935_save_skipped
 
-function t935_run() {
-    if (!__game_load_savegame(__test_data_dir() + '/Save/DuoSaves/Meidum 3.svx')) {
+function t935_run(name, ticks) {
+    if (!__game_load_savegame(__test_data_dir() + '/Save/DuoSaves/' + name + '.svx')) {
         __log_marker('t935_save_skipped')
         return true
     }
@@ -22,47 +26,60 @@ function t935_run() {
         }
     }
     if (!mon) {
-        __log_info_native('[test:935] no stepped pyramid complex in Meidum 3')
+        __log_info_native('[test:935] no stepped pyramid complex in ' + name)
         return false
     }
 
-    var counted = {}
-    var drowned = 0
+    // Laborers already dying or on the water in the save are not counted.
+    var preexisting = {}
+    var died = {}
     var rode = {}
+    var wet = 0
     var levelling = 0
-    for (var tick = 0; tick < 1600; tick++) {
+    for (var tick = 0; tick < ticks; tick++) {
         __test_run_ticks(1)
         for (var f = 1; f < 3000; f++) {
             var fig = city.get_figure(f)
             if (!fig || !fig.valid || fig.type != FIGURE_LABORER) {
                 continue
             }
+            var x = __test_figure_tile_x(f)
+            var y = __test_figure_tile_y(f)
+            var on_water = __test_map_terrain_is(x, y, TERRAIN_WATER)
+            if (tick == 0 && (on_water || __test_figure_is_dying(f))) {
+                preexisting[f] = true
+            }
+            if (preexisting[f]) {
+                continue
+            }
             var a = __test_figure_get_action(f)
-            if (fig.destination_building_id == mon && a == ACTION_6_CARTPUSHER_ON_FERRY) {
+            if (a == ACTION_6_CARTPUSHER_ON_FERRY) {
                 rode[f] = true
             }
-            if (a == ACTION_22_LABORER_LEVEL_WORK && __building_main_id(__building_at(__test_figure_tile_x(f), __test_figure_tile_y(f))) == mon) {
+            if (a == ACTION_22_LABORER_LEVEL_WORK && __building_main_id(__building_at(x, y)) == mon) {
                 levelling++
             }
-            // The save starts with one laborer already dying in the river; count only deaths in this run.
-            if (tick > 0 && __test_figure_is_dying(f) && fig.destination_building_id == mon && !counted[f]) {
-                counted[f] = true
-                drowned++
-                __log_info_native('[test:935] laborer ' + f + ' died at ' + __test_figure_tile_x(f) + ',' + __test_figure_tile_y(f))
-            }
-            if (tick == 0 && __test_figure_is_dying(f)) {
-                counted[f] = true
+            if (__test_figure_is_dying(f)) {
+                if (!died[f]) {
+                    died[f] = true
+                    __log_info_native('[test:935] ' + name + ' laborer ' + f + ' died at ' + x + ',' + y)
+                }
+            } else if (on_water && __test_figure_is_visible(f)) {
+                wet++
             }
         }
     }
+    var n_died = Object.keys(died).length
     var riders = Object.keys(rode).length
-    __log_info_native('[test:935] complex ' + mon + ': ' + drowned + ' laborers died on the way, ' + riders + ' rode the ferry, '
-        + levelling + ' laborer-ticks levelling on the site')
-    return drowned == 0 && riders > 0 && levelling > 0
+    __log_info_native('[test:935] ' + name + ': ' + n_died + ' laborers died, ' + wet + ' laborer-ticks walking on water, '
+        + riders + ' rode the ferry, ' + levelling + ' laborer-ticks levelling the complex')
+    return n_died == 0 && wet == 0 && riders > 0 && levelling > 0
 }
 
 function run_test() {
-    if (t935_run() && !__test_find_inlog('[test-marker] t935_save_skipped')) {
+    var ok = t935_run('Meidum 3', 1600)
+    ok = t935_run('Meidum 4', 2800) && ok
+    if (ok && !__test_find_inlog('[test-marker] t935_save_skipped')) {
         __log_marker('t935_laborers_cross_by_ferry')
     }
     __test_signal_ready()

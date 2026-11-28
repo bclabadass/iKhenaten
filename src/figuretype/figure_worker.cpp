@@ -1245,6 +1245,15 @@ void figure_worker::figure_action() {
             poof();
             break;
         }
+        if (laborer_line_crosses_water(tile(), road)) {
+            // The idle laborer walks back unseen; from a site across the river that walk ends in the water.
+            base.map_figure_remove();
+            base.tile = road;
+            base.previous_tile = road;
+            base.cc_coords.x = 15 * road.x();
+            base.cc_coords.y = 15 * road.y();
+            base.map_figure_add();
+        }
         advance_action(ACTION_9_LABORER_GOING_OUT);
         base.set_cross_country_destination(road);
         base.roam_length = 0;
