@@ -51,6 +51,7 @@ int map_routing_citizen_find_first_of_any(tile2i src, const int* offsets, int co
 
 bool map_routing_citizen_can_travel_over_land(tile2i src, tile2i dst, bool allow_ferry = false);
 // Same as over land, but no step enters the area from area_min to area_max (inclusive).
+bool map_routing_citizen_can_travel_over_land_avoiding_sites(tile2i src, tile2i dst, bool allow_ferry);
 bool map_routing_citizen_can_travel_over_land_around(tile2i src, tile2i dst, tile2i area_min, tile2i area_max,
   bool allow_ferry = false);
 bool map_routing_citizen_can_travel_over_road(tile2i src, tile2i dst, bool allow_ferry = false);

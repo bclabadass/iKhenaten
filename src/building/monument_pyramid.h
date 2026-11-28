@@ -98,6 +98,7 @@ public:
     building_stepped_pyramid(building &b) : building_pyramid(b) {}
 
     virtual void on_place(int orientation, int variant) override;
+    virtual void on_place_update_tiles(int orientation, int variant) override;
     virtual void on_create(int orientation) override;
     virtual void on_post_load() override;
     virtual void on_config_reload() override;
@@ -124,6 +125,7 @@ public:
     bool draw_ornaments_and_animations_flat_impl(painter &ctx, vec2i point, tile2i tile, color mask, const vec2i tiles_size);
     bool draw_ornaments_and_animations_hight_impl(painter &ctx, vec2i point, tile2i tile, color mask, const vec2i tiles_size);
     bool draw_unfinished_height_ornaments(painter &ctx, vec2i point, tile2i tile, color mask, const vec2i tiles_size);
+    void draw_site_stakes(painter& ctx, color mask, const vec2i tiles_size);
     bool draw_completed_height_ornaments(painter &ctx, vec2i point, tile2i tile, color mask, const vec2i tiles_size);
     int height_part_image(tile2i tile, int view);
     virtual int course_top_lift(int view) override;

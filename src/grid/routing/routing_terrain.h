@@ -25,6 +25,10 @@ int map_routing_citizen_value(int grid_offset);
 int map_routing_citizen_is_road(int grid_offset);
 inline int map_routing_citizen_is_road(tile2i tile) { return map_routing_citizen_is_road(tile.grid_offset()); }
 int map_routing_citizen_is_passable_terrain(int grid_offset);
+bool map_routing_is_monument_site(int grid_offset);
+inline bool map_routing_is_monument_site(tile2i tile) {
+    return map_routing_is_monument_site(tile.grid_offset());
+}
 
 int map_routing_noncitizen_is_passable(int grid_offset);
 int map_routing_is_destroyable(int grid_offset);

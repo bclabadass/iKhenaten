@@ -5,6 +5,7 @@
 #include "figure/figure_impl.h"
 #include "grid/routing/queue.h"
 #include "grid/routing/routing.h"
+#include "grid/routing/routing_terrain.h"
 
 #include "core/calc.h"
 #include "core/random.h"
@@ -121,6 +122,10 @@ bool figure::citizen_can_travel_over_land() {
     if (dcast()->route_goes_around(around_min, around_max)
         && map_routing_citizen_can_travel_over_land_around(tile, destination_tile, around_min, around_max,
           can_cross_ferry())) {
+        return true;
+    }
+    if (!map_routing_is_monument_site(tile) && !map_routing_is_monument_site(destination_tile)
+        && map_routing_citizen_can_travel_over_land_avoiding_sites(tile, destination_tile, can_cross_ferry())) {
         return true;
     }
     return map_routing_citizen_can_travel_over_land(tile, destination_tile, can_cross_ferry());

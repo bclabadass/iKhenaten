@@ -430,6 +430,42 @@ static int __test_image_from_desc(int pack, int id, int offset) {
 }
 ANK_FUNCTION_3(__test_image_from_desc);
 
+// The image id for a pack path such as "stepped_pyramid/pyramid_phase_one_00021" (0 if unknown).
+static int __test_image_from_path(pcstr path) {
+    return image_desc_from_name(xstring(path)).tid();
+}
+ANK_FUNCTION_1(__test_image_from_path);
+
+// Sets one tile's map image (for drawing sprites side by side in probes).
+static void __test_map_set_image(int x, int y, int image_id) {
+    map_image_set(tile2i(x, y), image_id);
+}
+ANK_FUNCTION_3(__test_map_set_image);
+
+// Routes a figure to (x, y) as it routes itself and returns its path as "x,y;x,y;..." ("" without a route).
+static pcstr __test_figure_route_to(int fid, int x, int y) {
+    static std::string out;
+    out.clear();
+    figure* f = figure_get(fid);
+    if (!f || f->id <= 0) {
+        return "";
+    }
+    f->route_remove();
+    f->destination_tile = tile2i(x, y);
+    f->figure_route_add();
+    if (!f->routing_path_id) {
+        return "";
+    }
+    int offset = f->tile.grid_offset();
+    for (int i = 0; i < f->routing_path_length; i++) {
+        offset += map_grid_direction_delta(figure_route_get_direction(f->routing_path_id, i));
+        const tile2i t(offset);
+        out += std::to_string(t.x()) + "," + std::to_string(t.y()) + ";";
+    }
+    return out.c_str();
+}
+ANK_FUNCTION_3(__test_figure_route_to);
+
 // An image's source bitmap name, size and animation length: "name wxh sprites" ("" for no image).
 static pcstr __test_image_info(int image_id) {
     static bstring256 buf;

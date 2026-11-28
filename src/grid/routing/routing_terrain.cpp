@@ -106,6 +106,20 @@ static int get_land_type_citizen_canal(int grid_offset) {
     //    }
 }
 
+// A monument under construction stays open ground for its workers (they come down onto it), but the original's
+// walkers go around the plot.
+bool map_routing_is_monument_site(int grid_offset) {
+    if (!map_terrain_is(grid_offset, TERRAIN_BUILDING)) {
+        return false;
+    }
+    building* b = building_at(grid_offset);
+    if (!b || !b->id) {
+        return false;
+    }
+    auto* monument = b->main()->dcast_monument();
+    return monument && !monument->is_finished();
+}
+
 int map_routing_land_penalty_amphibia(int grid_offset) {
     building* b = building_at(grid_offset);
     return routing_amphibia_buildings[b->type].penalty;

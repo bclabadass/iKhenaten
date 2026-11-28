@@ -1779,6 +1779,19 @@ void building_stepped_pyramid::on_post_load() {
 
     assign_stair();
     update_tile_heights();
+
+    // Sites laid out before the main part kept its ground show the ditch tile there until they are levelled.
+    if (is_main() && runtime_data().phase == 0) {
+        for (int dy = 0; dy < base.size; dy++) {
+            for (int dx = 0; dx < base.size; dx++) {
+                const int grid_offset = tile().shifted(dx, dy).grid_offset();
+                const int image = map_image_at(grid_offset);
+                if (image == base_img() || image == building_image_get()) {
+                    map_image_set(grid_offset, map_tiles_ground_image(grid_offset));
+                }
+            }
+        }
+    }
 }
 
 void building_stepped_pyramid::on_destroy() {
@@ -1815,6 +1828,10 @@ bool building_stepped_pyramid::draw_unfinished_height_ornaments(painter &ctx, ve
         return draw_completed_height_ornaments(ctx, point, tile, color_mask, tiles_size);
     }
 
+    if (runtime_data().phase == 0) {
+        draw_site_stakes(ctx, color_mask ? color_mask : 0xffffffff, tiles_size);
+    }
+
     if (phase() == 6 && runtime_data().alt_image > 0) {
         auto &command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
         command.image_id = runtime_data().alt_image;
@@ -1835,6 +1852,31 @@ bool building_stepped_pyramid::draw_unfinished_height_ornaments(painter &ctx, ve
     }
 
     return draw_ornaments_and_animations_hight_impl(ctx, point, tile, color_mask, tiles_size);
+}
+
+// The original's stake is one tile; drawn with the walkers so the grass tufts of the tiles in front don't cover it.
+void building_stepped_pyramid::draw_site_stakes(painter& ctx, color color_mask, const vec2i tiles_size) {
+    const int image_stick = current_params().first_img(animkeys().image_stick);
+    tile2i fnw = footprint_nw();
+    const tile2i corners[] = {fnw, fnw.shifted(tiles_size.y - 1, 0), fnw.shifted(0, tiles_size.x - 1),
+      fnw.shifted(tiles_size.y - 1, tiles_size.x - 1)};
+    for (int dy = 0; dy < base.size; dy++) {
+        for (int dx = 0; dx < base.size; dx++) {
+            tile2i t = base.tile.shifted(dx, dy);
+            if (std::find(std::begin(corners), std::end(corners), t) == std::end(corners)
+                || map_monuments_get_progress(t) != 0) {
+                continue;
+            }
+            const vec2i offset = g_camera.lookup_tile_to_pixel(t);
+            auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
+            command.image_id = image_stick;
+            command.pixel = offset;
+            command.mask = color_mask;
+            command.use_sort_pixel = true;
+            command.sort_pixel = offset + vec2i(0, 1);
+            command.location = SOURCE_LOCATION;
+        }
+    }
 }
 
 bool building_stepped_pyramid::draw_ornaments_and_animations_flat_impl(painter &ctx, vec2i point, tile2i tile, color color_mask, const vec2i tiles_size) {
@@ -1884,56 +1926,6 @@ bool building_stepped_pyramid::draw_ornaments_and_animations_flat_impl(painter &
                     command.location = SOURCE_LOCATION;
                 }
             }
-        }
-
-        int image_stick = current_params().first_img(animkeys().image_stick);
-        const image_t *img = image_get(image_stick);
-        tile2i left_top = base.tile.shifted(0, 0);
-        if (left_top == fnw && map_monuments_get_progress(left_top) == 0) {
-            vec2i offset = g_camera.lookup_tile_to_pixel(left_top);
-            auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
-            command.image_id = image_stick;
-            command.pixel = offset;
-            command.mask = color_mask;
-            command.use_sort_pixel = true;
-            command.sort_pixel = offset + vec2i(0, 1);
-            command.location = SOURCE_LOCATION;
-        }
-
-        tile2i right_top = base.tile.shifted(1, 0);
-        if (right_top == fnw.shifted(tiles_size.y - 1, 0) && map_monuments_get_progress(right_top) == 0) {
-            vec2i offset = g_camera.lookup_tile_to_pixel(right_top);
-            auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
-            command.image_id = image_stick;
-            command.pixel = offset;
-            command.mask = color_mask;
-            command.use_sort_pixel = true;
-            command.sort_pixel = offset + vec2i(0, 1);
-            command.location = SOURCE_LOCATION;
-        }
-
-        tile2i left_bottom = base.tile.shifted(0, 1);
-        if (left_bottom == fnw.shifted(0, tiles_size.x - 1) && map_monuments_get_progress(left_bottom) == 0) {
-            vec2i offset = g_camera.lookup_tile_to_pixel(left_bottom);
-            auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
-            command.image_id = image_stick;
-            command.pixel = offset;
-            command.mask = color_mask;
-            command.use_sort_pixel = true;
-            command.sort_pixel = offset + vec2i(0, 1);
-            command.location = SOURCE_LOCATION;
-        }
-
-        tile2i right_bottom = base.tile.shifted(1, 1);
-        if (right_bottom == fnw.shifted(tiles_size.y - 1, tiles_size.x - 1) && map_monuments_get_progress(right_bottom) == 0) {
-            vec2i offset = g_camera.lookup_tile_to_pixel(right_bottom);
-            auto& command = ImageDraw::create_command(ctx, render_command_t::ert_drawtile);
-            command.image_id = image_stick;
-            command.pixel = offset;
-            command.mask = color_mask;
-            command.use_sort_pixel = true;
-            command.sort_pixel = offset + vec2i(0, 1);
-            command.location = SOURCE_LOCATION;
         }
     } else if (monumentd.phase == 1) {
         for (int dy = 0; dy < base.size; dy++) {
@@ -2902,6 +2894,11 @@ void building_stepped_pyramid::on_place(int orientation, int variant) {
             claim_causeway_tiles(id(), probe);
         }
     }
+}
+
+// The site keeps its ground until it is levelled, as the other parts do (base_img is a ditch tile).
+void building_stepped_pyramid::on_place_update_tiles(int orientation, int variant) {
+    map_pyramid_tiles_add(id(), tile(), base.size, -1, TERRAIN_BUILDING);
 }
 
 void building_stepped_pyramid::on_phase_changed(int old, int current) {

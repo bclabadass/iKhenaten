@@ -916,6 +916,21 @@ static void set_empty_land_pass2(int grid_offset) {
     }
 }
 
+// The one-tile image empty land would show here (grass by its level, else bare land), leaving the tile itself alone.
+int map_tiles_ground_image(int grid_offset) {
+    const int ph_grass = map_grasslevel_get(grid_offset);
+    const int random = map_random_get(grid_offset);
+    if (ph_grass >= 1 && ph_grass <= 11) {
+        return image_offset(image_id_from_group(GROUP_TERRAIN_GRASS_PH), ph_grass - 1 + 12 * (random % 3));
+    }
+    if (ph_grass >= 12) {
+        return image_offset(image_id_from_group(GROUP_TERRAIN_GRASS_PH), 48 + (random % 12));
+    }
+    const int land = map_property_is_alternate_terrain(grid_offset) ? image_id_from_group(GROUP_TERRAIN_EMPTY_LAND_ALT)
+                                                                    : image_id_from_group(GROUP_TERRAIN_EMPTY_LAND);
+    return image_offset(land, random & 7);
+}
+
 void map_tiles_update_all_cleared_land() {
     map_tiles_foreach_map_tile(clear_empty_land_image);
 }

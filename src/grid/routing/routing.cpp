@@ -472,6 +472,32 @@ bool map_routing_citizen_can_travel_over_land(tile2i src, tile2i dst, bool allow
     return map_grid_get(routing_distance, dst_offset) != 0;
 }
 
+static bool is_site_to_avoid(int grid_offset) {
+    return map_grid_get(routing_land_citizen, grid_offset) == CITIZEN_2_PASSABLE_TERRAIN
+           && map_routing_is_monument_site(grid_offset);
+}
+
+static void callback_travel_citizen_land_avoiding_sites(int next_offset, int dist) {
+    if (!is_site_to_avoid(next_offset)) {
+        callback_travel_citizen_land(next_offset, dist);
+    }
+}
+
+static void callback_travel_citizen_land_ferry_avoiding_sites(int next_offset, int dist) {
+    if (!is_site_to_avoid(next_offset)) {
+        callback_travel_citizen_land_ferry(next_offset, dist);
+    }
+}
+
+bool map_routing_citizen_can_travel_over_land_avoiding_sites(tile2i src, tile2i dst, bool allow_ferry) {
+    int src_offset = src.grid_offset();
+    int dst_offset = dst.grid_offset();
+    ++xvalue<routing_stats_t>::ref().total_routes_calculated;
+    route_queue(src_offset, dst_offset,
+      allow_ferry ? callback_travel_citizen_land_ferry_avoiding_sites : callback_travel_citizen_land_avoiding_sites);
+    return map_grid_get(routing_distance, dst_offset) != 0;
+}
+
 static bool in_area_to_go_around(int grid_offset) {
     const tile2i t(grid_offset);
     const auto& state = g_routing_state_data;
