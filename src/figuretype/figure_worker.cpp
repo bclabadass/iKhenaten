@@ -7,6 +7,10 @@
 #include "grid/building.h"
 #include "grid/point.h"
 #include "grid/road_access.h"
+#include "grid/bridge.h"
+#include "grid/terrain.h"
+#include <cmath>
+#include <cstdlib>
 #include "building/monument_mastaba_engine.h"
 #include "building/monument_pyramid_engine.h"
 #include "building/monument_pyramid_figure.h"
@@ -689,6 +693,20 @@ bool figure_worker::assign_farm_task(building *farm) {
     return true;
 }
 
+static bool laborer_line_crosses_water(tile2i from, tile2i to) {
+    const int dx = to.x() - from.x();
+    const int dy = to.y() - from.y();
+    const int steps = std::max(std::abs(dx), std::abs(dy)) * 4;
+    for (int i = 1; i <= steps; i++) {
+        const tile2i t((int)std::lround(from.x() + (double)dx * i / steps),
+          (int)std::lround(from.y() + (double)dy * i / steps));
+        if (map_terrain_is(t, TERRAIN_WATER) && !map_is_bridge(t.grid_offset())) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool figure_worker::assign_monument_task(building *monument, figure_id mason_fid) {
     if (!monument || !monument->is_valid()) {
         return false;
@@ -803,12 +821,18 @@ bool figure_worker::assign_monument_task(building *monument, figure_id mason_fid
     }
 
     mon->add_workers(id());
-    map_monuments_set_progress(level_tile, 1);
     set_destination(head);
-    base.destination_tile = level_tile;
     base.roam_length = 0;
     runtime_data().level_tiles_done = 0;
     base.set_flag(e_figure_flag_invisible, false);
+    // OG walks cross-country to the tile; across the river that walk ends in the water, so the laborer takes the
+    // roads (and the ferry) to the site first and claims a tile there (ACTION_10 on arrival).
+    if (laborer_line_crosses_water(tile(), level_tile)) {
+        advance_action(ACTION_10_LABORER_TO_FARM);
+        return true;
+    }
+    map_monuments_set_progress(level_tile, 1);
+    base.destination_tile = level_tile;
     advance_action(ACTION_21_LABORER_TO_LEVEL_TILE);
     return true;
 }

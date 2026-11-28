@@ -265,7 +265,13 @@ bool figure::do_goto(tile2i dest, int terrainchoice, short NEXT_ACTION, short FA
     } else {
         OZZY_PROFILER_SECTION(_, "Figure/Goto/MoveTicks");
         destination_tile = dest;
+        const short action_before_move = action_state;
         move_ticks(speed_multiplier);
+        // A walker queued at a ferry landing (try_enter_ferry) stops with DIR_FIGURE_NONE in its wait action: it has
+        // not arrived, and NEXT_ACTION would take it out of the queue (the boat loads only waiting passengers).
+        if (action_state != action_before_move && action_state == dcast()->ferry_wait_action()) {
+            return false;
+        }
     }
 
     // check if destination is reached/figure is lost/etc.
